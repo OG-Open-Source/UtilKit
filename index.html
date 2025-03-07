@@ -1,10 +1,5 @@
 #!/bin/bash
-# [ -f ~/utilkit.sh ] && source ~/utilkit.sh || bash <(curl -sL raw.ogtt.tk/shell/get_utilkit.sh) && source ~/utilkit.sh
-
-Authors="OGATA Open-Source"
-Scripts="get_utilkit.sh"
-Version="2025.03.07"
-License="MIT License"
+# [ -f ~/utilkit.sh ] && source ~/utilkit.sh || bash <(curl -sL utilkit.ogtt.tk) && source ~/utilkit.sh
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -18,19 +13,7 @@ CLR9="\033[0;97m"
 CLR0="\033[0m"
 
 text() { echo -e "$1"; }
-error() {
-	[ -z "$1" ] && {
-		text "${CLR1}Unknown error${CLR0}"
-		return 1
-	}
-	text "${CLR1}$1${CLR0}"
-	if [ -w "/var/log" ]; then
-		log_file="/var/log/ogos-error.log"
-		timestamp="$(date '+%Y-%m-%d %H:%M:%S')"
-		log_entry="${timestamp} | ${Scripts} - ${Version} - $(text "$1" | tr -d '\n')"
-		text "${log_entry}" >>"${log_file}" 2>/dev/null
-	fi
-}
+error() { text "${CLR1}$1${CLR0}"; }
 
 detect_language() {
 	loc=$(curl -s "https://developers.cloudflare.com/cdn-cgi/trace" | grep "^loc=" | cut -d= -f2)
