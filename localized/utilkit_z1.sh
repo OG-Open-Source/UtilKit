@@ -2,8 +2,7 @@
 
 Authors="OGATA Open-Source"
 Scripts="utilkit.sh"
-Version="6.043.006.236"
-License="MIT License"
+Version="6.043.007.237"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -1277,21 +1276,53 @@ function RUN() {
 					fi
 				fi
 				TASK "* 下載腳本" "
-					curl -sSLf "$github_url" -o "$script_name" || { error "下載腳本 $script_name 失敗"; return 1; }
-					chmod +x "$script_name" || { error "設定腳本 $script_name 執行權限失敗"; return 1; }
+					curl -sSLf \"$github_url\" -o \"$script_name\" || { 
+						error \"下載腳本 $script_name 失敗\"
+						error \"從 $github_url 下載失敗\"
+						return 1
+					}
+
+					if [[ ! -f \"$script_name\" ]]; then
+						error \"下載失敗：未建立檔案\"
+						return 1
+					fi
+
+					if [[ ! -s \"$script_name\" ]]; then
+						error \"下載的檔案為空\"
+						cat \"$script_name\" 2>/dev/null || echo \"（無法顯示檔案內容）\"
+						return 1
+					fi
+
+					if ! grep -q '[^[:space:]]' \"$script_name\"; then
+						error \"下載的檔案僅包含空白字元\"
+						return 1
+					fi
+
+					chmod +x \"$script_name\" || { 
+						error \"設定腳本 $script_name 執行權限失敗\"
+						error \"無法設定 $script_name 的執行權限\"
+						ls -la \"$script_name\"
+						return 1
+					}
 				"
+
 				text "${CLR8}$(LINE = "24")${CLR0}"
-				if [[ "$1" == "--" ]]; then
-					shift
-					./"$script_name" "$@" || {
-						error "執行腳本 $script_name 失敗"
-						return 1
-					}
+				if [[ -f "$script_name" ]]; then
+					if [[ "$1" == "--" ]]; then
+						shift
+						./"$script_name" "$@" || {
+							error "執行腳本 $script_name 失敗"
+							return 1
+						}
+					else
+						./"$script_name" || {
+							error "執行腳本 $script_name 失敗"
+							return 1
+						}
+					fi
 				else
-					./"$script_name" || {
-						error "執行腳本 $script_name 失敗"
-						return 1
-					}
+					error "腳本檔案 '$script_name' 未成功下載"
+					return 1
 				fi
 				text "${CLR8}$(LINE = "24")${CLR0}"
 				text "${CLR2}完成${CLR0}\n"
