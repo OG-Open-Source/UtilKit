@@ -289,7 +289,14 @@
         "Ft9kM3": "* Checking $branch branch",
         "Gt9pN4": "* Checking master branch",
         "Ht9mL5": "* Downloading script",
-        "Jt9nR7": "Unable to detect location. Check your internet connection"
+        "Jt9nR7": "Unable to detect location. Check your internet connection",
+        "Jt9pL6": "Failed to download from: $github_url",
+        "Kt9mR7": "Download failed: File not created",
+        "Lt9nS8": "Downloaded file is empty",
+        "Mt9pT9": "(cannot display file content)",
+        "Nt9qU1": "Downloaded file contains only whitespace",
+        "Ot9rV2": "Failed to set execute permission on $script_name",
+        "Pt9sW3": "Script file '$script_name' was not downloaded successfully"
     },
     "z1": {
         "Xk9pL2": "${CLR1}未知錯誤${CLR0}",
@@ -581,7 +588,14 @@
         "Ft9kM3": "* 檢查分支 $branch",
         "Gt9pN4": "* 檢查 master 分支",
         "Ht9mL5": "* 下載腳本",
-        "Jt9nR7": "無法偵測地理位置。請檢查網路連線"
+        "Jt9nR7": "無法偵測地理位置。請檢查網路連線",
+        "Jt9pL6": "從 $github_url 下載失敗",
+        "Kt9mR7": "下載失敗：未建立檔案",
+        "Lt9nS8": "下載的檔案為空",
+        "Mt9pT9": "（無法顯示檔案內容）",
+        "Nt9qU1": "下載的檔案僅包含空白字元",
+        "Ot9rV2": "無法設定 $script_name 的執行權限",
+        "Pt9sW3": "腳本檔案 '$script_name' 未成功下載"
     },
     "zh": {
         "Xk9pL2": "${CLR1}未知错误${CLR0}",
@@ -873,6 +887,13 @@
         "Ft9kM3": "* 检查分支 $branch",
         "Gt9pN4": "* 检查 master 分支",
         "Ht9mL5": "* 下载脚本",
-        "Jt9nR7": "无法检测地理位置。请检查网络连接"
+        "Jt9nR7": "无法检测地理位置。请检查网络连接",
+        "Jt9pL6": "从 $github_url 下载失败",
+        "Kt9mR7": "下载失败：未建立文件",
+        "Lt9nS8": "下载的文件为空",
+        "Mt9pT9": "（无法显示文件内容）",
+        "Nt9qU1": "下载的文件仅包含空白字元",
+        "Ot9rV2": "无法设置 $script_name 的执行权限",
+        "Pt9sW3": "脚本文件 '$script_name' 未成功下载"
     }
 }

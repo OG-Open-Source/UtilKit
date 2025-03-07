@@ -2,8 +2,7 @@
 
 Authors="OGATA Open-Source"
 Scripts="utilkit.sh"
-Version="6.043.006.236"
-License="MIT License"
+Version="6.043.007.237"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -1277,21 +1276,53 @@ function RUN() {
 					fi
 				fi
 				TASK "*#Ht9mL5#*" "
-					curl -sSLf "$github_url" -o "$script_name" || { error "*#Ht7mK5#*"; return 1; }
-					chmod +x "$script_name" || { error "*#Kt8nR4#*"; return 1; }
+					curl -sSLf \"$github_url\" -o \"$script_name\" || { 
+						error \"*#Ht7mK5#*\"
+						error \"*#Jt9pL6#*\"
+						return 1
+					}
+
+					if [[ ! -f \"$script_name\" ]]; then
+						error \"*#Kt9mR7#*\"
+						return 1
+					fi
+
+					if [[ ! -s \"$script_name\" ]]; then
+						error \"*#Lt9nS8#*\"
+						cat \"$script_name\" 2>/dev/null || echo \"*#Mt9pT9#*\"
+						return 1
+					fi
+
+					if ! grep -q '[^[:space:]]' \"$script_name\"; then
+						error \"*#Nt9qU1#*\"
+						return 1
+					fi
+
+					chmod +x \"$script_name\" || { 
+						error \"*#Kt8nR4#*\"
+						error \"*#Ot9rV2#*\"
+						ls -la \"$script_name\"
+						return 1
+					}
 				"
+
 				text "${CLR8}$(LINE = "24")${CLR0}"
-				if [[ "$1" == "--" ]]; then
-					shift
-					./"$script_name" "$@" || {
-						error "*#Mt9nL5#*"
-						return 1
-					}
+				if [[ -f "$script_name" ]]; then
+					if [[ "$1" == "--" ]]; then
+						shift
+						./"$script_name" "$@" || {
+							error "*#Mt9nL5#*"
+							return 1
+						}
+					else
+						./"$script_name" || {
+							error "*#Mt9nL5#*"
+							return 1
+						}
+					fi
 				else
-					./"$script_name" || {
-						error "*#Mt9nL5#*"
-						return 1
-					}
+					error "*#Pt9sW3#*"
+					return 1
 				fi
 				text "${CLR8}$(LINE = "24")${CLR0}"
 				text "*#Rt9nK6#*\n"
