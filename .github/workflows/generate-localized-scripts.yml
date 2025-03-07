@@ -18,6 +18,12 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y jq
 
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=$(grep -oP 'Version="\K[^"]+' utilkit.sh || echo "unknown")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Generate localized versions
         run: |
           mkdir -p localized
@@ -62,5 +68,5 @@ jobs:
           mkdir -p localized
 
           git add localized/
-          git commit -m "Update localized scripts [skip ci]" || echo "No changes to commit"
+          git commit -m "Update localized scripts [${{ steps.version.outputs.version }}] [skip ci]" || echo "No changes to commit"
           git push
