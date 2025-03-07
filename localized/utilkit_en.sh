@@ -2,8 +2,7 @@
 
 Authors="OGATA Open-Source"
 Scripts="utilkit.sh"
-Version="6.043.006.236"
-License="MIT License"
+Version="6.043.007.237"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -1277,21 +1276,53 @@ function RUN() {
 					fi
 				fi
 				TASK "* Downloading script" "
-					curl -sSLf "$github_url" -o "$script_name" || { error "Failed to download script $script_name"; return 1; }
-					chmod +x "$script_name" || { error "Failed to set execute permission for $script_name"; return 1; }
+					curl -sSLf \"$github_url\" -o \"$script_name\" || { 
+						error \"Failed to download script $script_name\"
+						error \"Failed to download from: $github_url\"
+						return 1
+					}
+
+					if [[ ! -f \"$script_name\" ]]; then
+						error \"Download failed: File not created\"
+						return 1
+					fi
+
+					if [[ ! -s \"$script_name\" ]]; then
+						error \"Downloaded file is empty\"
+						cat \"$script_name\" 2>/dev/null || echo \"(cannot display file content)\"
+						return 1
+					fi
+
+					if ! grep -q '[^[:space:]]' \"$script_name\"; then
+						error \"Downloaded file contains only whitespace\"
+						return 1
+					fi
+
+					chmod +x \"$script_name\" || { 
+						error \"Failed to set execute permission for $script_name\"
+						error \"Failed to set execute permission on $script_name\"
+						ls -la \"$script_name\"
+						return 1
+					}
 				"
+
 				text "${CLR8}$(LINE = "24")${CLR0}"
-				if [[ "$1" == "--" ]]; then
-					shift
-					./"$script_name" "$@" || {
-						error "Failed to execute script $script_name"
-						return 1
-					}
+				if [[ -f "$script_name" ]]; then
+					if [[ "$1" == "--" ]]; then
+						shift
+						./"$script_name" "$@" || {
+							error "Failed to execute script $script_name"
+							return 1
+						}
+					else
+						./"$script_name" || {
+							error "Failed to execute script $script_name"
+							return 1
+						}
+					fi
 				else
-					./"$script_name" || {
-						error "Failed to execute script $script_name"
-						return 1
-					}
+					error "Script file '$script_name' was not downloaded successfully"
+					return 1
 				fi
 				text "${CLR8}$(LINE = "24")${CLR0}"
 				text "${CLR2}FINISHED${CLR0}\n"
