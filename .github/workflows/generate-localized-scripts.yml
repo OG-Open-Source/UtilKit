@@ -1,0 +1,66 @@
+name: Generate Localized Scripts
+
+on:
+  push:
+    paths:
+      - "utilkit.sh"
+      - "utilkit.json"
+  workflow_dispatch:
+
+jobs:
+  generate-localized-scripts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Generate localized versions
+        run: |
+          mkdir -p localized
+
+          # Get available languages
+          languages=$(jq -r 'keys[]' utilkit.json)
+
+          for lang in $languages; do
+            echo "Generating $lang version..."
+            
+            # Create a sed script for this language
+            sed_script=$(mktemp)
+            
+            # Extract translations and create sed commands
+            jq -r ".[\"$lang\"] | to_entries[] | .key" utilkit.json | while read -r key; do
+              value=$(jq -r ".[\"$lang\"][\"$key\"]" utilkit.json)
+              # Escape special characters for sed
+              escaped_value=$(echo "$value" | sed -e 's/[\/&]/\\&/g' -e 's/\[/\\[/g' -e 's/\]/\\]/g')
+              echo "s/\\*#${key}#\\*/${escaped_value}/g" >> "$sed_script"
+            done
+            
+            # Apply translations
+            cp utilkit.sh "localized/utilkit_${lang}.sh"
+            sed -i -f "$sed_script" "localized/utilkit_${lang}.sh"
+            
+            # Clean up
+            rm "$sed_script"
+          done
+
+      - name: Upload localized scripts
+        uses: actions/upload-artifact@v4
+        with:
+          name: localized-scripts
+          path: localized/
+
+      - name: Commit and push localized scripts
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+          # Move files to their final location
+          mkdir -p localized
+
+          git add localized/
+          git commit -m "Update localized scripts [skip ci]" || echo "No changes to commit"
+          git push
