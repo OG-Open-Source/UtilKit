@@ -27,29 +27,17 @@ jobs:
       - name: Generate localized versions
         run: |
           mkdir -p localized
-
-          # Get available languages
           languages=$(jq -r 'keys[]' utilkit.json)
-
           for lang in $languages; do
             echo "Generating $lang version..."
-            
-            # Create a sed script for this language
             sed_script=$(mktemp)
-            
-            # Extract translations and create sed commands
             jq -r ".[\"$lang\"] | to_entries[] | .key" utilkit.json | while read -r key; do
               value=$(jq -r ".[\"$lang\"][\"$key\"]" utilkit.json)
-              # Escape special characters for sed
               escaped_value=$(echo "$value" | sed -e 's/[\/&]/\\&/g' -e 's/\[/\\[/g' -e 's/\]/\\]/g')
               echo "s/\\*#${key}#\\*/${escaped_value}/g" >> "$sed_script"
             done
-            
-            # Apply translations
             cp utilkit.sh "localized/utilkit_${lang}.sh"
             sed -i -f "$sed_script" "localized/utilkit_${lang}.sh"
-            
-            # Clean up
             rm "$sed_script"
           done
 
@@ -63,10 +51,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-
-          # Move files to their final location
           mkdir -p localized
-
           git add localized/
-          git commit -m "Update localized scripts [${{ steps.version.outputs.version }}] [skip ci]" || echo "No changes to commit"
+          git commit -m "Update localized utilkit.sh ${{ steps.version.outputs.version }}" || echo "No changes to commit"
           git push
