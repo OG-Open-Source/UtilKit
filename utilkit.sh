@@ -1,8 +1,8 @@
 #!/bin/bash
 
-Authors="OGATA Open-Source"
+Authors="OG-Open-Source"
 Scripts="utilkit.sh"
-Version="6.043.007.237"
+Version="6.043.008.238"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
