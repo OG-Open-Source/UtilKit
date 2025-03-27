@@ -2,7 +2,7 @@
 
 Authors="OG-Open-Source"
 Scripts="utilkit.sh"
-Version="6.043.008.238"
+Version="6.043.009.239"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -14,9 +14,6 @@ CLR7="\033[0;37m"
 CLR8="\033[0;96m"
 CLR9="\033[0;97m"
 CLR0="\033[0m"
-
-LC_ALL=C
-LANG=C
 
 text() { echo -e "$1"; }
 error() {
