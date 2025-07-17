@@ -26,7 +26,7 @@ log_entry="$timestamp | $Scripts - $Version - $(Txt "$1"|tr -d '\n')"
 Txt "$log_entry" >>"$log_file" 2>/dev/null
 fi
 }
-function ADD(){
+function Add(){
 [ $# -eq 0 ]&&{
 Err "No items specified for insertion. Please provide at least one item to add"
 return 2
@@ -54,24 +54,24 @@ continue
 *.deb)CHECK_ROOT
 deb_file=$(basename "$1")
 Txt "${CLR3}INSERT DEB PACKAGE [$deb_file]${CLR0}\n"
-GET "$1"
+Get "$1"
 if [ -f "$deb_file" ];then
 dpkg -i "$deb_file"||{
 Err "Failed to install $deb_file. Check package compatibility and dependencies\n"
-rm -f "$deb_file"
+Del -f "$deb_file"
 failed=1
 shift
 continue
 }
 apt --fix-broken install -y||{
 Err "Failed to fix dependencies"
-rm -f "$deb_file"
+Del -f "$deb_file"
 failed=1
 shift
 continue
 }
 Txt "* DEB package $deb_file installed successfully"
-rm -f "$deb_file"
+Del -f "$deb_file"
 Txt "${CLR2}FINISHED${CLR0}\n"
 else
 Err "DEB package $deb_file not found or download failed\n"
@@ -211,10 +211,10 @@ case "$mode" in
 "interactive")Txt "\n${CLR3}Missing packages:${CLR0} ${missing_deps[*]}"
 read -p "Do you want to install the missing packages? (y/N) " -n 1 -r
 Txt "\n"
-[[ $REPLY =~ ^[Yy] ]]&&ADD "${missing_deps[@]}"
+[[ $REPLY =~ ^[Yy] ]]&&Add "${missing_deps[@]}"
 ;;
 "auto")Txt
-ADD "${missing_deps[@]}"
+Add "${missing_deps[@]}"
 esac
 }
 function CHECK_OS(){
@@ -461,7 +461,7 @@ failed=1
 shift
 continue
 }
-Txt "* File $1 exists"
+Txt "*#Qr4sf7#*"
 rm -f "$1"||{
 Err "Failed to remove file $1\n"
 failed=1
@@ -673,7 +673,7 @@ case "$option" in
 esac
 Txt "$result"
 }
-function GET(){
+function Get(){
 extract="false"
 target_dir="."
 rename_file=""
@@ -774,7 +774,7 @@ return 1
 }
 fi
 }
-function INPUT(){
+function Ask(){
 read -e -p "$1" "$2"||{
 Err "Failed to read user input"
 return 1
@@ -793,8 +793,8 @@ while read -r interface_item;do
 ((i++))
 done <<<"$all_interfaces"
 interfaces_num="${#interfaces[*]}"
-default4_route=$(ip -4 route show default 2>/dev/null|grep -A 3 "^default"||Txt "")
-default6_route=$(ip -6 route show default 2>/dev/null|grep -A 3 "^default"||Txt "")
+default4_route=$(ip -4 route show default 2>/dev/null|grep -A 3 "^default"||Txt)
+default6_route=$(ip -6 route show default 2>/dev/null|grep -A 3 "^default"||Txt)
 get_arr_item_idx(){
 item="$1"
 shift
@@ -1070,7 +1070,7 @@ shift
 esac
 done
 Txt "${CLR3}Downloading and executing script [${script_name}] from URL${CLR0}"
-TASK "* Downloading script" "
+Task "* Downloading script" "
 				curl -sSLf "$url" -o "$script_name" || { Err "Failed to download script $script_name"; return 1; }
 				chmod +x "$script_name" || { Err "Failed to set execute permission for $script_name"; return 1; }
 			"
@@ -1125,7 +1125,7 @@ return 1
 }
 temp_dir=$(mktemp -d)
 if [[ $branch != "main" ]];then
-TASK "* Cloning from branch $branch" "git clone --branch $branch https://github.com/$repo_owner/$repo_name.git "$temp_dir""
+Task "* Cloning from branch $branch" "git clone --branch $branch https://github.com/$repo_owner/$repo_name.git "$temp_dir""
 if [ $? -ne 0 ];then
 rm -rf "$temp_dir"
 {
@@ -1134,9 +1134,9 @@ return 1
 }
 fi
 else
-TASK "* Checking main branch" "git clone --branch main https://github.com/$repo_owner/$repo_name.git "$temp_dir"" true
+Task "* Checking main branch" "git clone --branch main https://github.com/$repo_owner/$repo_name.git "$temp_dir"" true
 if [ $? -ne 0 ];then
-TASK "* Trying master branch" "git clone --branch master https://github.com/$repo_owner/$repo_name.git "$temp_dir""
+Task "* Trying master branch" "git clone --branch master https://github.com/$repo_owner/$repo_name.git "$temp_dir""
 if [ $? -ne 0 ];then
 rm -rf "$temp_dir"
 {
@@ -1146,11 +1146,11 @@ return 1
 fi
 fi
 fi
-TASK "* Creating target directory" "ADD -d "$repo_name" && cp -r "$temp_dir"/* "$repo_name"/"
-TASK "* Cleaning up temporary files" "rm -rf "$temp_dir""
+Task "* Creating target directory" "Add -d "$repo_name" && cp -r "$temp_dir"/* "$repo_name"/"
+Task "* Cleaning up temporary files" "rm -rf "$temp_dir""
 Txt "Repository cloned to directory: ${CLR2}$repo_name${CLR0}"
 if [[ -f "$repo_name/$script_path" ]];then
-TASK "* Setting execute permissions" "chmod +x "$repo_name/$script_path""
+Task "* Setting execute permissions" "chmod +x "$repo_name/$script_path""
 Txt "$CLR8$(LINE = "24")$CLR0"
 if [[ $1 == "--" ]];then
 shift
@@ -1172,15 +1172,15 @@ else
 Txt "${CLR3}Downloading and executing script [${script_name}] from ${repo_owner}/${repo_name}${CLR0}"
 github_url="https://raw.githubusercontent.com/$repo_owner/$repo_name/refs/heads/$branch/$script_path"
 if [[ $branch != "main" ]];then
-TASK "* Checking $branch branch" "curl -sLf "$github_url" >/dev/null"
+Task "* Checking $branch branch" "curl -sLf "$github_url" >/dev/null"
 [ $? -ne 0 ]&&{
 Err "Script not found in $branch branch"
 return 1
 }
 else
-TASK "* Checking main branch" "curl -sLf "$github_url" >/dev/null" true
+Task "* Checking main branch" "curl -sLf "$github_url" >/dev/null" true
 if [ $? -ne 0 ];then
-TASK "* Checking master branch" "
+Task "* Checking master branch" "
 							branch="master"
 							github_url="https://raw.githubusercontent.com/$repo_owner/$repo_name/refs/heads/master/$script_path"
 							curl -sLf "$github_url" >/dev/null
@@ -1191,7 +1191,7 @@ return 1
 }
 fi
 fi
-TASK "* Downloading script" "
+Task "* Downloading script" "
 					curl -sSLf \"$github_url\" -o \"$script_name\" || { 
 						Err \"Failed to download script $script_name\"
 						Err \"Failed to download from: $github_url\"
@@ -1423,38 +1423,38 @@ return 1
 }
 esac
 if command -v journalctl &>/dev/null;then
-TASK "* Rotating and vacuuming journalctl logs" "journalctl --rotate --vacuum-time=1d --vacuum-size=500M"||{
+Task "* Rotating and vacuuming journalctl logs" "journalctl --rotate --vacuum-time=1d --vacuum-size=500M"||{
 Err "Failed to rotate and vacuum journalctl logs"
 return 1
 }
 fi
-TASK "* Removing temporary files" "rm -rf /tmp/*"||{
+Task "* Removing temporary files" "rm -rf /tmp/*"||{
 Err "Failed to remove temporary files"
 return 1
 }
 for cmd in docker npm pip;do
 if command -v "$cmd" &>/dev/null;then
 case "$cmd" in
-docker)TASK "* Cleaning Docker system" "docker system prune -af"||{
+docker)Task "* Cleaning Docker system" "docker system prune -af"||{
 Err "Failed to clean Docker system"
 return 1
 };;
-npm)TASK "* Cleaning NPM cache" "npm cache clean --force"||{
+npm)Task "* Cleaning NPM cache" "npm cache clean --force"||{
 Err "Failed to clean NPM cache"
 return 1
 };;
-pip)TASK "* Purging PIP cache" "pip cache purge"||{
+pip)Task "* Purging PIP cache" "pip cache purge"||{
 Err "Failed to purge PIP cache"
 return 1
 }
 esac
 fi
 done
-TASK "* Removing user cache files" "rm -rf ~/.cache/*"||{
+Task "* Removing user cache files" "rm -rf ~/.cache/*"||{
 Err "Failed to remove user cache files"
 return 1
 }
-TASK "* Removing thumbnail files" "rm -rf ~/.thumbnails/*"||{
+Task "* Removing thumbnail files" "rm -rf ~/.thumbnails/*"||{
 Err "Failed to remove thumbnail files"
 return 1
 }
@@ -1512,7 +1512,7 @@ Txt "${CLR3}Optimizing system configuration for long-running servers...${CLR0}"
 Txt "$CLR8$(LINE = "24")$CLR0"
 SYSCTL_CONF="/etc/sysctl.d/99-server-optimizations.conf"
 Txt "# Server optimizations for long-running systems" >"$SYSCTL_CONF"
-TASK "* Optimizing memory management" "
+Task "* Optimizing memory management" "
 		Txt 'vm.swappiness = 1' >> $SYSCTL_CONF
 		Txt 'vm.vfs_cache_pressure = 50' >> $SYSCTL_CONF
 		Txt 'vm.dirty_ratio = 15' >> $SYSCTL_CONF
@@ -1522,7 +1522,7 @@ TASK "* Optimizing memory management" "
 Err "Failed to optimize memory management"
 return 1
 }
-TASK "* Optimizing network settings" "
+Task "* Optimizing network settings" "
 		Txt 'net.core.somaxconn = 65535' >> $SYSCTL_CONF
 		Txt 'net.core.netdev_max_backlog = 65535' >> $SYSCTL_CONF
 		Txt 'net.ipv4.tcp_max_syn_backlog = 65535' >> $SYSCTL_CONF
@@ -1536,7 +1536,7 @@ TASK "* Optimizing network settings" "
 Err "Failed to optimize network settings"
 return 1
 }
-TASK "* Optimizing TCP buffers" "
+Task "* Optimizing TCP buffers" "
 		Txt 'net.core.rmem_max = 16777216' >> $SYSCTL_CONF
 		Txt 'net.core.wmem_max = 16777216' >> $SYSCTL_CONF
 		Txt 'net.ipv4.tcp_rmem = 4096 87380 16777216' >> $SYSCTL_CONF
@@ -1546,7 +1546,7 @@ TASK "* Optimizing TCP buffers" "
 Err "Failed to optimize TCP buffers"
 return 1
 }
-TASK "* Optimizing filesystem settings" "
+Task "* Optimizing filesystem settings" "
 		Txt 'fs.file-max = 2097152' >> $SYSCTL_CONF
 		Txt 'fs.nr_open = 2097152' >> $SYSCTL_CONF
 		Txt 'fs.inotify.max_user_watches = 524288' >> $SYSCTL_CONF
@@ -1554,7 +1554,7 @@ TASK "* Optimizing filesystem settings" "
 Err "Failed to optimize filesystem settings"
 return 1
 }
-TASK "* Optimizing system limits" "
+Task "* Optimizing system limits" "
 		Txt '* soft nofile 1048576' >> /etc/security/limits.conf
 		Txt '* hard nofile 1048576' >> /etc/security/limits.conf
 		Txt '* soft nproc 65535' >> /etc/security/limits.conf
@@ -1563,7 +1563,7 @@ TASK "* Optimizing system limits" "
 Err "Failed to optimize system limits"
 return 1
 }
-TASK "* Optimizing I/O scheduler" "
+Task "* Optimizing I/O scheduler" "
 		for disk in /sys/block/[sv]d*; do
 			Txt 'none' > \$disk/queue/scheduler 2>/dev/null || true
 			Txt '256' > \$disk/queue/nr_requests 2>/dev/null || true
@@ -1572,7 +1572,7 @@ TASK "* Optimizing I/O scheduler" "
 Err "Failed to optimize I/O scheduler"
 return 1
 }
-TASK "* Disabling non-essential services" '
+Task "* Disabling non-essential services" '
 		for service in bluetooth cups avahi-daemon postfix nfs-server rpcbind autofs; do
 			systemctl disable --now $service 2>/dev/null || true
 		done
@@ -1580,11 +1580,11 @@ TASK "* Disabling non-essential services" '
 Err "Failed to disable services"
 return 1
 }
-TASK "* Applying system parameters" "sysctl -p $SYSCTL_CONF"||{
+Task "* Applying system parameters" "sysctl -p $SYSCTL_CONF"||{
 Err "Failed to apply system parameters"
 return 1
 }
-TASK "* Clearing system cache" "
+Task "* Clearing system cache" "
 		sync
 		Txt 3 > /proc/sys/vm/drop_caches
 		ip -s -s neigh flush all
@@ -1625,11 +1625,11 @@ Txt
 Txt "${CLR2}Reboot cancelled${CLR0}\n"
 return 0
 }
-TASK "* Performing final checks" "sync"||{
+Task "* Performing final checks" "sync"||{
 Err "Failed to sync filesystems"
 return 1
 }
-TASK "* Initiating reboot" "reboot || sudo reboot"||{
+Task "* Initiating reboot" "reboot || sudo reboot"||{
 Err "Failed to initiate reboot"
 return 1
 }
@@ -1659,21 +1659,21 @@ case $(command -v apk apt opkg pacman yum zypper dnf|head -n1) in
 *apt)while
 fuser /var/lib/dpkg/lock-frontend &>/dev/null
 do
-TASK "* Waiting for dpkg lock" "sleep 1"||return 1
+Task "* Waiting for dpkg lock" "sleep 1"||return 1
 ((wait_time++))
 [ "$wait_time" -gt 10 ]&&{
 Err "Timeout waiting for dpkg lock to be released"
 return 1
 }
 done
-TASK "* Configuring pending packages" "DEBIAN_FRONTEND=noninteractive dpkg --configure -a"||{
+Task "* Configuring pending packages" "DEBIAN_FRONTEND=noninteractive dpkg --configure -a"||{
 Err "Failed to configure pending packages"
 return 1
 }
 update_pkgs "apt" "apt update -y" "apt full-upgrade -y"
 ;;
 *opkg)update_pkgs "opkg" "opkg update" "opkg upgrade";;
-*pacman)TASK "* Updating and upgrading packages" "pacman -Syu --noconfirm"||{
+*pacman)Task "* Updating and upgrading packages" "pacman -Syu --noconfirm"||{
 Err "Failed to update and upgrade packages using pacman"
 return 1
 };;
@@ -1718,37 +1718,37 @@ Err "System is already running the latest stable version ($target_codename)"
 return 1
 }
 Txt "* Upgrading from ${CLR2}${current_codename}${CLR0} to ${CLR3}${target_codename}${CLR0}"
-TASK "* Backing up sources.list" "cp /etc/apt/sources.list /etc/apt/sources.list.backup"||{
+Task "* Backing up sources.list" "cp /etc/apt/sources.list /etc/apt/sources.list.backup"||{
 Err "Failed to backup sources.list"
 return 1
 }
-TASK "* Updating sources.list" "sed -i 's/$current_codename/$target_codename/g' /etc/apt/sources.list"||{
+Task "* Updating sources.list" "sed -i 's/$current_codename/$target_codename/g' /etc/apt/sources.list"||{
 Err "Failed to update sources.list"
 return 1
 }
-TASK "* Updating package lists for new release" "apt update -y"||{
+Task "* Updating package lists for new release" "apt update -y"||{
 Err "Failed to update package lists for new release"
 return 1
 }
-TASK "* Upgrading to new Debian release" "apt full-upgrade -y"||{
+Task "* Upgrading to new Debian release" "apt full-upgrade -y"||{
 Err "Failed to upgrade to new Debian release"
 return 1
 }
 ;;
 Ubuntu)Txt "* Detected 'Ubuntu' system"
-TASK "* Updating package lists" "apt update -y"||{
+Task "* Updating package lists" "apt update -y"||{
 Err "Failed to update package lists using apt"
 return 1
 }
-TASK "* Upgrading current packages" "apt full-upgrade -y"||{
+Task "* Upgrading current packages" "apt full-upgrade -y"||{
 Err "Failed to upgrade current packages"
 return 1
 }
-TASK "* Installing update-manager-core" "apt install -y update-manager-core"||{
+Task "* Installing update-manager-core" "apt install -y update-manager-core"||{
 Err "Failed to install update-manager-core"
 return 1
 }
-TASK "* Upgrading Ubuntu release" "do-release-upgrade -f DistUpgradeViewNonInteractive"||{
+Task "* Upgrading Ubuntu release" "do-release-upgrade -f DistUpgradeViewNonInteractive"||{
 Err "Failed to upgrade Ubuntu release"
 return 1
 }
@@ -1762,7 +1762,7 @@ esac
 Txt "$CLR8$(LINE = "24")$CLR0"
 Txt "${CLR2}System upgrade completed${CLR0}\n"
 }
-function TASK(){
+function Task(){
 message="$1"
 command="$2"
 ignore_Err=${3:-false}
@@ -1777,7 +1777,7 @@ Txt "${CLR1}Failed${CLR0} ($ret)"
 [[ -s $temp_file ]]&&Txt "$CLR1$(cat "$temp_file")$CLR0"
 [[ $ignore_Err != "true" ]]&&return $ret
 fi
-rm -f "$temp_file"
+Del -f "$temp_file"
 return $ret
 }
 function TIMEZONE(){

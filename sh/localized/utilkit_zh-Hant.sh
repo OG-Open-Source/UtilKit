@@ -26,7 +26,7 @@ log_entry="$timestamp | $Scripts - $Version - $(Txt "$1"|tr -d '\n')"
 Txt "$log_entry" >>"$log_file" 2>/dev/null
 fi
 }
-function ADD(){
+function Add(){
 [ $# -eq 0 ]&&{
 Err "未指定要新增的項目。請提供至少一個要新增的項目"
 return 2
@@ -54,24 +54,24 @@ continue
 *.deb)CHECK_ROOT
 deb_file=$(basename "$1")
 Txt "${CLR3}安裝 DEB 套件［$deb_file］${CLR0}\n"
-GET "$1"
+Get "$1"
 if [ -f "$deb_file" ];then
 dpkg -i "$deb_file"||{
 Err "安裝 $deb_file 失敗。請檢查套件相容性和相依性\n"
-rm -f "$deb_file"
+Del -f "$deb_file"
 failed=1
 shift
 continue
 }
 apt --fix-broken install -y||{
 Err "修復相依性失敗"
-rm -f "$deb_file"
+Del -f "$deb_file"
 failed=1
 shift
 continue
 }
 Txt "* DEB 套件 $deb_file 安裝成功"
-rm -f "$deb_file"
+Del -f "$deb_file"
 Txt "${CLR2}完成${CLR0}\n"
 else
 Err "找不到 DEB 套件 $deb_file 或下載失敗\n"
@@ -211,10 +211,10 @@ case "$mode" in
 "interactive")Txt "\n${CLR3}缺少的套件：${CLR0} ${missing_deps[*]}"
 read -p "是否要安裝缺少的套件？(y/N) " -n 1 -r
 Txt "\n"
-[[ $REPLY =~ ^[Yy] ]]&&ADD "${missing_deps[@]}"
+[[ $REPLY =~ ^[Yy] ]]&&Add "${missing_deps[@]}"
 ;;
 "auto")Txt
-ADD "${missing_deps[@]}"
+Add "${missing_deps[@]}"
 esac
 }
 function CHECK_OS(){
@@ -461,14 +461,14 @@ failed=1
 shift
 continue
 }
-Txt "* File $1 exists"
+Txt "*#Qr4sf7#*"
 rm -f "$1"||{
 Err "刪除檔案 $1 失敗\n"
 failed=1
 shift
 continue
 }
-Txt "* File $1 removed successfully"
+Txt "* 檔案 $1 移除成功"
 Txt "${CLR2}完成${CLR0}\n"
 ;;
 "dir")[ ! -d "$1" ]&&{
@@ -477,14 +477,14 @@ failed=1
 shift
 continue
 }
-Txt "* Directory $1 exists"
+Txt "* 目錄 $1 已存在"
 rm -rf "$1"||{
 Err "刪除目錄 $1 失敗\n"
 failed=1
 shift
 continue
 }
-Txt "* Directory $1 removed successfully"
+Txt "* 目錄 $1 移除成功"
 Txt "${CLR2}完成${CLR0}\n"
 ;;
 "pkg")CHECK_ROOT
@@ -530,7 +530,7 @@ failed=1
 shift
 continue
 fi
-Txt "* Package $1 removed successfully"
+Txt "* 套件 $1 移除成功"
 Txt "${CLR2}完成${CLR0}\n"
 ;;
 *){
@@ -673,7 +673,7 @@ case "$option" in
 esac
 Txt "$result"
 }
-function GET(){
+function Get(){
 extract="false"
 target_dir="."
 rename_file=""
@@ -774,7 +774,7 @@ return 1
 }
 fi
 }
-function INPUT(){
+function Ask(){
 read -e -p "$1" "$2"||{
 Err "讀取使用者輸入失敗"
 return 1
@@ -793,8 +793,8 @@ while read -r interface_item;do
 ((i++))
 done <<<"$all_interfaces"
 interfaces_num="${#interfaces[*]}"
-default4_route=$(ip -4 route show default 2>/dev/null|grep -A 3 "^default"||Txt "")
-default6_route=$(ip -6 route show default 2>/dev/null|grep -A 3 "^default"||Txt "")
+default4_route=$(ip -4 route show default 2>/dev/null|grep -A 3 "^default"||Txt)
+default6_route=$(ip -6 route show default 2>/dev/null|grep -A 3 "^default"||Txt)
 get_arr_item_idx(){
 item="$1"
 shift
@@ -1070,7 +1070,7 @@ shift
 esac
 done
 Txt "${CLR3}正在從 URL 下載並執行腳本 [${script_name}]${CLR0}"
-TASK "* 下載腳本" "
+Task "* 下載腳本" "
 				curl -sSLf "$url" -o "$script_name" || { Err "下載腳本 $script_name 失敗"; return 1; }
 				chmod +x "$script_name" || { Err "設定腳本 $script_name 執行權限失敗"; return 1; }
 			"
@@ -1125,7 +1125,7 @@ return 1
 }
 temp_dir=$(mktemp -d)
 if [[ $branch != "main" ]];then
-TASK "* 正在從分支 $branch 克隆" "git clone --branch $branch https://github.com/$repo_owner/$repo_name.git "$temp_dir""
+Task "* 正在從分支 $branch 克隆" "git clone --branch $branch https://github.com/$repo_owner/$repo_name.git "$temp_dir""
 if [ $? -ne 0 ];then
 rm -rf "$temp_dir"
 {
@@ -1134,9 +1134,9 @@ return 1
 }
 fi
 else
-TASK "* 檢查 main 分支" "git clone --branch main https://github.com/$repo_owner/$repo_name.git "$temp_dir"" true
+Task "* 檢查 main 分支" "git clone --branch main https://github.com/$repo_owner/$repo_name.git "$temp_dir"" true
 if [ $? -ne 0 ];then
-TASK "* 嘗試 master 分支" "git clone --branch master https://github.com/$repo_owner/$repo_name.git "$temp_dir""
+Task "* 嘗試 master 分支" "git clone --branch master https://github.com/$repo_owner/$repo_name.git "$temp_dir""
 if [ $? -ne 0 ];then
 rm -rf "$temp_dir"
 {
@@ -1146,11 +1146,11 @@ return 1
 fi
 fi
 fi
-TASK "* 建立目標目錄" "ADD -d "$repo_name" && cp -r "$temp_dir"/* "$repo_name"/"
-TASK "* 清理暫存檔案" "rm -rf "$temp_dir""
+Task "* 建立目標目錄" "Add -d "$repo_name" && cp -r "$temp_dir"/* "$repo_name"/"
+Task "* 清理暫存檔案" "rm -rf "$temp_dir""
 Txt "儲存庫已克隆到目錄：${CLR2}$repo_name"
 if [[ -f "$repo_name/$script_path" ]];then
-TASK "* 設定執行權限" "chmod +x "$repo_name/$script_path""
+Task "* 設定執行權限" "chmod +x "$repo_name/$script_path""
 Txt "$CLR8$(LINE = "24")$CLR0"
 if [[ $1 == "--" ]];then
 shift
@@ -1172,15 +1172,15 @@ else
 Txt "${CLR3}正在從 ${repo_owner}/${repo_name} 下載並執行腳本 [${script_name}]${CLR0}"
 github_url="https://raw.githubusercontent.com/$repo_owner/$repo_name/refs/heads/$branch/$script_path"
 if [[ $branch != "main" ]];then
-TASK "* 檢查分支 $branch" "curl -sLf "$github_url" >/dev/null"
+Task "* 檢查分支 $branch" "curl -sLf "$github_url" >/dev/null"
 [ $? -ne 0 ]&&{
 Err "在分支 $branch 中找不到腳本"
 return 1
 }
 else
-TASK "* 檢查 main 分支" "curl -sLf "$github_url" >/dev/null" true
+Task "* 檢查 main 分支" "curl -sLf "$github_url" >/dev/null" true
 if [ $? -ne 0 ];then
-TASK "* 檢查 master 分支" "
+Task "* 檢查 master 分支" "
 							branch="master"
 							github_url="https://raw.githubusercontent.com/$repo_owner/$repo_name/refs/heads/master/$script_path"
 							curl -sLf "$github_url" >/dev/null
@@ -1191,7 +1191,7 @@ return 1
 }
 fi
 fi
-TASK "* 下載腳本" "
+Task "* 下載腳本" "
 					curl -sSLf \"$github_url\" -o \"$script_name\" || { 
 						Err \"下載腳本 $script_name 失敗\"
 						Err \"從 $github_url 下載失敗\"
@@ -1423,38 +1423,38 @@ return 1
 }
 esac
 if command -v journalctl &>/dev/null;then
-TASK "* 輪替和清理 journalctl 日誌" "journalctl --rotate --vacuum-time=1d --vacuum-size=500M"||{
+Task "* 輪替和清理 journalctl 日誌" "journalctl --rotate --vacuum-time=1d --vacuum-size=500M"||{
 Err "輪替和清理 journalctl 日誌失敗"
 return 1
 }
 fi
-TASK "* 移除暫存檔案" "rm -rf /tmp/*"||{
+Task "* 移除暫存檔案" "rm -rf /tmp/*"||{
 Err "移除暫存檔案失敗"
 return 1
 }
 for cmd in docker npm pip;do
 if command -v "$cmd" &>/dev/null;then
 case "$cmd" in
-docker)TASK "* 清理 Docker 系統" "docker system prune -af"||{
+docker)Task "* 清理 Docker 系統" "docker system prune -af"||{
 Err "清理 Docker 系統失敗"
 return 1
 };;
-npm)TASK "* 清理 NPM 快取" "npm cache clean --force"||{
+npm)Task "* 清理 NPM 快取" "npm cache clean --force"||{
 Err "清理 NPM 快取失敗"
 return 1
 };;
-pip)TASK "* 清除 PIP 快取" "pip cache purge"||{
+pip)Task "* 清除 PIP 快取" "pip cache purge"||{
 Err "清除 PIP 快取失敗"
 return 1
 }
 esac
 fi
 done
-TASK "* 移除使用者快取檔案" "rm -rf ~/.cache/*"||{
+Task "* 移除使用者快取檔案" "rm -rf ~/.cache/*"||{
 Err "移除使用者快取檔案失敗"
 return 1
 }
-TASK "* 移除縮圖檔案" "rm -rf ~/.thumbnails/*"||{
+Task "* 移除縮圖檔案" "rm -rf ~/.thumbnails/*"||{
 Err "移除縮圖檔案失敗"
 return 1
 }
@@ -1512,7 +1512,7 @@ Txt "${CLR3}正在優化長期運行伺服器的系統設定...${CLR0}"
 Txt "$CLR8$(LINE = "24")$CLR0"
 SYSCTL_CONF="/etc/sysctl.d/99-server-optimizations.conf"
 Txt "# 長期運行系統的伺服器優化" >"$SYSCTL_CONF"
-TASK "* 正在優化記憶體管理" "
+Task "* 正在優化記憶體管理" "
 		Txt 'vm.swappiness = 1' >> $SYSCTL_CONF
 		Txt 'vm.vfs_cache_pressure = 50' >> $SYSCTL_CONF
 		Txt 'vm.dirty_ratio = 15' >> $SYSCTL_CONF
@@ -1522,7 +1522,7 @@ TASK "* 正在優化記憶體管理" "
 Err "優化記憶體管理失敗"
 return 1
 }
-TASK "* 正在優化網路設定" "
+Task "* 正在優化網路設定" "
 		Txt 'net.core.somaxconn = 65535' >> $SYSCTL_CONF
 		Txt 'net.core.netdev_max_backlog = 65535' >> $SYSCTL_CONF
 		Txt 'net.ipv4.tcp_max_syn_backlog = 65535' >> $SYSCTL_CONF
@@ -1536,7 +1536,7 @@ TASK "* 正在優化網路設定" "
 Err "優化網路設定失敗"
 return 1
 }
-TASK "* 正在優化 TCP 緩衝區" "
+Task "* 正在優化 TCP 緩衝區" "
 		Txt 'net.core.rmem_max = 16777216' >> $SYSCTL_CONF
 		Txt 'net.core.wmem_max = 16777216' >> $SYSCTL_CONF
 		Txt 'net.ipv4.tcp_rmem = 4096 87380 16777216' >> $SYSCTL_CONF
@@ -1546,7 +1546,7 @@ TASK "* 正在優化 TCP 緩衝區" "
 Err "優化 TCP 緩衝區失敗"
 return 1
 }
-TASK "* 正在優化檔案系統設定" "
+Task "* 正在優化檔案系統設定" "
 		Txt 'fs.file-max = 2097152' >> $SYSCTL_CONF
 		Txt 'fs.nr_open = 2097152' >> $SYSCTL_CONF
 		Txt 'fs.inotify.max_user_watches = 524288' >> $SYSCTL_CONF
@@ -1554,7 +1554,7 @@ TASK "* 正在優化檔案系統設定" "
 Err "優化檔案系統設定失敗"
 return 1
 }
-TASK "* 正在優化系統限制" "
+Task "* 正在優化系統限制" "
 		Txt '* soft nofile 1048576' >> /etc/security/limits.conf
 		Txt '* hard nofile 1048576' >> /etc/security/limits.conf
 		Txt '* soft nproc 65535' >> /etc/security/limits.conf
@@ -1563,7 +1563,7 @@ TASK "* 正在優化系統限制" "
 Err "優化系統限制失敗"
 return 1
 }
-TASK "* 正在優化 I/O 排程器" "
+Task "* 正在優化 I/O 排程器" "
 		for disk in /sys/block/[sv]d*; do
 			Txt 'none' > \$disk/queue/scheduler 2>/dev/null || true
 			Txt '256' > \$disk/queue/nr_requests 2>/dev/null || true
@@ -1572,7 +1572,7 @@ TASK "* 正在優化 I/O 排程器" "
 Err "優化 I/O 排程器失敗"
 return 1
 }
-TASK "* 停用非必要服務" '
+Task "* 停用非必要服務" '
 		for service in bluetooth cups avahi-daemon postfix nfs-server rpcbind autofs; do
 			systemctl disable --now $service 2>/dev/null || true
 		done
@@ -1580,11 +1580,11 @@ TASK "* 停用非必要服務" '
 Err "停用服務失敗"
 return 1
 }
-TASK "* 套用系統參數" "sysctl -p $SYSCTL_CONF"||{
+Task "* 套用系統參數" "sysctl -p $SYSCTL_CONF"||{
 Err "套用系統參數失敗"
 return 1
 }
-TASK "* 清除系統快取" "
+Task "* 清除系統快取" "
 		sync
 		Txt 3 > /proc/sys/vm/drop_caches
 		ip -s -s neigh flush all
@@ -1625,11 +1625,11 @@ Txt
 Txt "${CLR2}已取消重新啟動${CLR0}\n"
 return 0
 }
-TASK "* 執行最終檢查" "sync"||{
+Task "* 執行最終檢查" "sync"||{
 Err "同步檔案系統失敗"
 return 1
 }
-TASK "* 開始重新啟動" "reboot || sudo reboot"||{
+Task "* 開始重新啟動" "reboot || sudo reboot"||{
 Err "啟動重新啟動失敗"
 return 1
 }
@@ -1659,21 +1659,21 @@ case $(command -v apk apt opkg pacman yum zypper dnf|head -n1) in
 *apt)while
 fuser /var/lib/dpkg/lock-frontend &>/dev/null
 do
-TASK "* 等待 dpkg 鎖定" "sleep 1"||return 1
+Task "* 等待 dpkg 鎖定" "sleep 1"||return 1
 ((wait_time++))
 [ "$wait_time" -gt 10 ]&&{
 Err "等待 dpkg 鎖定釋放超時"
 return 1
 }
 done
-TASK "* 設定待處理的套件" "DEBIAN_FRONTEND=noninteractive dpkg --configure -a"||{
+Task "* 設定待處理的套件" "DEBIAN_FRONTEND=noninteractive dpkg --configure -a"||{
 Err "設定待處理的套件失敗"
 return 1
 }
 update_pkgs "apt" "apt update -y" "apt full-upgrade -y"
 ;;
 *opkg)update_pkgs "opkg" "opkg update" "opkg upgrade";;
-*pacman)TASK "* 更新和升級套件" "pacman -Syu --noconfirm"||{
+*pacman)Task "* 更新和升級套件" "pacman -Syu --noconfirm"||{
 Err "使用 pacman 更新和升級套件失敗"
 return 1
 };;
@@ -1718,37 +1718,37 @@ Err "系統已經是最新的穩定版本 ($target_codename)"
 return 1
 }
 Txt "* 正在從 ${CLR2}${current_codename}${CLR0} 升級到 ${CLR3}${target_codename}${CLR0}"
-TASK "* 備份 sources.list" "cp /etc/apt/sources.list /etc/apt/sources.list.backup"||{
+Task "* 備份 sources.list" "cp /etc/apt/sources.list /etc/apt/sources.list.backup"||{
 Err "備份 sources.list 失敗"
 return 1
 }
-TASK "* 更新 sources.list" "sed -i 's/$current_codename/$target_codename/g' /etc/apt/sources.list"||{
+Task "* 更新 sources.list" "sed -i 's/$current_codename/$target_codename/g' /etc/apt/sources.list"||{
 Err "更新 sources.list 失敗"
 return 1
 }
-TASK "* 更新新版本的套件清單" "apt update -y"||{
+Task "* 更新新版本的套件清單" "apt update -y"||{
 Err "更新新版本的套件清單失敗"
 return 1
 }
-TASK "* 升級到新的 Debian 版本" "apt full-upgrade -y"||{
+Task "* 升級到新的 Debian 版本" "apt full-upgrade -y"||{
 Err "升級到新的 Debian 版本失敗"
 return 1
 }
 ;;
 Ubuntu)Txt "* 偵測到 'Ubuntu' 系統"
-TASK "* 正在更新套件清單" "apt update -y"||{
+Task "* 正在更新套件清單" "apt update -y"||{
 Err "使用 apt 更新套件清單失敗"
 return 1
 }
-TASK "* 正在升級目前的套件" "apt full-upgrade -y"||{
+Task "* 正在升級目前的套件" "apt full-upgrade -y"||{
 Err "升級目前的套件失敗"
 return 1
 }
-TASK "* 安裝 update-manager-core" "apt install -y update-manager-core"||{
+Task "* 安裝 update-manager-core" "apt install -y update-manager-core"||{
 Err "安裝 update-manager-core 失敗"
 return 1
 }
-TASK "* 升級 Ubuntu 版本" "do-release-upgrade -f DistUpgradeViewNonInteractive"||{
+Task "* 升級 Ubuntu 版本" "do-release-upgrade -f DistUpgradeViewNonInteractive"||{
 Err "升級 Ubuntu 版本失敗"
 return 1
 }
@@ -1762,7 +1762,7 @@ esac
 Txt "$CLR8$(LINE = "24")$CLR0"
 Txt "${CLR2}系統升級完成${CLR0}\n"
 }
-function TASK(){
+function Task(){
 message="$1"
 command="$2"
 ignore_Err=${3:-false}
@@ -1777,7 +1777,7 @@ Txt "${CLR1}失敗${CLR0} ($ret)"
 [[ -s $temp_file ]]&&Txt "$CLR1$(cat "$temp_file")$CLR0"
 [[ $ignore_Err != "true" ]]&&return $ret
 fi
-rm -f "$temp_file"
+Del -f "$temp_file"
 return $ret
 }
 function TIMEZONE(){
