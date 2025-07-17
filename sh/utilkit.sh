@@ -2,7 +2,7 @@
 
 AUTHORS="OG-Open-Source"
 SCRIPTS="UtilKit.sh"
-VERSION="6.044.000.262"
+VERSION="6.044.001.263"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -755,7 +755,7 @@ function Get() {
 	}; }
 	[ -n "$renameFile" ] && outputFile="$renameFile"
 	outputPath="$targetDirectory/$outputFile"
-	uniformResourceLocator=$(Txt "$uniformResourceLocator" | sed -E 's#([^:])/+#\1/#g; s#^(https?|ftp):/+#\1://#')
+	uniformResourceLocator=$(echo "$uniformResourceLocator" | sed -E 's#([^:])/+#\1/#g; s#^(https?|ftp):/+#\1://#')
 	Txt "*#Bw4nP7#*"
 	fileSize=$(curl -sI "$uniformResourceLocator" | grep -i content-length | awk '{print $2}' | tr -d '\r')
 	sizeLimit="26214400"
@@ -988,17 +988,17 @@ function LoadAverage() {
 			Err "*#Nt5kR8#*"
 			return 1
 		}
-		read -r 01Min 05Min 15Min <<<"$loadData"
+		read -r ZoMin ZfMin OfMin <<<"$loadData"
 	else
-		read -r 01Min 05Min 15Min _ _ </proc/loadavg || {
+		read -r ZoMin ZfMin OfMin _ _ </proc/loadavg || {
 			Err "*#Ht6mL9#*"
 			return 1
 		}
 	fi
-	[[ $01Min =~ ^[0-9.]+$ ]] || 01Min=0
-	[[ $05Min =~ ^[0-9.]+$ ]] || 05Min=0
-	[[ $15Min =~ ^[0-9.]+$ ]] || 15Min=0
-	LC_ALL=C printf "%.2f, %.2f, %.2f (%d cores)" "$01Min" "$05Min" "$15Min" "$(nproc)"
+	[[ $ZoMin =~ ^[0-9.]+$ ]] || ZoMin=0
+	[[ $ZfMin =~ ^[0-9.]+$ ]] || ZfMin=0
+	[[ $OfMin =~ ^[0-9.]+$ ]] || OfMin=0
+	LC_ALL=C printf "%.2f, %.2f, %.2f (%d cores)" "$ZoMin" "$ZfMin" "$OfMin" "$(nproc)"
 }
 function Net.Location() {
 	location=$(curl -s "https://developers.cloudflare.com/cdn-cgi/trace" | grep "^loc=" | cut -d= -f2)
