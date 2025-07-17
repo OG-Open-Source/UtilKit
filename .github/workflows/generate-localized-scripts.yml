@@ -15,6 +15,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - name: Install shfmt
+        run: go install mvdan.cc/sh/v3/cmd/shfmt@latest
+
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y jq
 
@@ -26,6 +34,7 @@ jobs:
 
       - name: Generate localized versions
         run: |
+          ~/go/bin/shfmt -mn sh/utilkit.sh > sh/utilkit.min.sh
           mkdir -p sh/localized
           languages=$(jq -r 'keys[]' sh/utilkit.json)
           for lang in $languages; do
@@ -36,10 +45,11 @@ jobs:
               escaped_value=$(echo "$value" | sed -e 's/[\/&]/\\&/g' -e 's/\[/\\[/g' -e 's/\]/\\]/g')
               echo "s/\\*#${key}#\\*/${escaped_value}/g" >> "$sed_script"
             done
-            cp sh/utilkit.sh "sh/localized/utilkit_${lang}.sh"
+            cp sh/utilkit.min.sh "sh/localized/utilkit_${lang}.sh"
             sed -i -f "$sed_script" "sh/localized/utilkit_${lang}.sh"
             rm "$sed_script"
           done
+          rm sh/utilkit.min.sh
 
       - name: Upload localized scripts
         uses: actions/upload-artifact@v4
