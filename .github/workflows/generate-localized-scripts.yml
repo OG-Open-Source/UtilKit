@@ -53,5 +53,5 @@ jobs:
           git config --local user.name "GitHub Action"
           mkdir -p sh/localized
           git add sh/localized/
-          git commit -m "Update localized utilkit.sh ${{ steps.version.outputs.version }}" || echo "No changes to commit"
+          git commit -m "Update localized UtilKit.sh ${{ steps.version.outputs.version }}" || echo "No changes to commit"
           git push

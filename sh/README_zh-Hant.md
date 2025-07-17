@@ -1,4 +1,4 @@
-# utilkit.sh
+# UtilKit.sh
 
 一個全面的 Shell 函數庫，提供系統管理、監控和網路配置等功能。
 
@@ -20,7 +20,7 @@
 
 ## 簡介
 
-utilkit.sh 是一個全面的 Shell 函數庫，專為系統管理員和開發者設計。它提供了豐富的函式可用，包括套件管理、系統監控、網路配置等，大大簡化了日常系統維護工作。
+UtilKit.sh 是一個全面的 Shell 函數庫，專為系統管理員和開發者設計。它提供了豐富的函式可用，包括套件管理、系統監控、網路配置等，大大簡化了日常系統維護工作。
 
 | 可用函式                      |                               |                               |                           |
 |-------------------------------|-------------------------------|-------------------------------|---------------------------|
@@ -58,7 +58,7 @@ utilkit.sh 是一個全面的 Shell 函數庫，專為系統管理員和開發�
 
 ```bash
 #使用安裝腳本
-[ -f ~/utilkit.sh ] && source ~/utilkit.sh || bash <(curl -sL utilkit.ogtt.tk) && source ~/utilkit.sh
+[ -f ~/utilkit.sh ] && source ~/utilkit.sh || bash <(curl -sL utilkit.ogtt.tk/sh) && source ~/utilkit.sh
 ```
 
 ## 使用方法

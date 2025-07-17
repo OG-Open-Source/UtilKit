@@ -1,8 +1,8 @@
 #!/bin/bash
 
 Authors="OG-Open-Source"
-Scripts="utilkit.sh"
-Version="6.043.009.239"
+Scripts="UtilKit.sh"
+Version="6.043.009.240"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"

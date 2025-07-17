@@ -1,4 +1,4 @@
-# utilkit.sh
+# UtilKit.sh
 
 A comprehensive Shell function library that provides functions for system administration, monitoring, and network configuration.
 
@@ -20,7 +20,7 @@ A comprehensive Shell function library that provides functions for system admini
 
 ## Introduction
 
-utilkit.sh is a comprehensive Shell function library designed for system administrators and developers. It provides a rich set of functions, including package management, system monitoring, network configuration, etc., which greatly simplifies daily system maintenance tasks.
+UtilKit.sh is a comprehensive Shell function library designed for system administrators and developers. It provides a rich set of functions, including package management, system monitoring, network configuration, etc., which greatly simplifies daily system maintenance tasks.
 
 | Available Functions           |                               |                               |                           |
 |-------------------------------|-------------------------------|-------------------------------|---------------------------|
@@ -58,7 +58,7 @@ utilkit.sh is a comprehensive Shell function library designed for system adminis
 
 ```bash
 # Use the installation script
-[ -f ~/utilkit.sh ] && source ~/utilkit.sh || bash <(curl -sL utilkit.ogtt.tk) && source ~/utilkit.sh
+[ -f ~/utilkit.sh ] && source ~/utilkit.sh || bash <(curl -sL utilkit.ogtt.tk/sh) && source ~/utilkit.sh
 ```
 
 ## Usage
