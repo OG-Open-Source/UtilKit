@@ -1,7 +1,7 @@
 #!/bin/bash
 AUTHORS="OG-Open-Source"
 SCRIPTS="UtilKit.sh"
-VERSION="6.044.000.262"
+VERSION="6.044.001.263"
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
 CLR3="\033[0;33m"
@@ -53,11 +53,11 @@ continue
 ;;
 *.deb)?Root
 debFile=$(basename "$1")
-Txt "${CLR3}INSERT DEB PACKAGE [$deb_file]${CLR0}\n"
+Txt "${CLR3}INSERT DEB PACKAGE [$debFile]${CLR0}\n"
 Get "$1"
 if [ -f "$debFile" ];then
 dpkg -i "$debFile"||{
-Err "Failed to install $deb_file. Check package compatibility and dependencies\n"
+Err "Failed to install $debFile. Check package compatibility and dependencies\n"
 Del -f "$debFile"
 failed=1
 shift
@@ -70,11 +70,11 @@ failed=1
 shift
 continue
 }
-Txt "* DEB package $deb_file installed successfully"
+Txt "* DEB package $debFile installed successfully"
 Del -f "$debFile"
 Txt "${CLR2}FINISHED${CLR0}\n"
 else
-Err "DEB package $deb_file not found or download failed\n"
+Err "DEB package $debFile not found or download failed\n"
 failed=1
 shift
 continue
@@ -713,28 +713,28 @@ return 2
 outputFile="${uniformResourceLocator##*/}"
 [ -z "$outputFile" ]&&outputFile="index.html"
 [ "$targetDirectory" != "." ]&&{ mkdir -p "$targetDirectory"||{
-Err "Failed to create directory $target_dir"
+Err "Failed to create directory $targetDirectory"
 return 1
 };}
 [ -n "$renameFile" ]&&outputFile="$renameFile"
 outputPath="$targetDirectory/$outputFile"
-uniformResourceLocator=$(Txt "$uniformResourceLocator"|sed -E 's#([^:])/+#\1/#g; s#^(https?|ftp):/+#\1://#')
-Txt "${CLR3}DOWNLOAD [$url]${CLR0}"
+uniformResourceLocator=$(echo "$uniformResourceLocator"|sed -E 's#([^:])/+#\1/#g; s#^(https?|ftp):/+#\1://#')
+Txt "${CLR3}DOWNLOAD [$uniformResourceLocator]${CLR0}"
 fileSize=$(curl -sI "$uniformResourceLocator"|grep -i content-length|awk '{print $2}'|tr -d '\r')
 sizeLimit="26214400"
 if [ -n "$fileSize" ]&&[ "$fileSize" -gt "$sizeLimit" ];then
 wget --no-check-certificate --timeout=5 --tries=2 "$uniformResourceLocator" -O "$outputPath"||{
-Err "Failed to download file using wget"
+Err "Failed to download file using Wget"
 return 1
 }
 else
 curl --location --insecure --connect-timeout 5 --retry 2 "$uniformResourceLocator" -o "$outputPath"||{
-Err "Failed to download file using curl"
+Err "Failed to download file using cUrl"
 return 1
 }
 fi
 if [ -f "$outputPath" ];then
-Txt "* File downloaded successfully to $output_path"
+Txt "* File downloaded successfully to $outputPath"
 if [ "$extract" = true ];then
 case "$outputFile" in
 *.tar.gz|*.tgz)tar -xzf "$outputPath" -C "$targetDirectory"||{
@@ -771,7 +771,7 @@ return 1
 };;
 *)Txt "* File format not recognized for auto-extraction"
 esac
-[ $? -eq 0 ]&&Txt "* File extracted successfully to $target_dir"
+[ $? -eq 0 ]&&Txt "* File extracted successfully to $targetDirectory"
 fi
 Txt "${CLR2}FINISHED${CLR0}\n"
 else
@@ -871,7 +871,7 @@ fi
 done
 ;;
 "")Txt "$interface";;
-*)Err "Invalid parameter: $1. Valid parameters are: RX_BYTES, RX_PACKETS, RX_DROP, TX_BYTES, TX_PACKETS, TX_DROP, -i"
+*)Err "Invalid parameter: $1. Valid parameters are: rx_bytes, rx_packets, rx_drop, tx_bytes, tx_packets, tx_drop, -i"
 return 2
 esac
 }
@@ -926,17 +926,17 @@ loadData=$(uptime|sed 's/.*load average: //'|sed 's/,//g')||{
 Err "Failed to get load average from uptime command"
 return 1
 }
-read -r 01Min 05Min 15Min <<<"$loadData"
+read -r ZoMin ZfMin OfMin <<<"$loadData"
 else
-read -r 01Min 05Min 15Min _ _ </proc/loadavg||{
+read -r ZoMin ZfMin OfMin _ _ </proc/loadavg||{
 Err "Failed to read load average from /proc/loadavg"
 return 1
 }
 fi
-[[ $01Min =~ ^[0-9.]+$ ]]||01Min=0
-[[ $05Min =~ ^[0-9.]+$ ]]||05Min=0
-[[ $15Min =~ ^[0-9.]+$ ]]||15Min=0
-LC_ALL=C printf "%.2f, %.2f, %.2f (%d cores)" "$01Min" "$05Min" "$15Min" "$(nproc)"
+[[ $ZoMin =~ ^[0-9.]+$ ]]||ZoMin=0
+[[ $ZfMin =~ ^[0-9.]+$ ]]||ZfMin=0
+[[ $OfMin =~ ^[0-9.]+$ ]]||OfMin=0
+LC_ALL=C printf "%.2f, %.2f, %.2f (%d cores)" "$ZoMin" "$ZfMin" "$OfMin" "$(nproc)"
 }
 function Net.Location(){
 location=$(curl -s "https://developers.cloudflare.com/cdn-cgi/trace"|grep "^loc="|cut -d= -f2)
@@ -988,7 +988,7 @@ return 1
 esac
 if ! packageCount=$($countCommand 2>/dev/null|wc -l)||[[ -z $packageCount || $packageCount -eq 0 ]];then
 {
-Err "Failed to count packages for ${pkg_manager##*/}"
+Err "Failed to count packages for ${packageManager##*/}"
 return 1
 }
 fi
@@ -1012,7 +1012,7 @@ Txt "\n$output"
 stty echo
 trap - SIGINT SIGQUIT SIGTSTP
 {
-Err "Command execution failed: ${cmds[$i]}"
+Err "Command execution failed: ${commands[$i]}"
 return 1
 }
 fi
@@ -1057,21 +1057,21 @@ shift
 *)break
 esac
 done
-Txt "${CLR3}Downloading and executing script [${script_name}] from URL${CLR0}"
+Txt "${CLR3}Downloading and executing script [${scriptName}] from URL${CLR0}"
 Task "* Downloading script" "
-				curl -sSLf "$uniformResourceLocator" -o "$scriptName" || { Err "Failed to download script $script_name"; return 1; }
-				chmod +x "$scriptName" || { Err "Failed to set execute permission for $script_name"; return 1; }
+				curl -sSLf "$uniformResourceLocator" -o "$scriptName" || { Err "Failed to download script $scriptName"; return 1; }
+				chmod +x "$scriptName" || { Err "Failed to set execute permission for $scriptName"; return 1; }
 			"
 Txt "$CLR8$(Linet = "24")$CLR0"
 if [[ $1 == "--" ]];then
 shift
 ./"$scriptName" "$@"||{
-Err "Failed to execute script $script_name"
+Err "Failed to execute script $scriptName"
 return 1
 }
 else
 ./"$scriptName"||{
-Err "Failed to execute script $script_name"
+Err "Failed to execute script $scriptName"
 return 1
 }
 fi
@@ -1106,29 +1106,29 @@ shift
 esac
 done
 if [[ $downloadRepository == true ]];then
-Txt "${CLR3}Cloning repository ${repo_owner}/${repo_name}${CLR0}"
+Txt "${CLR3}Cloning repository ${repositoryOwner}/${repositoryName}${CLR0}"
 [[ -d $repositoryName ]]&&{
-Err "Directory $repo_name already exists"
+Err "Directory $repositoryName already exists"
 return 1
 }
 temporaryDirectory=$(mktemp -d)
 if [[ $repositoryBranch != "main" ]];then
-Task "* Cloning from branch $branch" "git clone --branch $repositoryBranch https://github.com/$repositoryOwner/$repositoryName.git "$temporaryDirectory""
+Task "* Cloning from repositoryBranch $repositoryBranch" "git clone --branch $repositoryBranch https://github.com/$repositoryOwner/$repositoryName.git "$temporaryDirectory""
 if [ $? -ne 0 ];then
 rm -rf "$temporaryDirectory"
 {
-Err "Failed to clone repository from $branch branch"
+Err "Failed to clone repository from $repositoryBranch repositoryBranch"
 return 1
 }
 fi
 else
-Task "* Checking main branch" "git clone --branch main https://github.com/$repositoryOwner/$repositoryName.git "$temporaryDirectory"" true
+Task "* Checking main repositoryBranch" "git clone --branch main https://github.com/$repositoryOwner/$repositoryName.git "$temporaryDirectory"" true
 if [ $? -ne 0 ];then
-Task "* Trying master branch" "git clone --branch master https://github.com/$repositoryOwner/$repositoryName.git "$temporaryDirectory""
+Task "* Trying master repositoryBranch" "git clone --branch master https://github.com/$repositoryOwner/$repositoryName.git "$temporaryDirectory""
 if [ $? -ne 0 ];then
 rm -rf "$temporaryDirectory"
 {
-Err "Failed to clone repository from either main or master branch"
+Err "Failed to clone repository from either main or master repositoryBranch"
 return 1
 }
 fi
@@ -1136,19 +1136,19 @@ fi
 fi
 Task "* Creating target directory" "Add -d "$repositoryName" && cp -r "$temporaryDirectory"/* "$repositoryName"/"
 Task "* Cleaning up temporary files" "rm -rf "$temporaryDirectory""
-Txt "Repository cloned to directory: ${CLR2}$repo_name${CLR0}"
+Txt "Repository cloned to directory: ${CLR2}$repositoryName${CLR0}"
 if [[ -f "$repositoryName/$scriptPath" ]];then
 Task "* Setting execute permissions" "chmod +x "$repositoryName/$scriptPath""
 Txt "$CLR8$(Linet = "24")$CLR0"
 if [[ $1 == "--" ]];then
 shift
 ./"$repositoryName/$scriptPath" "$@"||{
-Err "Failed to execute script $script_name"
+Err "Failed to execute script $scriptName"
 return 1
 }
 else
 ./"$repositoryName/$scriptPath"||{
-Err "Failed to execute script $script_name"
+Err "Failed to execute script $scriptName"
 return 1
 }
 fi
@@ -1157,32 +1157,32 @@ Txt "${CLR2}FINISHED${CLR0}\n"
 [[ $deleteAfter == true ]]&&rm -rf "$repositoryName"
 fi
 else
-Txt "${CLR3}Downloading and executing script [${script_name}] from ${repo_owner}/${repo_name}${CLR0}"
+Txt "${CLR3}Downloading and executing script [${scriptName}] from ${repositoryOwner}/${repositoryName}${CLR0}"
 githubUniformResourceLocator="https://raw.githubusercontent.com/$repositoryOwner/$repositoryName/refs/heads/$repositoryBranch/$scriptPath"
 if [[ $repositoryBranch != "main" ]];then
-Task "* Checking $branch branch" "curl -sLf "$githubUniformResourceLocator" >/dev/null"
+Task "* Checking $repositoryBranch repositoryBranch" "curl -sLf "$githubUniformResourceLocator" >/dev/null"
 [ $? -ne 0 ]&&{
-Err "Script not found in $branch branch"
+Err "Script not found in $repositoryBranch repositoryBranch"
 return 1
 }
 else
-Task "* Checking main branch" "curl -sLf "$githubUniformResourceLocator" >/dev/null" true
+Task "* Checking main repositoryBranch" "curl -sLf "$githubUniformResourceLocator" >/dev/null" true
 if [ $? -ne 0 ];then
-Task "* Checking master branch" "
+Task "* Checking master repositoryBranch" "
 							repositoryBranch="master"
 							githubUniformResourceLocator="https://raw.githubusercontent.com/$repositoryOwner/$repositoryName/refs/heads/master/$scriptPath"
 							curl -sLf "$githubUniformResourceLocator" >/dev/null
 						"
 [ $? -ne 0 ]&&{
-Err "Script not found in either main or master branch"
+Err "Script not found in either main or master repositoryBranch"
 return 1
 }
 fi
 fi
 Task "* Downloading script" "
 					curl -sSLf \"$githubUniformResourceLocator\" -o \"$scriptName\" || { 
-						Err \"Failed to download script $script_name\"
-						Err \"Failed to download from: $github_url\"
+						Err \"Failed to download script $scriptName\"
+						Err \"Failed to download from: $github_uniformResourceLocator\"
 						return 1
 					}
 
@@ -1203,8 +1203,8 @@ Task "* Downloading script" "
 					fi
 
 					chmod +x \"$scriptName\" || { 
-						Err \"Failed to set execute permission for $script_name\"
-						Err \"Failed to set execute permission on $script_name\"
+						Err \"Failed to set execute permission for $scriptName\"
+						Err \"Failed to set execute permission on $scriptName\"
 						ls -la \"$scriptName\"
 						return 1
 					}
@@ -1214,17 +1214,17 @@ if [[ -f $scriptName ]];then
 if [[ $1 == "--" ]];then
 shift
 ./"$scriptName" "$@"||{
-Err "Failed to execute script $script_name"
+Err "Failed to execute script $scriptName"
 return 1
 }
 else
 ./"$scriptName"||{
-Err "Failed to execute script $script_name"
+Err "Failed to execute script $scriptName"
 return 1
 }
 fi
 else
-Err "Script file '$script_name' was not downloaded successfully"
+Err "Script file '$scriptName' was not downloaded successfully"
 return 1
 fi
 Txt "$CLR8$(Linet = "24")$CLR0"
@@ -1237,13 +1237,13 @@ scriptPath="$1"
 if [[ $2 == "--" ]];then
 shift 2
 "$scriptPath" "$@"||{
-Err "Failed to execute script $script_name"
+Err "Failed to execute script $scriptName"
 return 1
 }
 else
 shift
 "$scriptPath" "$@"||{
-Err "Failed to execute script $script_name"
+Err "Failed to execute script $scriptName"
 return 1
 }
 fi
@@ -1592,7 +1592,7 @@ Err "Failed to get active user count"
 return 1
 }
 if [ "$activeUsers" -gt 1 ];then
-Txt "${CLR1}Warning: There are currently $active_users active users on the system${CLR0}\n"
+Txt "${CLR1}Warning: There are currently $activeUsers active users on the system${CLR0}\n"
 Txt "Active users:"
 who|awk '{print $1 " since " $3 " " $4}'
 Txt
@@ -1602,7 +1602,7 @@ Err "Failed to check running processes"
 return 1
 }
 if [ "$importantProcesses" -gt 0 ];then
-Txt "${CLR1}Warning: There are $important_processes important processes running${CLR0}\n"
+Txt "${CLR1}Warning: There are $importantProcesses important processes running${CLR0}\n"
 Txt "${CLR8}Top 5 processes by CPU usage:${CLR0}"
 ps aux --sort=-%cpu|head -n 6
 Txt
@@ -1673,9 +1673,9 @@ Err "Unsupported package manager"
 return 1
 }
 esac
-Txt "* Updating $Scripts"
+Txt "* Updating $SCRIPTS"
 bash <(curl -L https://raw.githubusercontent.com/OG-Open-Source/UtilKit/refs/heads/main/sh/get_utilkit.sh)||{
-Err "Failed to update $Scripts"
+Err "Failed to update $SCRIPTS"
 return 1
 }
 Txt "$CLR8$(Linet = "24")$CLR0"
@@ -1705,7 +1705,7 @@ targetCodename=$(curl -s http://ftp.debian.org/debian/dists/stable/Release|grep 
 Err "System is already running the latest stable version ($targetCodename)"
 return 1
 }
-Txt "* Upgrading from ${CLR2}${current_codename}${CLR0} to ${CLR3}${target_codename}${CLR0}"
+Txt "* Upgrading from ${CLR2}${currentCodename}${CLR0} to ${CLR3}${targetCodename}${CLR0}"
 Task "* Backing up sources.list" "cp /etc/apt/sources.list /etc/apt/sources.list.backup"||{
 Err "Failed to backup sources.list"
 return 1

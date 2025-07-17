@@ -1,7 +1,7 @@
 #!/bin/bash
 AUTHORS="OG-Open-Source"
 SCRIPTS="UtilKit.sh"
-VERSION="6.044.000.262"
+VERSION="6.044.001.263"
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
 CLR3="\033[0;33m"
@@ -53,11 +53,11 @@ continue
 ;;
 *.deb)?Root
 debFile=$(basename "$1")
-Txt "${CLR3}安装 DEB 软件包［$deb_file］${CLR0}\n"
+Txt "${CLR3}安装 DEB 软件包［$debFile］${CLR0}\n"
 Get "$1"
 if [ -f "$debFile" ];then
 dpkg -i "$debFile"||{
-Err "安装 $deb_file 失败。请检查软件包兼容性和依赖性\n"
+Err "安装 $debFile 失败。请检查软件包兼容性和依赖性\n"
 Del -f "$debFile"
 failed=1
 shift
@@ -70,11 +70,11 @@ failed=1
 shift
 continue
 }
-Txt "* DEB 软件包 $deb_file 安装成功"
+Txt "* DEB 软件包 $debFile 安装成功"
 Del -f "$debFile"
 Txt "${CLR2}完成${CLR0}\n"
 else
-Err "找不到 DEB 软件包 $deb_file 或下载失败\n"
+Err "找不到 DEB 软件包 $debFile 或下载失败\n"
 failed=1
 shift
 continue
@@ -713,28 +713,28 @@ return 2
 outputFile="${uniformResourceLocator##*/}"
 [ -z "$outputFile" ]&&outputFile="index.html"
 [ "$targetDirectory" != "." ]&&{ mkdir -p "$targetDirectory"||{
-Err "创建目录 $target_dir 失败"
+Err "创建目录 $targetDirectory 失败"
 return 1
 };}
 [ -n "$renameFile" ]&&outputFile="$renameFile"
 outputPath="$targetDirectory/$outputFile"
-uniformResourceLocator=$(Txt "$uniformResourceLocator"|sed -E 's#([^:])/+#\1/#g; s#^(https?|ftp):/+#\1://#')
-Txt "${CLR3}下载［$url］${CLR0}"
+uniformResourceLocator=$(echo "$uniformResourceLocator"|sed -E 's#([^:])/+#\1/#g; s#^(https?|ftp):/+#\1://#')
+Txt "${CLR3}下载［$uniformResourceLocator］${CLR0}"
 fileSize=$(curl -sI "$uniformResourceLocator"|grep -i content-length|awk '{print $2}'|tr -d '\r')
 sizeLimit="26214400"
 if [ -n "$fileSize" ]&&[ "$fileSize" -gt "$sizeLimit" ];then
 wget --no-check-certificate --timeout=5 --tries=2 "$uniformResourceLocator" -O "$outputPath"||{
-Err "使用 wget 下载文件失败"
+Err "使用 Wget 下载文件失败"
 return 1
 }
 else
 curl --location --insecure --connect-timeout 5 --retry 2 "$uniformResourceLocator" -o "$outputPath"||{
-Err "使用 curl 下载文件失败"
+Err "使用 cUrl 下载文件失败"
 return 1
 }
 fi
 if [ -f "$outputPath" ];then
-Txt "* 文件成功下载至 $output_path"
+Txt "* 文件成功下载至 $outputPath"
 if [ "$extract" = true ];then
 case "$outputFile" in
 *.tar.gz|*.tgz)tar -xzf "$outputPath" -C "$targetDirectory"||{
@@ -771,7 +771,7 @@ return 1
 };;
 *)Txt "* 无法识别的文件格式，不进行自动解压缩"
 esac
-[ $? -eq 0 ]&&Txt "* 文件成功解压缩至 $target_dir"
+[ $? -eq 0 ]&&Txt "* 文件成功解压缩至 $targetDirectory"
 fi
 Txt "${CLR2}完成${CLR0}\n"
 else
@@ -871,7 +871,7 @@ fi
 done
 ;;
 "")Txt "$interface";;
-*)Err "无效的参数：$1。有效的参数为：RX_BYTES、RX_PACKETS、RX_DROP、TX_BYTES、TX_PACKETS、TX_DROP、-i"
+*)Err "无效的参数：$1。有效的参数为：rx_bytes、rx_packets、rx_drop、tx_bytes、tx_packets、tx_drop、-i"
 return 2
 esac
 }
@@ -926,17 +926,17 @@ loadData=$(uptime|sed 's/.*load average: //'|sed 's/,//g')||{
 Err "从 uptime 命令获取负载平均值失败"
 return 1
 }
-read -r 01Min 05Min 15Min <<<"$loadData"
+read -r ZoMin ZfMin OfMin <<<"$loadData"
 else
-read -r 01Min 05Min 15Min _ _ </proc/loadavg||{
+read -r ZoMin ZfMin OfMin _ _ </proc/loadavg||{
 Err "从 /proc/loadavg 读取负载平均值失败"
 return 1
 }
 fi
-[[ $01Min =~ ^[0-9.]+$ ]]||01Min=0
-[[ $05Min =~ ^[0-9.]+$ ]]||05Min=0
-[[ $15Min =~ ^[0-9.]+$ ]]||15Min=0
-LC_ALL=C printf "%.2f, %.2f, %.2f (%d cores)" "$01Min" "$05Min" "$15Min" "$(nproc)"
+[[ $ZoMin =~ ^[0-9.]+$ ]]||ZoMin=0
+[[ $ZfMin =~ ^[0-9.]+$ ]]||ZfMin=0
+[[ $OfMin =~ ^[0-9.]+$ ]]||OfMin=0
+LC_ALL=C printf "%.2f, %.2f, %.2f (%d cores)" "$ZoMin" "$ZfMin" "$OfMin" "$(nproc)"
 }
 function Net.Location(){
 location=$(curl -s "https://developers.cloudflare.com/cdn-cgi/trace"|grep "^loc="|cut -d= -f2)
@@ -988,7 +988,7 @@ return 1
 esac
 if ! packageCount=$($countCommand 2>/dev/null|wc -l)||[[ -z $packageCount || $packageCount -eq 0 ]];then
 {
-Err "计算 ${pkg_manager##*/} 的软件包数量失败"
+Err "计算 ${packageManager##*/} 的软件包数量失败"
 return 1
 }
 fi
@@ -1012,7 +1012,7 @@ Txt "\n$output"
 stty echo
 trap - SIGINT SIGQUIT SIGTSTP
 {
-Err "命令执行失败：${cmds[$i]}"
+Err "命令执行失败：${commands[$i]}"
 return 1
 }
 fi
@@ -1057,21 +1057,21 @@ shift
 *)break
 esac
 done
-Txt "${CLR3}正在从 URL 下载并执行脚本 [${script_name}]${CLR0}"
+Txt "${CLR3}正在从 URL 下载并执行脚本 [${scriptName}]${CLR0}"
 Task "* 下载脚本" "
-				curl -sSLf "$uniformResourceLocator" -o "$scriptName" || { Err "下载脚本 $script_name 失败"; return 1; }
-				chmod +x "$scriptName" || { Err "设置脚本 $script_name 执行权限失败"; return 1; }
+				curl -sSLf "$uniformResourceLocator" -o "$scriptName" || { Err "下载脚本 $scriptName 失败"; return 1; }
+				chmod +x "$scriptName" || { Err "设置脚本 $scriptName 执行权限失败"; return 1; }
 			"
 Txt "$CLR8$(Linet = "24")$CLR0"
 if [[ $1 == "--" ]];then
 shift
 ./"$scriptName" "$@"||{
-Err "执行脚本 $script_name 失败"
+Err "执行脚本 $scriptName 失败"
 return 1
 }
 else
 ./"$scriptName"||{
-Err "执行脚本 $script_name 失败"
+Err "执行脚本 $scriptName 失败"
 return 1
 }
 fi
@@ -1106,18 +1106,18 @@ shift
 esac
 done
 if [[ $downloadRepository == true ]];then
-Txt "${CLR3}正在克隆仓库 ${repo_owner}/${repo_name}${CLR0}"
+Txt "${CLR3}正在克隆仓库 ${repositoryOwner}/${repositoryName}${CLR0}"
 [[ -d $repositoryName ]]&&{
-Err "目录 $repo_name 已存在"
+Err "目录 $repositoryName 已存在"
 return 1
 }
 temporaryDirectory=$(mktemp -d)
 if [[ $repositoryBranch != "main" ]];then
-Task "* 正在从分支 $branch 克隆" "git clone --branch $repositoryBranch https://github.com/$repositoryOwner/$repositoryName.git "$temporaryDirectory""
+Task "* 正在从分支 $repositoryBranch 克隆" "git clone --branch $repositoryBranch https://github.com/$repositoryOwner/$repositoryName.git "$temporaryDirectory""
 if [ $? -ne 0 ];then
 rm -rf "$temporaryDirectory"
 {
-Err "从分支 $branch 克隆仓库失败"
+Err "从分支 $repositoryBranch 克隆仓库失败"
 return 1
 }
 fi
@@ -1136,19 +1136,19 @@ fi
 fi
 Task "* 建立目标目录" "Add -d "$repositoryName" && cp -r "$temporaryDirectory"/* "$repositoryName"/"
 Task "* 清理临时文件" "rm -rf "$temporaryDirectory""
-Txt "仓库已克隆到目录：${CLR2}$repo_name"
+Txt "仓库已克隆到目录：${CLR2}$repositoryName"
 if [[ -f "$repositoryName/$scriptPath" ]];then
 Task "* 设置执行权限" "chmod +x "$repositoryName/$scriptPath""
 Txt "$CLR8$(Linet = "24")$CLR0"
 if [[ $1 == "--" ]];then
 shift
 ./"$repositoryName/$scriptPath" "$@"||{
-Err "执行脚本 $script_name 失败"
+Err "执行脚本 $scriptName 失败"
 return 1
 }
 else
 ./"$repositoryName/$scriptPath"||{
-Err "执行脚本 $script_name 失败"
+Err "执行脚本 $scriptName 失败"
 return 1
 }
 fi
@@ -1157,12 +1157,12 @@ Txt "${CLR2}完成${CLR0}\n"
 [[ $deleteAfter == true ]]&&rm -rf "$repositoryName"
 fi
 else
-Txt "${CLR3}正在从 ${repo_owner}/${repo_name} 下载并执行脚本 [${script_name}]${CLR0}"
+Txt "${CLR3}正在从 ${repositoryOwner}/${repositoryName} 下载并执行脚本 [${scriptName}]${CLR0}"
 githubUniformResourceLocator="https://raw.githubusercontent.com/$repositoryOwner/$repositoryName/refs/heads/$repositoryBranch/$scriptPath"
 if [[ $repositoryBranch != "main" ]];then
-Task "* 检查分支 $branch" "curl -sLf "$githubUniformResourceLocator" >/dev/null"
+Task "* 检查分支 $repositoryBranch" "curl -sLf "$githubUniformResourceLocator" >/dev/null"
 [ $? -ne 0 ]&&{
-Err "在分支 $branch 中找不到脚本"
+Err "在分支 $repositoryBranch 中找不到脚本"
 return 1
 }
 else
@@ -1181,8 +1181,8 @@ fi
 fi
 Task "* 下载脚本" "
 					curl -sSLf \"$githubUniformResourceLocator\" -o \"$scriptName\" || { 
-						Err \"下载脚本 $script_name 失败\"
-						Err \"从 $github_url 下载失败\"
+						Err \"下载脚本 $scriptName 失败\"
+						Err \"从 $github_uniformResourceLocator 下载失败\"
 						return 1
 					}
 
@@ -1203,8 +1203,8 @@ Task "* 下载脚本" "
 					fi
 
 					chmod +x \"$scriptName\" || { 
-						Err \"设置脚本 $script_name 执行权限失败\"
-						Err \"无法设置 $script_name 的执行权限\"
+						Err \"设置脚本 $scriptName 执行权限失败\"
+						Err \"无法设置 $scriptName 的执行权限\"
 						ls -la \"$scriptName\"
 						return 1
 					}
@@ -1214,17 +1214,17 @@ if [[ -f $scriptName ]];then
 if [[ $1 == "--" ]];then
 shift
 ./"$scriptName" "$@"||{
-Err "执行脚本 $script_name 失败"
+Err "执行脚本 $scriptName 失败"
 return 1
 }
 else
 ./"$scriptName"||{
-Err "执行脚本 $script_name 失败"
+Err "执行脚本 $scriptName 失败"
 return 1
 }
 fi
 else
-Err "脚本文件 '$script_name' 未成功下载"
+Err "脚本文件 '$scriptName' 未成功下载"
 return 1
 fi
 Txt "$CLR8$(Linet = "24")$CLR0"
@@ -1237,13 +1237,13 @@ scriptPath="$1"
 if [[ $2 == "--" ]];then
 shift 2
 "$scriptPath" "$@"||{
-Err "执行脚本 $script_name 失败"
+Err "执行脚本 $scriptName 失败"
 return 1
 }
 else
 shift
 "$scriptPath" "$@"||{
-Err "执行脚本 $script_name 失败"
+Err "执行脚本 $scriptName 失败"
 return 1
 }
 fi
@@ -1592,7 +1592,7 @@ Err "获取活动用户数量失败"
 return 1
 }
 if [ "$activeUsers" -gt 1 ];then
-Txt "${CLR1}警告：当前系统有 $active_users 个活动用户${CLR0}\n"
+Txt "${CLR1}警告：当前系统有 $activeUsers 个活动用户${CLR0}\n"
 Txt "活动用户："
 who|awk '{print $1 " since " $3 " " $4}'
 Txt
@@ -1602,7 +1602,7 @@ Err "检查运行中的进程失败"
 return 1
 }
 if [ "$importantProcesses" -gt 0 ];then
-Txt "${CLR1}警告：有 $important_processes 个重要进程正在运行${CLR0}\n"
+Txt "${CLR1}警告：有 $importantProcesses 个重要进程正在运行${CLR0}\n"
 Txt "${CLR8}CPU 使用率最高的 5 个进程：${CLR0}"
 ps aux --sort=-%cpu|head -n 6
 Txt
@@ -1673,9 +1673,9 @@ Err "不支持的软件包管理器"
 return 1
 }
 esac
-Txt "* 正在更新 $Scripts"
+Txt "* 正在更新 $SCRIPTS"
 bash <(curl -L https://raw.githubusercontent.com/OG-Open-Source/UtilKit/refs/heads/main/sh/get_utilkit.sh)||{
-Err "更新 $Scripts 失败"
+Err "更新 $SCRIPTS 失败"
 return 1
 }
 Txt "$CLR8$(Linet = "24")$CLR0"
@@ -1705,7 +1705,7 @@ targetCodename=$(curl -s http://ftp.debian.org/debian/dists/stable/Release|grep 
 Err "系统已经是最新的稳定版本 ($targetCodename)"
 return 1
 }
-Txt "* 正在从 ${CLR2}${current_codename}${CLR0} 升级到 ${CLR3}${target_codename}${CLR0}"
+Txt "* 正在从 ${CLR2}${currentCodename}${CLR0} 升级到 ${CLR3}${targetCodename}${CLR0}"
 Task "* 备份 sources.list" "cp /etc/apt/sources.list /etc/apt/sources.list.backup"||{
 Err "备份 sources.list 失败"
 return 1
