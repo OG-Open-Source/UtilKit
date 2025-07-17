@@ -29,11 +29,11 @@ lang="${1:-$(detect_language)}"
 if [ -f ~/utilkit.sh ]; then
 	text "${CLR2}Updating utilkit.sh...${CLR0}"
 
-	if curl -sSL "https://raw.githubusercontent.com/OG-Open-Source/utilkit.sh/refs/heads/main/localized/utilkit_${lang}.sh" -o "utilkit.sh" 2>/dev/null; then
+	if curl -sSL "https://raw.githubusercontent.com/OG-Open-Source/utilkit/refs/heads/main/sh/localized/utilkit_${lang}.sh" -o "utilkit.sh" 2>/dev/null; then
 		text "${CLR2}Downloaded pre-localized version for $lang${CLR0}"
 	else
 		text "${CLR3}Pre-localized version not available, downloading default version...${CLR0}"
-		if ! curl -sSL "https://raw.githubusercontent.com/OG-Open-Source/utilkit.sh/refs/heads/main/utilkit.sh" -o "utilkit.sh"; then
+		if ! curl -sSL "https://raw.githubusercontent.com/OG-Open-Source/utilkit/refs/heads/main/sh/utilkit.sh" -o "utilkit.sh"; then
 			error "Failed to download utilkit.sh"
 			exit 1
 		fi
@@ -44,18 +44,18 @@ else
 	if ! crontab -l 2>/dev/null | grep -q "get_utilkit.sh"; then
 		(crontab -l 2>/dev/null || echo "") | {
 			cat
-			echo "0 0 * * * curl -sL https://raw.githubusercontent.com/OG-Open-Source/utilkit.sh/refs/heads/main/get_utilkit.sh | bash -s -- $lang"
+			echo "0 0 * * * curl -sL https://raw.githubusercontent.com/OG-Open-Source/utilkit/refs/heads/main/sh/get_utilkit.sh | bash -s -- $lang"
 		} | crontab -
 		text "${CLR2}Added daily auto-update to crontab${CLR0}"
 	fi
 
 	text "${CLR2}Downloading utilkit.sh...${CLR0}"
 
-	if curl -sSL "https://raw.githubusercontent.com/OG-Open-Source/utilkit.sh/refs/heads/main/localized/utilkit_${lang}.sh" -o "utilkit.sh" 2>/dev/null; then
+	if curl -sSL "https://raw.githubusercontent.com/OG-Open-Source/utilkit/refs/heads/main/sh/localized/utilkit_${lang}.sh" -o "utilkit.sh" 2>/dev/null; then
 		text "${CLR2}Downloaded pre-localized version for $lang${CLR0}"
 	else
 		text "${CLR3}Pre-localized version not available, downloading default version...${CLR0}"
-		if ! curl -sSL "https://raw.githubusercontent.com/OG-Open-Source/utilkit.sh/refs/heads/main/utilkit.sh" -o "utilkit.sh"; then
+		if ! curl -sSL "https://raw.githubusercontent.com/OG-Open-Source/utilkit/refs/heads/main/sh/utilkit.sh" -o "utilkit.sh"; then
 			error "Failed to download utilkit.sh"
 			exit 1
 		fi

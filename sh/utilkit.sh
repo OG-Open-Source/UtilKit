@@ -23,7 +23,7 @@ error() {
 	}
 	text "${CLR1}$1${CLR0}"
 	if [ -w "/var/log" ]; then
-		log_file="/var/log/ogos-error.log"
+		log_file="/var/log/utilkit.sh.log"
 		timestamp="$(date '+%Y-%m-%d %H:%M:%S')"
 		log_entry="${timestamp} | ${Scripts} - ${Version} - $(text "$1" | tr -d '\n')"
 		text "${log_entry}" >>"${log_file}" 2>/dev/null
@@ -1790,7 +1790,7 @@ function SYS_UPDATE() {
 	} ;;
 	esac
 	text "*#Jn5tR8#*"
-	bash <(curl -L https://raw.githubusercontent.com/OG-Open-Source/utilkit.sh/refs/heads/main/get_utilkit.sh) || {
+	bash <(curl -L https://raw.githubusercontent.com/OG-Open-Source/utilkit/refs/heads/main/sh/get_utilkit.sh) || {
 		error "*#Wx4nP9#*"
 		return 1
 	}

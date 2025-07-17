@@ -3,8 +3,8 @@ name: Generate Localized Scripts
 on:
   push:
     paths:
-      - "utilkit.sh"
-      - "utilkit.json"
+      - "sh/utilkit.sh"
+      - "sh/utilkit.json"
   workflow_dispatch:
 
 jobs:
@@ -21,23 +21,23 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          VERSION=$(grep -oP 'Version="\K[^"]+' utilkit.sh || echo "unknown")
+          VERSION=$(grep -oP 'Version="\K[^"]+' sh/utilkit.sh || echo "unknown")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Generate localized versions
         run: |
-          mkdir -p localized
-          languages=$(jq -r 'keys[]' utilkit.json)
+          mkdir -p sh/localized
+          languages=$(jq -r 'keys[]' sh/utilkit.json)
           for lang in $languages; do
             echo "Generating $lang version..."
             sed_script=$(mktemp)
-            jq -r ".[\"$lang\"] | to_entries[] | .key" utilkit.json | while read -r key; do
-              value=$(jq -r ".[\"$lang\"][\"$key\"]" utilkit.json)
+            jq -r ".[\"$lang\"] | to_entries[] | .key" sh/utilkit.json | while read -r key; do
+              value=$(jq -r ".[\"$lang\"][\"$key\"]" sh/utilkit.json)
               escaped_value=$(echo "$value" | sed -e 's/[\/&]/\\&/g' -e 's/\[/\\[/g' -e 's/\]/\\]/g')
               echo "s/\\*#${key}#\\*/${escaped_value}/g" >> "$sed_script"
             done
-            cp utilkit.sh "localized/utilkit_${lang}.sh"
-            sed -i -f "$sed_script" "localized/utilkit_${lang}.sh"
+            cp sh/utilkit.sh "sh/localized/utilkit_${lang}.sh"
+            sed -i -f "$sed_script" "sh/localized/utilkit_${lang}.sh"
             rm "$sed_script"
           done
 
@@ -45,13 +45,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: localized-scripts
-          path: localized/
+          path: sh/localized/
 
       - name: Commit and push localized scripts
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          mkdir -p localized
-          git add localized/
+          mkdir -p sh/localized
+          git add sh/localized/
           git commit -m "Update localized utilkit.sh ${{ steps.version.outputs.version }}" || echo "No changes to commit"
           git push
