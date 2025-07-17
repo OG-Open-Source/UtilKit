@@ -296,7 +296,12 @@
     "Mt9pT9": "(cannot display file content)",
     "Nt9qU1": "Downloaded file contains only whitespace",
     "Ot9rV2": "Failed to set execute permission on $script_name",
-    "Pt9sW3": "Script file '$script_name' was not downloaded successfully"
+    "Pt9sW3": "Script file '$script_name' was not downloaded successfully",
+    "Qr4sF7": "* File $1 exists",
+    "Jr5sA8": "* File $1 removed successfully",
+    "Ka5yK6": "* Directory $1 exists",
+    "Uq3fO7": "* Directory $1 removed successfully",
+    "Us4pO5": "* Package $1 removed successfully"
   },
   "zh-Hant": {
     "Xk9pL2": "${CLR1}未知錯誤${CLR0}",
@@ -595,7 +600,12 @@
     "Mt9pT9": "（無法顯示檔案內容）",
     "Nt9qU1": "下載的檔案僅包含空白字元",
     "Ot9rV2": "無法設定 $script_name 的執行權限",
-    "Pt9sW3": "腳本檔案 '$script_name' 未成功下載"
+    "Pt9sW3": "腳本檔案 '$script_name' 未成功下載",
+    "Qr4sF7": "* 檔案 $1 已存在",
+    "Jr5sA8": "* 檔案 $1 移除成功",
+    "Ka5yK6": "* 目錄 $1 已存在",
+    "Uq3fO7": "* 目錄 $1 移除成功",
+    "Us4pO5": "* 套件 $1 移除成功"
   },
   "zh-Hans": {
     "Xk9pL2": "${CLR1}未知错误${CLR0}",
@@ -894,6 +904,11 @@
     "Mt9pT9": "（无法显示文件内容）",
     "Nt9qU1": "下载的文件仅包含空白字元",
     "Ot9rV2": "无法设置 $script_name 的执行权限",
-    "Pt9sW3": "脚本文件 '$script_name' 未成功下载"
+    "Pt9sW3": "脚本文件 '$script_name' 未成功下载",
+    "Qr4sF7": "* 文件 $1 已存在",
+    "Jr5sA8": "* 文件 $1 移除成功",
+    "Ka5yK6": "* 目录 $1 已存在",
+    "Uq3fO7": "* 目录 $1 移除成功",
+    "Us4pO5": "* 软件包 $1 移除成功"
   }
 }
