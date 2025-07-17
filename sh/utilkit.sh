@@ -2,7 +2,7 @@
 
 AUTHORS="OG-Open-Source"
 SCRIPTS="UtilKit.sh"
-VERSION="6.044.001.263"
+VERSION="6.044.002.264"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -489,7 +489,7 @@ function Del() {
 					shift
 					continue
 				}
-				Txt "*#Qr4sf7#*"
+				Txt "*#Qr4sF7#*"
 				rm -f "$1" || {
 					Err "*#Wx9nL6#*\n"
 					failed=1
