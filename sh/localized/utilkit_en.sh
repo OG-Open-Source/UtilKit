@@ -1,7 +1,7 @@
 #!/bin/bash
 AUTHORS="OG-Open-Source"
 SCRIPTS="UtilKit.sh"
-VERSION="6.044.001.263"
+VERSION="6.044.002.264"
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
 CLR3="\033[0;33m"
@@ -468,7 +468,7 @@ failed=1
 shift
 continue
 }
-Txt "*#Qr4sf7#*"
+Txt "* File $1 exists"
 rm -f "$1"||{
 Err "Failed to remove file $1\n"
 failed=1
