@@ -2,7 +2,7 @@
 
 ANTHORS="OG-Open-Source"
 SCRIPTS="UtilKit.sh"
-VERSION="7.043.009"
+VERSION="7.046.000"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -15,8 +15,8 @@ CLR8="\033[0;96m"
 CLR9="\033[0;97m"
 CLR0="\033[0m"
 
-Txt() { echo -e "$1" "$2"; }
-Err() {
+function Txt() { echo -e "$1" "$2"; }
+function Err() {
 	[ -z "$1" ] && {
 		Txt "${CLR1}未知錯誤${CLR0}"
 		return 1
@@ -229,7 +229,7 @@ function CHECK_DEPS() {
 	case "${mode}" in
 	"interactive")
 		Txt "\n${CLR3}缺少的套件：${CLR0} ${missing_deps[*]}"
-		read -p "是否要安裝缺少的套件？(y/N) " -n 1 -r continue_install
+		Ask "是否要安裝缺少的套件？(y/N) " -n 1 continue_install
 		Txt
 		[[ "${continue_install}" =~ ^[Yy]$ ]] && ADD "${missing_deps[@]}"
 		;;
@@ -1277,32 +1277,32 @@ function RUN() {
 					fi
 				fi
 				Task "* 下載腳本" "
-					curl -sSLf \"${github_url}\" -o \"${script_name}\" || { 
-						Err \"下載腳本 ${script_name} 失敗\"
-						Err \"從 $github_url 下載失敗\"
+					curl -sSLf "${github_url}" -o "${script_name}" || { 
+						Err "下載腳本 ${script_name} 失敗"
+						Err "從 ${github_url} 下載失敗"
 						return 1
 					}
 
-					if [[ ! -f \"${script_name}\" ]]; then
-						Err \"下載失敗：未建立檔案\"
+					if [[ ! -f "${script_name}" ]]; then
+						Err "下載失敗：未建立檔案"
 						return 1
 					fi
 
-					if [[ ! -s \"${script_name}\" ]]; then
-						Err \"下載的檔案為空\"
-						cat \"${script_name}\" 2>/dev/null || Txt \"（無法顯示檔案內容）\"
+					if [[ ! -s "${script_name}" ]]; then
+						Err "下載的檔案為空"
+						cat "${script_name}" 2>/dev/null || Txt "（無法顯示檔案內容）"
 						return 1
 					fi
 
-					if ! grep -q '[^[:space:]]' \"${script_name}\"; then
-						Err \"下載的檔案僅包含空白字元\"
+					if ! grep -q '[^[:space:]]' "${script_name}"; then
+						Err "下載的檔案僅包含空白字元"
 						return 1
 					fi
 
-					chmod +x \"${script_name}\" || { 
-						Err \"設定腳本 ${script_name} 執行權限失敗\"
-						Err \"無法設定 ${script_name} 的執行權限\"
-						ls -la \"${script_name}\"
+					chmod +x "${script_name}" || { 
+						Err "設定腳本 ${script_name} 執行權限失敗"
+						Err "無法設定 ${script_name} 的執行權限"
+						ls -la "${script_name}"
 						return 1
 					}
 				"
@@ -1557,10 +1557,7 @@ function SYS_INFO() {
 	Txt "${CLR3}系統資訊${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 
-	Txt "- 主機名稱：		${CLR2}$(uname -n || {
-		Err "取得主機名稱失敗"
-		return 1
-	})${CLR0}"
+	Txt "- 主機名稱：		${CLR2}$(uname -n || hostname)${CLR0}"
 	Txt "- 作業系統：		${CLR2}$(CHECK_OS)${CLR0}"
 	Txt "- 核心版本：		${CLR2}$(uname -r)${CLR0}"
 	Txt "- 系統語言：		${CLR2}$LANG${CLR0}"
@@ -1728,7 +1725,7 @@ function SYS_REBOOT() {
 		ps aux --sort=-%cpu | head -n 6
 		Txt
 	fi
-	read -p "您確定要立即重新啟動系統嗎？(y/N) " -n 1 -r continue_reboot
+	Ask "您確定要立即重新啟動系統嗎？(y/N) " -n 1 continue_reboot
 	Txt
 	[[ ! "${continue_reboot}" =~ ^[Yy]$ ]] && {
 		Txt "${CLR2}已取消重新啟動${CLR0}\n"
