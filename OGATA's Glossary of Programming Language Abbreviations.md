@@ -72,3 +72,4 @@ strt. -> start
 nm. -> name
 upr. -> upper
 lwr. -> lower
+val. -> value

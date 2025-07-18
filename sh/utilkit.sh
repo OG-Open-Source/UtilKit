@@ -1,8 +1,8 @@
 #!/bin/bash
 
-AUTHORS="OG-Open-Source"
+ANTHORS="OG-Open-Source"
 SCRIPTS="UtilKit.sh"
-VERSION="7.044.002.284"
+VERSION="7.043.009"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -23,13 +23,14 @@ Err() {
 	}
 	Txt "${CLR1}$1${CLR0}"
 	if [ -w "/var/log" ]; then
-		log_file-Err="/var/log/utilkit.sh.log"
-		timestamp-Err="$(date '+%Y-%m-%d %H:%M:%S')"
-		log_entry-Err="${timestamp-Err} | ${SCRIPTS} - ${VERSION} - $(Txt "$1" | tr -d '\n')"
-		Txt "${log_entry-Err}" >>"${log_file-Err}" 2>/dev/null
+		log_file="/var/log/utilkit.sh.log"
+		timestamp="$(date '+%Y-%m-%d %H:%M:%S')"
+		log_entry="${timestamp} | ${SCRIPTS} - ${VERSION} - $(Txt "$1" | tr -d '\n')"
+		Txt "${log_entry}" >>"${log_file}" 2>/dev/null
 	fi
 }
-function Add() {
+
+function ADD() {
 	[ $# -eq 0 ] && {
 		Err "*#Ht5mK8#*"
 		return 2
@@ -42,141 +43,141 @@ function Add() {
 		Err "*#Qw3nR7#*"
 		return 2
 	}
-	mod_Add="package"
-	err_code_Add=0
+	mode="pkg"
+	failed=0
 	while [ $# -gt 0 ]; do
 		case "$1" in
 		-f)
-			mod_Add="file"
+			mode="file"
 			shift
 			continue
 			;;
 		-d)
-			mod_Add="directory"
+			mode="dir"
 			shift
 			continue
 			;;
 		*.deb)
-			ChkRoot
-			debFile=$(basename "$1")
+			CHECK_ROOT
+			deb_file=$(basename "$1")
 			Txt "*#Ym6pN4#*\n"
-			Get "$1"
-			if [ -f "$debFile" ]; then
-				dpkg -i "$debFile" || {
+			GET "$1"
+			if [ -f "$deb_file" ]; then
+				dpkg -i "$deb_file" || {
 					Err "*#Bx5kM9#*\n"
-					Del -f "$debFile"
-					err_code_Add=1
+					rm -f "$deb_file"
+					failed=1
 					shift
 					continue
 				}
 				apt --fix-broken install -y || {
 					Err "*#Vt4jK7#*"
-					Del -f "$debFile"
-					err_code_Add=1
+					rm -f "$deb_file"
+					failed=1
 					shift
 					continue
 				}
 				Txt "*#Gz7tP5#*"
-				Del -f "$debFile"
+				rm -f "$deb_file"
 				Txt "*#Rt9nK6#*\n"
 			else
 				Err "*#Jh2mP8#*\n"
-				err_code_Add=1
+				failed=1
 				shift
 				continue
 			fi
 			shift
 			;;
 		*)
-			case "${mod_Add}" in
+			case "$mode" in
 			"file")
 				Txt "*#Wn5tM9#*"
 				[ -d "$1" ] && {
 					Err "*#Cx7kR4#*\n"
-					err_code_Add=1
+					failed=1
 					shift
 					continue
 				}
 				[ -f "$1" ] && {
 					Err "*#Fx3pL8#*\n"
-					err_code_Add=1
+					failed=1
 					shift
 					continue
 				}
 				touch "$1" || {
 					Err "*#Dw9nM5#*\n"
-					err_code_Add=1
+					failed=1
 					shift
 					continue
 				}
 				Txt "*#Uz2xK7#*"
 				Txt "*#Rt9nK6#*\n"
 				;;
-			"directory")
+			"dir")
 				Txt "*#Yt6mK2#*"
 				[ -f "$1" ] && {
 					Err "*#Lp5tR2#*\n"
-					err_code_Add=1
+					failed=1
 					shift
 					continue
 				}
 				[ -d "$1" ] && {
 					Err "*#Wx7nJ4#*\n"
-					err_code_Add=1
+					failed=1
 					shift
 					continue
 				}
 				mkdir -p "$1" || {
 					Err "*#Ht5kM8#*\n"
-					err_code_Add=1
+					failed=1
 					shift
 					continue
 				}
 				Txt "*#Kz9pR4#*"
 				Txt "*#Rt9nK6#*\n"
 				;;
-			"package")
+			"pkg")
 				Txt "*#Kt7vL2#*"
-				ChkRoot
-				pkg_mgr_Add=$(command -v apk apt opkg pacman yum zypper dnf | head -n1)
-				pkg_mgr_Add=${pkg_mgr_Add##*/}
-				case $pkg_mgr_Add in
+				CHECK_ROOT
+				pkg_manager=$(command -v apk apt opkg pacman yum zypper dnf | head -n1)
+				pkg_manager=${pkg_manager##*/}
+				case $pkg_manager in
 				apk | apt | opkg | pacman | yum | zypper | dnf)
-					IsInst() {
-						case $pkg_mgr_Add_IsInst in
+					is_installed() {
+						case $pkg_manager in
 						apk) apk info -e "$1" &>/dev/null ;;
 						apt) dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q "ok installed" ;;
 						opkg) opkg list-installed | grep -q "^$1 " ;;
 						pacman) pacman -Qi "$1" &>/dev/null ;;
-						yum | dnf) $pkg_mgr_Add_IsInst list installed "$1" &>/dev/null ;;
+						yum | dnf) $pkg_manager list installed "$1" &>/dev/null ;;
 						zypper) zypper se -i -x "$1" &>/dev/null ;;
 						esac
 					}
-					InstallPkg() {
-						case $pkg_mgr_Add_InstallPkg in
+					install_pkg() {
+						case $pkg_manager in
 						apk) apk update && apk add "$1" ;;
 						apt) apt install -y "$1" ;;
 						opkg) opkg update && opkg install "$1" ;;
 						pacman) pacman -Sy && pacman -S --noconfirm "$1" ;;
-						yum | dnf) $pkg_mgr_Add_InstallPkg install -y "$1" ;;
+						yum | dnf) $pkg_manager install -y "$1" ;;
 						zypper) zypper refresh && zypper install -y "$1" ;;
 						esac
 					}
-					if ! IsInst "$1"; then
+					if ! is_installed "$1"; then
 						Txt "*#Pn8kR5#*"
-						if InstallPkg "$1"; then
-							if IsInst "$1"; then
+						if install_pkg "$1"; then
+							if is_installed "$1"; then
 								Txt "*#Jt6mN4#*"
 								Txt "*#Rt9nK6#*\n"
 							else
 								Err "*#Hv7pL3#*\n"
-								err_code_Add=1
+								failed=1
 								shift
 								continue
 							fi
 						else
 							Err "*#Hv7pL3#*\n"
-							err_code_Add=1
+							failed=1
 							shift
 							continue
 						fi
@@ -187,7 +188,7 @@ function Add() {
 					;;
 				*)
 					Err "*#Zx7mP4#*\n"
-					err_code_Add=1
+					failed=1
 					shift
 					continue
 					;;
@@ -198,21 +199,16 @@ function Add() {
 			;;
 		esac
 	done
-	return $err_code
+	return $failed
 }
-function Ask() {
-	read -e -p "$1" -r $2 || {
-		Err "*#Nt6mK8#*"
-		return 1
-	}
-}
-function ChkDep() {
-	mod_ChkDep="display"
-	mis_dep_ChkDep=()
-	while [[ $1 == -* ]]; do
+
+function CHECK_DEPS() {
+	mode="display"
+	missing_deps=()
+	while [[ "$1" == -* ]]; do
 		case "$1" in
-		-i) mod_ChkDep="interactive" ;;
-		-a) mod_ChkDep="auto" ;;
+		-i) mode="interactive" ;;
+		-a) mode="auto" ;;
 		*)
 			Err "*#Kp7mN4#*"
 			return 1
@@ -220,30 +216,30 @@ function ChkDep() {
 		esac
 		shift
 	done
-	for dep_ChkDep in "${deps[@]}"; do
-		if command -v "${dep_ChkDep}" &>/dev/null; then
-			stat_ChkDep="*#Bw5tR9#*"
+	for dep in "${deps[@]}"; do
+		if command -v "$dep" &>/dev/null; then
+			status="*#Bw5tR9#*"
 		else
-			stat_ChkDep="*#Ht6pL2#*"
-			mis_dep_ChkDep+=("${dep_ChkDep}")
+			status="*#Ht6pL2#*"
+			missing_deps+=("$dep")
 		fi
-		Txt "$stat_ChkDep\t${dep_ChkDep}"
+		Txt "$status\t$dep"
 	done
-	[[ ${#mis_dep_ChkDep[@]} -eq 0 ]] && return 0
-	case "${mod_ChkDep}" in
+	[[ ${#missing_deps[@]} -eq 0 ]] && return 0
+	case "$mode" in
 	"interactive")
-		Txt "\n*#Jk4nR7#* ${mis_dep_ChkDep[*]}"
-		Press "*#Ym6tK8#*" cont_ChkDep
-		Txt "\n"
-		[[ "${cont_ChkDep}" =~ ^[Yy] ]] && Add "${mis_dep_ChkDep[@]}"
+		Txt "\n*#Jk4nR7#* ${missing_deps[*]}"
+		read -p "*#Ym6tK8#*" -n 1 -r
+		Txt
+		[[ $REPLY =~ ^[Yy] ]] && ADD "${missing_deps[@]}"
 		;;
 	"auto")
 		Txt
-		Add "${mis_dep_ChkDep[@]}"
+		ADD "${missing_deps[@]}"
 		;;
 	esac
 }
-function ChkOs() {
+function CHECK_OS() {
 	case "$1" in
 	-v)
 		if [ -f /etc/os-release ]; then
@@ -292,20 +288,20 @@ function ChkOs() {
 		;;
 	esac
 }
-function ChkRoot() {
+function CHECK_ROOT() {
 	if [ "$EUID" -ne 0 ] || [ "$(id -u)" -ne 0 ]; then
 		Err "*#Yk4mN8#*"
 		exit 1
 	fi
 }
-function ChkVirt() {
+function CHECK_VIRT() {
 	if command -v systemd-detect-virt >/dev/null 2>&1; then
-		virt_typ_ChkVirt=$(systemd-detect-virt 2>/dev/null)
-		[ -z "${virt_typ_ChkVirt}" ] && {
+		virt_type=$(systemd-detect-virt 2>/dev/null)
+		[ -z "$virt_type" ] && {
 			Err "*#Vt8nP4#*"
 			return 1
 		}
-		case "${virt_typ_ChkVirt}" in
+		case "$virt_type" in
 		kvm) grep -qi "proxmox" /sys/class/dmi/id/product_name 2>/dev/null && Txt "Proxmox VE (KVM)" || Txt "KVM" ;;
 		microsoft) Txt "Microsoft Hyper-V" ;;
 		none)
@@ -317,47 +313,46 @@ function ChkVirt() {
 				Txt "*#Fn2kP5#*"
 			fi
 			;;
-		*) Txt "${virt_typ_ChkVirt:-*#Fn2kP5#*}" ;;
+		*) Txt "${virt_type:-*#Fn2kP5#*}" ;;
 		esac
 	elif [ -f /proc/cpuinfo ]; then
-		virt_typ_ChkVirt=$(grep -i "hypervisor" /proc/cpuinfo >/dev/null && Txt "*#Hk9nR2#*" || Txt "*#Qw8kL5#*")
+		virt_type=$(grep -i "hypervisor" /proc/cpuinfo >/dev/null && Txt "*#Hk9nR2#*" || Txt "*#Qw8kL5#*")
 	else
-		virt_typ_ChkVirt="*#Dn6tM3#*"
+		virt_type="*#Dn6tM3#*"
 	fi
 }
-function Clear() {
-	targ_dir_Clear="${1:-$HOME}"
-	cd "${targ_dir_Clear}" || {
+function CLEAN() {
+	cd "$HOME" || {
 		Err "*#Jm5tK8#*"
 		return 1
 	}
 	clear
 }
-function CpuCache() {
+function CPU_CACHE() {
 	[ ! -f /proc/cpuinfo ] && {
 		Err "*#Kw7nP5#*"
 		return 1
 	}
-	cache_CpuCache=$(awk '/^cache size/ {sum+=$4; count++} END {print (count>0) ? sum/count : "N/A"}' /proc/cpuinfo)
-	[ "${cache_CpuCache}" = "N/A" ] && {
+	cpu_cache=$(awk '/^cache size/ {sum+=$4; count++} END {print (count>0) ? sum/count : "N/A"}' /proc/cpuinfo)
+	[ "$cpu_cache" = "N/A" ] && {
 		Err "*#Bx5tR9#*"
 		return 1
 	}
-	Txt "${cache_CpuCache} KB"
+	Txt "${cpu_cache} KB"
 }
-function CpuFreq() {
+function CPU_FREQ() {
 	[ ! -f /proc/cpuinfo ] && {
 		Err "*#Kw7nP5#*"
 		return 1
 	}
-	freq_CpuFreq=$(awk '/^cpu MHz/ {sum+=$4; count++} END {print (count>0) ? sprintf("%.2f", sum/count/1000) : "N/A"}' /proc/cpuinfo)
-	[ "${freq_CpuFreq}" = "N/A" ] && {
+	cpu_freq=$(awk '/^cpu MHz/ {sum+=$4; count++} END {print (count>0) ? sprintf("%.2f", sum/count/1000) : "N/A"}' /proc/cpuinfo)
+	[ "$cpu_freq" = "N/A" ] && {
 		Err "*#Rw6tK9#*"
 		return 1
 	}
-	Txt "${freq_CpuFreq} GHz"
+	Txt "${cpu_freq} GHz"
 }
-function CpuModel() {
+function CPU_MODEL() {
 	if command -v lscpu &>/dev/null; then
 		lscpu | awk -F': +' '/Model name/ {print $2; exit}'
 	elif [ -f /proc/cpuinfo ]; then
@@ -371,95 +366,89 @@ function CpuModel() {
 		}
 	fi
 }
-function CpuUsage() {
-	read -r cpu_CpuUsage usr_CpuUsage nice_CpuUsage sys_CpuUsage idel_CpuUsage io_CpuUsage irq_CpuUsage softirq_CpuUsage <<<$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8}' /proc/stat) || {
+function CPU_USAGE() {
+	read -r cpu user nice system idle iowait irq softirq <<<$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8}' /proc/stat) || {
 		Err "*#Ht7mK4#*"
 		return 1
 	}
-	ttl1_CpuUsage=$((usr_CpuUsage + nice_CpuUsage + sys_CpuUsage + idel_CpuUsage + io_CpuUsage + irq_CpuUsage + softirq_CpuUsage))
-	idel1_CpuUsage=${idel_CpuUsage}
+	total1=$((user + nice + system + idle + iowait + irq + softirq))
+	idle1=$idle
 	sleep 0.3
-	read -r cpu_CpuUsage usr_CpuUsage nice_CpuUsage sys_CpuUsage idel_CpuUsage io_CpuUsage irq_CpuUsage softirq_CpuUsage <<<$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8}' /proc/stat) || {
+	read -r cpu user nice system idle iowait irq softirq <<<$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8}' /proc/stat) || {
 		Err "*#Ht7mK4#*"
 		return 1
 	}
-	ttl2_CpuUsage=$((usr_CpuUsage + nice_CpuUsage + sys_CpuUsage + idel_CpuUsage + io_CpuUsage + irq_CpuUsage + softirq_CpuUsage))
-	idel2_CpuUsage=${idel_CpuUsage}
-	ttl_diff_CpuUsage=$((ttl2_CpuUsage - ttl1_CpuUsage))
-	idle_diff_CpuUsage=$((idel2_CpuUsage - idel1_CpuUsage))
-	usage_CpuUsage=$((100 * (ttl_diff_CpuUsage - idle_diff_CpuUsage) / ttl_diff_CpuUsage))
-	Txt "$usage_CpuUsage"
+	total2=$((user + nice + system + idle + iowait + irq + softirq))
+	idle2=$idle
+	total_diff=$((total2 - total1))
+	idle_diff=$((idle2 - idle1))
+	usage=$((100 * (total_diff - idle_diff) / total_diff))
+	Txt "$usage"
 }
-function ConvSz() {
+function CONVERT_SIZE() {
 	[ -z "$1" ] && {
 		Err "*#Jk4mN8#*"
 		return 2
 	}
-	input_size_ConvSz=$1
-	input_unit_ConvSz=${2:-B}
-	unit_lower_ConvSz=$(Format -aa "${input_unit_ConvSz}")
-	if ! [[ ${input_size_ConvSz} =~ ^[+-]?[0-9]*\.?[0-9]+$ ]]; then
+	size=$1
+	unit=${2:-iB}
+	unit_lower=$(FORMAT -aa "$unit")
+	if ! [[ "$size" =~ ^[+-]?[0-9]*\.?[0-9]+$ ]]; then
 		{
 			Err "*#Wx5vR7#*"
 			return 2
 		}
-	elif [[ ${input_size_ConvSz} =~ ^[-].*$ ]]; then
+	elif [[ "$size" =~ ^[-].*$ ]]; then
 		{
 			Err "*#Bm2kL6#*"
 			return 2
 		}
-	elif [[ ${input_size_ConvSz} =~ ^[+].*$ ]]; then
-		input_size_ConvSz=${input_size_ConvSz#+}
+	elif [[ "$size" =~ ^[+].*$ ]]; then
+		size=${size#+}
 	fi
-	LC_NUMERIC=C awk -v size="${input_size_ConvSz}" -v unit="${unit_lower_ConvSz}" '
+	case "$unit_lower" in
+	b) bytes=$size ;;
+	kb | kib) bytes=$(LC_NUMERIC=C awk -v size="$size" -v unit="$unit_lower" 'BEGIN {printf "%.0f", size * (unit == "kb" ? 1000 : 1024)}') ;;
+	mb | mib) bytes=$(LC_NUMERIC=C awk -v size="$size" -v unit="$unit_lower" 'BEGIN {printf "%.0f", size * (unit == "mb" ? 1000000 : 1048576)}') ;;
+	gb | gib) bytes=$(LC_NUMERIC=C awk -v size="$size" -v unit="$unit_lower" 'BEGIN {printf "%.0f", size * (unit == "gb" ? 1000000000 : 1073741824)}') ;;
+	tb | tib) bytes=$(LC_NUMERIC=C awk -v size="$size" -v unit="$unit_lower" 'BEGIN {printf "%.0f", size * (unit == "tb" ? 1000000000000 : 1099511627776)}') ;;
+	pb | pib) bytes=$(LC_NUMERIC=C awk -v size="$size" -v unit="$unit_lower" 'BEGIN {printf "%.0f", size * (unit == "pb" ? 1000000000000000 : 1125899906842624)}') ;;
+	*) bytes=$size ;;
+	esac
+	[[ ! "$bytes" =~ ^[0-9]+\.?[0-9]*$ ]] && {
+		Err "*#Dn7tR4#*"
+		return 1
+	}
+	LC_NUMERIC=C awk -v bytes="$bytes" -v is_binary="$([[ $unit_lower =~ ^.*ib$ ]] && Txt 1 || Txt 0)" '
 	BEGIN {
-		is_binary = 0
-		if (unit ~ /ib$/ || unit == "b") {
-			is_binary = 1
-		}
-
 		base = is_binary ? 1024 : 1000
-		units_str = is_binary ? "B KiB MiB GiB TiB PiB" : "B KB MB GB TB PB"
-		split(units_str, units, " ")
-
-		bytes = size
-		if (unit == "kb") { bytes = size * 1000 }
-		else if (unit == "mb") { bytes = size * 1000000 }
-		else if (unit == "gb") { bytes = size * 1000000000 }
-		else if (unit == "tb") { bytes = size * 1000000000000 }
-		else if (unit == "pb") { bytes = size * 1000000000000000 }
-		else if (unit == "kib") { bytes = size * 1024 }
-		else if (unit == "mib") { bytes = size * 1048576 }
-		else if (unit == "gib") { bytes = size * 1073741824 }
-		else if (unit == "tib") { bytes = size * 1099511627776 }
-		else if (unit == "pib") { bytes = size * 1125899906842624 }
-
+		units = is_binary ? "B KiB MiB GiB TiB PiB" : "B KB MB GB TB PB"
+		split(units, unit_array, " ")
 		power = 0
 		value = bytes
-		if (bytes > 0) {
-			power = int(log(bytes) / log(base))
-			if (power > 5) { power = 5 }
-			value = bytes / (base ^ power)
+		while (value >= base && power < 5) {
+			value /= base
+			power++
 		}
-
 		if (power == 0) {
-			printf "%.0f %s\n", bytes, units[1]
+			printf "%d %s\n", bytes, unit_array[power + 1]
 		} else {
 			if (value >= 100) {
-				printf "%.1f %s\n", value, units[power + 1]
+				printf "%.1f %s\n", value, unit_array[power + 1]
 			} else if (value >= 10) {
-				printf "%.2f %s\n", value, units[power + 1]
+				printf "%.2f %s\n", value, unit_array[power + 1]
 			} else {
-				printf "%.3f %s\n", value, units[power + 1]
+				printf "%.3f %s\n", value, unit_array[power + 1]
 			}
 		}
 	}'
 }
-function Copyright() {
+function COPYRIGHT() {
 	Txt "${SCRIPTS} ${VERSION}"
-	Txt "Copyright (c) $(date +%Y) ${AUTHORS}."
+	Txt "Copyright (C) $(date +%Y) ${ANTHORS}."
 }
-function Del() {
+
+function DEL() {
 	[ $# -eq 0 ] && {
 		Err "*#Yt5mP8#*"
 		return 2
@@ -472,103 +461,103 @@ function Del() {
 		Err "*#Qw3nR7#*"
 		return 2
 	}
-	mod_Del="package"
-	err_code_Del=0
+	mode="pkg"
+	failed=0
 	while [ $# -gt 0 ]; do
 		case "$1" in
 		-f)
-			mod_Del="file"
+			mode="file"
 			shift
 			continue
 			;;
 		-d)
-			mod_Del="directory"
+			mode="dir"
 			shift
 			continue
 			;;
 		*)
-			Txt "${CLR3}REMOVE $(Format -AA "${mod_Del}") [$1]${CLR0}"
-			case "${mod_Del}" in
+			Txt "${CLR3}REMOVE $(FORMAT -AA "$mode") [$1]${CLR0}"
+			case "$mode" in
 			"file")
 				[ ! -f "$1" ] && {
 					Err "*#Lm7tK4#*\n"
-					err_code_Del=1
+					failed=1
 					shift
 					continue
 				}
-				Txt "*#Qr4sF7#*"
+				Txt "* File $1 exists"
 				rm -f "$1" || {
 					Err "*#Wx9nL6#*\n"
-					err_code_Del=1
+					failed=1
 					shift
 					continue
 				}
-				Txt "*#Jr5sA8#*"
+				Txt "* File $1 removed successfully"
 				Txt "*#Rt9nK6#*\n"
 				;;
-			"directory")
+			"dir")
 				[ ! -d "$1" ] && {
 					Err "*#Dn6kP3#*\n"
-					err_code_Del=1
+					failed=1
 					shift
 					continue
 				}
-				Txt "*#Ka5yK6#*"
+				Txt "* Directory $1 exists"
 				rm -rf "$1" || {
 					Err "*#Hm8wR5#*\n"
-					err_code_Del=1
+					failed=1
 					shift
 					continue
 				}
-				Txt "*#Uq3fO7#*"
+				Txt "* Directory $1 removed successfully"
 				Txt "*#Rt9nK6#*\n"
 				;;
-			"package")
-				ChkRoot
-				pkg_mgr_Del=$(command -v apk apt opkg pacman yum zypper dnf | head -n1)
-				pkg_mgr_Del=${pkg_mgr_Del##*/}
-				case $pkg_mgr_Del in
+			"pkg")
+				CHECK_ROOT
+				pkg_manager=$(command -v apk apt opkg pacman yum zypper dnf | head -n1)
+				pkg_manager=${pkg_manager##*/}
+				case $pkg_manager in
 				apk | apt | opkg | pacman | yum | zypper | dnf)
-					IsInst() {
-						case $pkg_mgr_Del_IsInst in
+					is_installed() {
+						case $pkg_manager in
 						apk) apk info -e "$1" &>/dev/null ;;
 						apt) dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q "ok installed" ;;
 						opkg) opkg list-installed | grep -q "^$1 " ;;
 						pacman) pacman -Qi "$1" &>/dev/null ;;
-						yum | dnf) $pkg_mgr_Del_IsInst list installed "$1" &>/dev/null ;;
+						yum | dnf) $pkg_manager list installed "$1" &>/dev/null ;;
 						zypper) zypper se -i -x "$1" &>/dev/null ;;
 						esac
 					}
-					RmPkg() {
-						case $pkg_mgr_Del_RmPkg in
+					remove_pkg() {
+						case $pkg_manager in
 						apk) apk del "$1" ;;
 						apt) apt purge -y "$1" && apt autoremove -y ;;
 						opkg) opkg remove "$1" ;;
 						pacman) pacman -Rns --noconfirm "$1" ;;
-						yum | dnf) $pkg_mgr_Del_RmPkg remove -y "$1" ;;
+						yum | dnf) $pkg_manager remove -y "$1" ;;
 						zypper) zypper remove -y "$1" ;;
 						esac
 					}
-					if ! IsInst "$1"; then
+					if ! is_installed "$1"; then
 						Err "*#Pn8kR5#*\n"
-						err_code_Del=1
+						failed=1
 						shift
 						continue
 					fi
 					Txt "* Package $1 is installed"
-					if ! RmPkg "$1"; then
+					if ! remove_pkg "$1"; then
 						Err "*#Qn5tR2#*\n"
-						err_code_Del=1
+						failed=1
 						shift
 						continue
 					fi
-					if IsInst "$1"; then
+					if is_installed "$1"; then
 						Err "*#Qn5tR2#*\n"
-						err_code_Del=1
+						failed=1
 						shift
 						continue
 					fi
-					Txt "*#Us4pO5#*"
+					Txt "* Package $1 removed successfully"
 					Txt "*#Rt9nK6#*\n"
 					;;
 				*) {
@@ -582,81 +571,82 @@ function Del() {
 			;;
 		esac
 	done
-	return $err_code_Del
+	return $failed
 }
-function DiskUsage() {
-	used_DiskUsage=$(df -B1 / | awk '/^\/dev/ {print $3}') || {
+function DISK_USAGE() {
+	used=$(df -B1 / | awk '/^\/dev/ {print $3}') || {
 		Err "*#Ht5nK9#*"
 		return 1
 	}
-	ttl_DiskUsage=$(df -B1 / | awk '/^\/dev/ {print $2}') || {
+	total=$(df -B1 / | awk '/^\/dev/ {print $2}') || {
 		Err "*#Yt8pR2#*"
 		return 1
 	}
-	pct_DiskUsage=$(df / | awk '/^\/dev/ {printf("%.2f"), $3/$2 * 100.0}')
+	percentage=$(df / | awk '/^\/dev/ {printf("%.2f"), $3/$2 * 100.0}')
 	case "$1" in
-	-u) Txt "$used_DiskUsage" ;;
-	-t) Txt "$ttl_DiskUsage" ;;
-	-p) Txt "$pct_DiskUsage" ;;
-	*) Txt "$(ConvSz "$used_DiskUsage") / $(ConvSz "$ttl_DiskUsage") ($pct_DiskUsage%)" ;;
+	-u) Txt "${used}" ;;
+	-t) Txt "${total}" ;;
+	-p) Txt "${percentage}" ;;
+	*) Txt "$(CONVERT_SIZE ${used}) / $(CONVERT_SIZE ${total}) (${percentage}%)" ;;
 	esac
 }
-function DnsAddr() {
+function DNS_ADDR() {
 	[ ! -f /etc/resolv.conf ] && {
 		Err "*#Rw6nK8#*"
 		return 1
 	}
-	ipv4_DnsAddr=()
-	ipv6_DnsAddr=()
-	while read -r server_DnsAddr; do
-		if [[ $server_DnsAddr =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-			ipv4_DnsAddr+=("$server_DnsAddr")
-		elif [[ $server_DnsAddr =~ ^[0-9a-fA-F:]+$ ]]; then
-			ipv6_DnsAddr+=("$server_DnsAddr")
+	ipv4_servers=()
+	ipv6_servers=()
+	while read -r server; do
+		if [[ ${server} =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+			ipv4_servers+=("${server}")
+		elif [[ ${server} =~ ^[0-9a-fA-F:]+$ ]]; then
+			ipv6_servers+=("${server}")
 		fi
 	done < <(grep -E '^nameserver' /etc/resolv.conf | awk '{print $2}')
-	[[ ${#ipv4_DnsAddr[@]} -eq 0 && ${#ipv6_DnsAddr[@]} -eq 0 ]] && {
+	[[ ${#ipv4_servers[@]} -eq 0 && ${#ipv6_servers[@]} -eq 0 ]] && {
 		Err "*#Bx5tP7#*"
 		return 1
 	}
 	case "$1" in
 	-4)
-		[ ${#ipv4_DnsAddr[@]} -eq 0 ] && {
+		[ ${#ipv4_servers[@]} -eq 0 ] && {
 			Err "*#Vt7mR3#*"
 			return 1
 		}
-		Txt "${ipv4_DnsAddr[*]}"
+		Txt "${ipv4_servers[*]}"
 		;;
 	-6)
-		[ ${#ipv6_DnsAddr[@]} -eq 0 ] && {
+		[ ${#ipv6_servers[@]} -eq 0 ] && {
 			Err "*#Qw8kL6#*"
 			return 1
 		}
-		Txt "${ipv6_DnsAddr[*]}"
+		Txt "${ipv6_servers[*]}"
 		;;
 	*)
-		[ ${#ipv4_DnsAddr[@]} -eq 0 -a ${#ipv6_DnsAddr[@]} -eq 0 ] && {
+		[ ${#ipv4_servers[@]} -eq 0 -a ${#ipv6_servers[@]} -eq 0 ] && {
 			Err "*#Jn3vK7#*"
 			return 1
 		}
-		Txt "${ipv4_DnsAddr[*]}   ${ipv6_DnsAddr[*]}"
+		Txt "${ipv4_servers[*]}   ${ipv6_servers[*]}"
 		;;
 	esac
 }
-function Find() {
+
+function FIND() {
 	[ $# -eq 0 ] && {
 		Err "*#Zt5kP8#*"
 		return 2
 	}
-	pkg_mgr_Find=$(command -v apk apt opkg pacman yum zypper dnf | head -n1)
-	case ${pkg_mgr_Find##*/} in
-	apk) search_command-Find="apk search" ;;
-	apt) search_command-Find="apt-cache search" ;;
-	opkg) search_command-Find="opkg search" ;;
-	pacman) search_command-Find="pacman -Ss" ;;
-	yum) search_command-Find="yum search" ;;
-	zypper) search_command-Find="zypper search" ;;
-	dnf) search_command-Find="dnf search" ;;
+	pkg_manager=$(command -v apk apt opkg pacman yum zypper dnf | head -n1)
+	case ${pkg_manager##*/} in
+	apk) search_command="apk search" ;;
+	apt) search_command="apt-cache search" ;;
+	opkg) search_command="opkg search" ;;
+	pacman) search_command="pacman -Ss" ;;
+	yum) search_command="yum search" ;;
+	zypper) search_command="zypper search" ;;
+	dnf) search_command="dnf search" ;;
 	*) {
 		Err "*#Bx9nK5#*"
 		return 1
@@ -664,16 +654,16 @@ function Find() {
 	esac
 	for target in "$@"; do
 		Txt "*#Hk7mP4#*"
-		${search_command-Find} "$target" || {
+		${search_command} "${target}" || {
 			Err "*#Jt6nR3#*\n"
 			return 1
 		}
 		Txt "*#Rt9nK6#*\n"
 	done
 }
-function Font() {
-	font_style-Font=""
-	declare -A font_style_list-Font=(
+function FONT() {
+	font=""
+	declare -A style=(
 		[B]="\033[1m" [U]="\033[4m"
 		[BLACK]="\033[30m" [RED]="\033[31m" [GREEN]="\033[32m" [YELLOW]="\033[33m"
 		[BLUE]="\033[34m" [PURPLE]="\033[35m" [CYAN]="\033[36m" [WHITE]="\033[37m"
@@ -688,55 +678,56 @@ function Font() {
 		case "$1" in
 		RGB)
 			shift
-			[[ $1 =~ ^([0-9]{1,3}),([0-9]{1,3}),([0-9]{1,3})$ ]] && font_style-Font+="\033[38;2;${BASH_REMATCH[1]};${BASH_REMATCH[2]};${BASH_REMATCH[3]}m"
+			[[ "$1" =~ ^([0-9]{1,3}),([0-9]{1,3}),([0-9]{1,3})$ ]] && font+="\033[38;2;${BASH_REMATCH[1]};${BASH_REMATCH[2]};${BASH_REMATCH[3]}m"
 			;;
 		BG.RGB)
 			shift
-			[[ $1 =~ ^([0-9]{1,3}),([0-9]{1,3}),([0-9]{1,3})$ ]] && font_style-Font+="\033[48;2;${BASH_REMATCH[1]};${BASH_REMATCH[2]};${BASH_REMATCH[3]}m"
+			[[ "$1" =~ ^([0-9]{1,3}),([0-9]{1,3}),([0-9]{1,3})$ ]] && font+="\033[48;2;${BASH_REMATCH[1]};${BASH_REMATCH[2]};${BASH_REMATCH[3]}m"
 			;;
-		*) font_style-Font+="${font_style_list-Font[$1]:-}" ;;
+		*) font+="${style[$1]:-}" ;;
 		esac
 		shift
 	done
-	Txt "${font_style-Font}$1${CLR0}"
+	Txt "${font}${1}${CLR0}"
 }
-function Format() {
-	flg_Format="$1"
+function FORMAT() {
+	option="$1"
 	value="$2"
-	ans_Format=""
+	result=""
 	[ -z "$value" ] && {
 		Err "*#Yt7nK4#*"
 		return 2
 	}
-	[ -z "$flg_Format" ] && {
+	[ -z "$option" ] && {
 		Err "*#Bk8mR5#*"
 		return 2
 	}
-	case "$flg_Format" in
-	-AA) ans_Format=$(Txt "$value" | tr '[:lower:]' '[:upper:]') ;;
-	-aa) ans_Format=$(Txt "$value" | tr '[:upper:]' '[:lower:]') ;;
-	-Aa) ans_Format=$(Txt "$value" | tr '[:upper:]' '[:lower:]' | sed 's/\b\(.\)/\u\1/') ;;
-	*) ans_Format="$value" ;;
+	case "$option" in
+	-AA) result=$(Txt "$value" | tr '[:lower:]' '[:upper:]') ;;
+	-aa) result=$(Txt "$value" | tr '[:upper:]' '[:lower:]') ;;
+	-Aa) result=$(Txt "$value" | tr '[:upper:]' '[:lower:]' | sed 's/\b\(.\)/\u\1/') ;;
+	*) result="$value" ;;
 	esac
-	Txt "$ans_Format"
+	Txt "${result}"
 }
-function Get() {
-	unzip_Get="false"
-	targ_dir_Get="."
-	ren_file_Get=""
-	url_Get=""
+
+function GET() {
+	extract="false"
+	target_dir="."
+	rename_file=""
+	url=""
 	while [ $# -gt 0 ]; do
 		case "$1" in
 		-x)
-			unzip_Get=true
+			extract=true
 			shift
 			;;
 		-r)
-			[ -z "$2" ] || [[ $2 == -* ]] && {
+			[ -z "$2" ] || [[ "$2" == -* ]] && {
 				Err "*#Kp8nR4#*"
 				return 2
 			}
-			ren_file_Get="$2"
+			rename_file="$2"
 			shift 2
 			;;
 		-*) {
@@ -744,71 +735,71 @@ function Get() {
 			return 2
 		} ;;
 		*)
-			[ -z "$url_Get" ] && url_Get="$1" || targ_dir_Get="$1"
+			[ -z "${url}" ] && url="$1" || target_dir="$1"
 			shift
 			;;
 		esac
 	done
-	[ -z "$url_Get" ] && {
+	[ -z "${url}" ] && {
 		Err "*#Yt6nR8#*"
 		return 2
 	}
-	[[ $url_Get =~ ^(http|https|ftp):// ]] || url_Get="https://$url_Get"
-	out_file_Get="${url_Get##*/}"
-	[ -z "$out_file_Get" ] && out_file_Get="index.html"
-	[ "$targ_dir_Get" != "." ] && { mkdir -p "$targ_dir_Get" || {
+	[[ "${url}" =~ ^(http|https|ftp):// ]] || url="https://${url}"
+	output_file="${url##*/}"
+	[ -z "${output_file}" ] && output_file="index.html"
+	[ "${target_dir}" != "." ] && { mkdir -p "${target_dir}" || {
 		Err "*#Hx7mK5#*"
 		return 1
 	}; }
-	[ -n "$ren_file_Get" ] && out_file_Get="$ren_file_Get"
-	out_path_Get="$targ_dir_Get/$out_file_Get"
-	url_Get=$(echo "$url_Get" | sed -E 's#([^:])/+#\1/#g; s#^(https?|ftp):/+#\1://#')
+	[ -n "${rename_file}" ] && output_file="${rename_file}"
+	output_path="${target_dir}/${output_file}"
+	url=$(Txt "${url}" | sed -E 's#([^:])/+#\1/#g; s#^(https?|ftp):/+#\1://#')
 	Txt "*#Bw4nP7#*"
-	file_sz_Get=$(curl -sI "$url_Get" | grep -i content-length | awk '{print $2}' | tr -d '\r')
-	if [ -n "$file_sz_Get" ] && [ "$file_sz_Get" -gt "26214400" ]; then
-		wget --no-check-certificate --timeout=5 --tries=2 "$url_Get" -O "$out_path_Get" || {
+	file_size=$(curl -sI "${url}" | grep -i content-length | awk '{print $2}' | tr -d '\r')
+	if [ -n "${file_size}" ] && [ "${file_size}" -gt 26214400 ]; then
+		wget --no-check-certificate --timeout=5 --tries=2 "${url}" -O "${output_path}" || {
 			Err "*#Vt5kR8#*"
 			return 1
 		}
 	else
-		curl --location --insecure --connect-timeout 5 --retry 2 "$url_Get" -o "$out_path_Get" || {
+		curl --location --insecure --connect-timeout 5 --retry 2 "${url}" -o "${output_path}" || {
 			Err "*#Mx6nL4#*"
 			return 1
 		}
 	fi
-	if [ -f "$out_path_Get" ]; then
+	if [ -f "${output_path}" ]; then
 		Txt "*#Jt7mP5#*"
-		if [ "$unzip_Get" = true ]; then
-			case "$out_file_Get" in
-			*.tar.gz | *.tgz) tar -xzf "$out_path_Get" -C "$targ_dir_Get" || {
+		if [ "${extract}" = true ]; then
+			case "${output_file}" in
+			*.tar.gz | *.tgz) tar -xzf "${output_path}" -C "${target_dir}" || {
 				Err "*#Nx5kR7#*"
 				return 1
 			} ;;
-			*.tar) tar -xf "$out_path_Get" -C "$targ_dir_Get" || {
+			*.tar) tar -xf "${output_path}" -C "${target_dir}" || {
 				Err "*#Qw6mL8#*"
 				return 1
 			} ;;
-			*.tar.bz2 | *.tbz2) tar -xjf "$out_path_Get" -C "$targ_dir_Get" || {
+			*.tar.bz2 | *.tbz2) tar -xjf "${output_path}" -C "${target_dir}" || {
 				Err "*#Yx3nP6#*"
 				return 1
 			} ;;
-			*.tar.xz | *.txz) tar -xJf "$out_path_Get" -C "$targ_dir_Get" || {
+			*.tar.xz | *.txz) tar -xJf "${output_path}" -C "${target_dir}" || {
 				Err "*#Zx8kM4#*"
 				return 1
 			} ;;
-			*.zip) unzip "$out_path_Get" -d "$targ_dir_Get" || {
+			*.zip) unzip "${output_path}" -d "${target_dir}" || {
 				Err "*#Lw5nR9#*"
 				return 1
 			} ;;
-			*.7z) 7z x "$out_path_Get" -o"$targ_dir_Get" || {
+			*.7z) 7z x "${output_path}" -o"${target_dir}" || {
 				Err "*#Px7mK3#*"
 				return 1
 			} ;;
-			*.rar) unrar x "$out_path_Get" "$targ_dir_Get" || {
+			*.rar) unrar x "${output_path}" "${target_dir}" || {
 				Err "*#Tx4nL6#*"
 				return 1
 			} ;;
-			*.zst) zstd -d "$out_path_Get" -o "$targ_dir_Get" || {
+			*.zst) zstd -d "${output_path}" -o "${target_dir}" || {
 				Err "*#Gx9kP5#*"
 				return 1
 			} ;;
@@ -824,10 +815,17 @@ function Get() {
 		}
 	fi
 }
-function Iface() {
-	interface_Iface=""
-	declare -a interfaces_Iface=()
-	all_interfaces_Iface=$(
+
+function Ask() {
+	read -e -p "$1" -r $2 || {
+		Err "*#Nt6mK8#*"
+		return 1
+	}
+}
+function INTERFACE() {
+	interface=""
+	declare -a interfaces=()
+	all_interfaces=$(
 		cat /proc/net/dev |
 			grep ':' |
 			cut -d':' -f1 |
@@ -839,80 +837,94 @@ function Iface() {
 		return 1
 	}
 	i=1
-	while read -r interface_item_Iface; do
-		[ -n "$interface_item_Iface" ] && interfaces_Iface[$i]="$interface_item_Iface"
+	while read -r interface_item; do
+		[ -n "${interface_item}" ] && interfaces[$i]="${interface_item}"
 		((i++))
-	done <<<"$allInterfaces"
-	interfaces_number_Iface="${#interfaces_Iface[*]}"
-	default4_route_Iface=$(ip -4 route show default 2>/dev/null | grep -A 3 "^default" || Txt)
-	default6_route_Iface=$(ip -6 route show default 2>/dev/null | grep -A 3 "^default" || Txt)
-	interface4_Iface=""
-	interface6_Iface=""
-	for ((i = 1; i <= ${#interfaces_Iface[@]}; i++)); do
-		item_Iface="${interfaces_Iface[$i]}"
-		[ -z "$item_Iface" ] && continue
-		if [[ -n $interface4_Iface && $interface4_Iface == *"$item_Iface"* ]] && [ -z "$interface4_Iface" ]; then
-			interface4_Iface="$item_Iface"
+	done <<<"${all_interfaces}"
+	interfaces_num="${#interfaces[*]}"
+	default4_route=$(ip -4 route show default 2>/dev/null | grep -A 3 "^default" || Txt)
+	default6_route=$(ip -6 route show default 2>/dev/null | grep -A 3 "^default" || Txt)
+	get_arr_item_idx() {
+		item="$1"
+		shift
+		arr=("$@")
+		for ((i = 1; i <= ${#arr[@]}; i++)); do
+			if [ "${item}" = "${arr[$i]}" ]; then
+				Txt "$i"
+				return 0
+			fi
+		done
+		return 255
+	}
+	interface4=""
+	interface6=""
+	for ((i = 1; i <= ${#interfaces[@]}; i++)); do
+		item="${interfaces[$i]}"
+		[ -z "${item}" ] && continue
+		if [[ -n "$default4_route" && "$default4_route" == *"${item}"* ]] && [ -z "${interface4}" ]; then
+			interface4="${item}"
+			interface4_device_order=$(get_arr_item_idx "${item}" "${interfaces[@]}")
 		fi
-		if [[ -n $interface6_Iface && $interface6_Iface == *"$item_Iface"* ]] && [ -z "$interface6_Iface" ]; then
-			interface6_Iface="$item_Iface"
+		if [[ -n "$default6_route" && "$default6_route" == *"${item}"* ]] && [ -z "${interface6}" ]; then
+			interface6="${item}"
+			interface6_device_order=$(get_arr_item_idx "${item}" "${interfaces[@]}")
 		fi
-		[ -n "$interface4_Iface" ] && [ -n "$interface6_Iface" ] && break
+		[ -n "${interface4}" ] && [ -n "${interface6}" ] && break
 	done
-	if [ -z "$interface4_Iface" ] && [ -z "$interface6_Iface" ]; then
-		for ((i = 1; i <= ${#interfaces_Iface[@]}; i++)); do
-			item_Iface="${interfaces_Iface[$i]}"
-			if [[ $item_Iface =~ ^en ]]; then
-				interface4_Iface="$item_Iface"
-				interface6_Iface="$item_Iface"
+	if [ -z "${interface4}" ] && [ -z "${interface6}" ]; then
+		for ((i = 1; i <= ${#interfaces[@]}; i++)); do
+			item="${interfaces[$i]}"
+			if [[ "${item}" =~ ^en ]]; then
+				interface4="${item}"
+				interface6="${item}"
 				break
 			fi
 		done
-		if [ -z "$interface4_Iface" ] && [ -z "$interface6_Iface" ] && [ "$interfaces_number_Iface" -gt 0 ]; then
-			interface4_Iface="${interfaces_Iface[1]}"
-			interface6_Iface="${interfaces_Iface[1]}"
+		if [ -z "${interface4}" ] && [ -z "${interface6}" ] && [ "${interfaces_num}" -gt 0 ]; then
+			interface4="${interfaces[1]}"
+			interface6="${interfaces[1]}"
 		fi
 	fi
-	if [ -n "$interface4_Iface" ] || [ -n "$interface6_Iface" ]; then
-		interface_Iface="$interface4_Iface $interface6_Iface"
-		[[ $interface4_Iface == "$interface6_Iface" ]] && interface_Iface="$interface4_Iface"
-		interface_Iface=$(Txt "$interface_Iface" | tr -s ' ' | xargs)
+	if [ -n "${interface4}" ] || [ -n "${interface6}" ]; then
+		interface="${interface4} ${interface6}"
+		[[ "${interface4}" == "${interface6}" ]] && interface="${interface4}"
+		interface=$(Txt "${interface}" | tr -s ' ' | xargs)
 	else
-		phys_insterface_Iface=$(ip -o link show | grep -v 'lo\|docker\|br-\|veth\|bond\|tun\|tap' | grep 'state UP' | head -n 1 | awk -F': ' '{print $2}')
-		if [ -n "$phys_insterface_Iface" ]; then
-			interface_Iface="$phys_insterface_Iface"
+		physical_iface=$(ip -o link show | grep -v 'lo\|docker\|br-\|veth\|bond\|tun\|tap' | grep 'state UP' | head -n 1 | awk -F': ' '{print $2}')
+		if [ -n "${physical_iface}" ]; then
+			interface="${physical_iface}"
 		else
-			interface_Iface=$(ip -o link show | grep -v 'lo:' | head -n 1 | awk -F': ' '{print $2}')
+			interface=$(ip -o link show | grep -v 'lo:' | head -n 1 | awk -F': ' '{print $2}')
 		fi
 	fi
 	case "$1" in
-	rx_bytes | rx_packets | rx_drop | tx_bytes | tx_packets | tx_drop)
-		for iface_Iface in $interface_Iface; do
-			if stats_Iface=$(awk -v iface="$iface_Iface" '$1 ~ iface":" {print $2, $3, $5, $10, $11, $13}' /proc/net/dev 2>/dev/null); then
-				read rx_bytes_Iface rx_packets_Iface rx_drop_Iface tx_bytes_Iface tx_packets_Iface tx_drop_Iface <<<"$stats_Iface"
+	RX_BYTES | RX_PACKETS | RX_DROP | TX_BYTES | TX_PACKETS | TX_DROP)
+		for iface in ${interface}; do
+			if stats=$(awk -v iface="${iface}" '$1 ~ iface":" {print $2, $3, $5, $10, $11, $13}' /proc/net/dev 2>/dev/null); then
+				read rx_bytes rx_packets rx_drop tx_bytes tx_packets tx_drop <<<"${stats}"
 				case "$1" in
-				rx_bytes)
-					Txt "$rx_bytes_Iface"
+				RX_BYTES)
+					Txt "${rx_bytes}"
 					break
 					;;
-				rx_packets)
-					Txt "$rx_packets_Iface"
+				RX_PACKETS)
+					Txt "${rx_packets}"
 					break
 					;;
-				rx_drop)
-					Txt "$rx_drop_Iface"
+				RX_DROP)
+					Txt "${rx_drop}"
 					break
 					;;
-				tx_bytes)
-					Txt "$tx_bytes_Iface"
+				TX_BYTES)
+					Txt "${tx_bytes}"
 					break
 					;;
-				tx_packets)
-					Txt "$tx_packets_Iface"
+				TX_PACKETS)
+					Txt "${tx_packets}"
 					break
 					;;
-				tx_drop)
-					Txt "$tx_drop_Iface"
+				TX_DROP)
+					Txt "${tx_drop}"
 					break
 					;;
 				esac
@@ -920,166 +932,169 @@ function Iface() {
 		done
 		;;
 	-i)
-		for iface_Iface in $interface_Iface; do
-			if stats_Iface=$(awk -v iface="$iface_Iface" '$1 ~ iface":" {print $2, $3, $5, $10, $11, $13}' /proc/net/dev 2>/dev/null); then
-				read rx_bytes_Iface rx_packets_Iface rx_drop_Iface tx_bytes_Iface tx_packets_Iface tx_drop_Iface <<<"$stats_Iface"
-				Txt "$iface_Iface: RX: $(ConvSz $rx_bytes_Iface), TX: $(ConvSz $tx_bytes_Iface)"
+		for iface in ${interface}; do
+			if stats=$(awk -v iface="${iface}" '$1 ~ iface":" {print $2, $3, $5, $10, $11, $13}' /proc/net/dev 2>/dev/null); then
+				read rx_bytes rx_packets rx_drop tx_bytes tx_packets tx_drop <<<"${stats}"
+				Txt "${iface}: RX: $(CONVERT_SIZE ${rx_bytes}), TX: $(CONVERT_SIZE ${tx_bytes})"
 			fi
 		done
 		;;
-	"") Txt "$interface_Iface" ;;
+	"") Txt "${interface}" ;;
 	*)
 		Err "*#Wx7mP5#*"
 		return 2
 		;;
 	esac
 }
-function IpAddr() {
-	ver_IpAddr="$1"
-	case "${ver_IpAddr}" in
+function IP_ADDR() {
+	flg_IpAddr="$1"
+	case "${flg_IpAddr}" in
 	-4)
-		ipv4_addr_IpAddr=$(timeout 1s dig +short -4 myip.opendns.com @resolver1.opendns.com 2>/dev/null) ||
-			ipv4_addr_IpAddr=$(timeout 1s curl -sL ipv4.ip.sb 2>/dev/null) ||
-			ipv4_addr_IpAddr=$(timeout 1s wget -qO- -4 ifconfig.me 2>/dev/null) ||
-			[ -n "${ipv4_addr_IpAddr}" ] && Txt "${ipv4_addr_IpAddr}" || {
+		ipv4_addr=$(timeout 1s dig +short -4 myip.opendns.com @resolver1.opendns.com 2>/dev/null) ||
+			ipv4_addr=$(timeout 1s curl -sL ipv4.ip.sb 2>/dev/null) ||
+			ipv4_addr=$(timeout 1s wget -qO- -4 ifconfig.me 2>/dev/null) ||
+			[ -n "${ipv4_addr}" ] && Txt "${ipv4_addr}" || {
 			Err "*#Kt6nR9#*"
 			return 1
 		}
 		;;
 	-6)
-		ipv6_addr_IpAddr=$(timeout 1s curl -sL ipv6.ip.sb 2>/dev/null) ||
-			ipv6_addr_IpAddr=$(timeout 1s wget -qO- -6 ifconfig.me 2>/dev/null) ||
-			[ -n "${ipv6_addr_IpAddr}" ] && Txt "${ipv6_addr_IpAddr}" || {
+		ipv6_addr=$(timeout 1s curl -sL ipv6.ip.sb 2>/dev/null) ||
+			ipv6_addr=$(timeout 1s wget -qO- -6 ifconfig.me 2>/dev/null) ||
+			[ -n "${ipv6_addr}" ] && Txt "${ipv6_addr}" || {
 			Err "*#Mx5nK7#*"
 			return 1
 		}
 		;;
 	*)
-		ipv4_addr_IpAddr=$(IpAddr -4)
-		ipv6_addr_IpAddr=$(IpAddr -6)
-		[ -z "${ipv4_addr_IpAddr}${ipv6_addr_IpAddr}" ] && {
+		ipv4_addr=$(IP_ADDR -4)
+		ipv6_addr=$(IP_ADDR -6)
+		[ -z "${ipv4_addr}${ipv6_addr}" ] && {
 			Err "*#Px7mR4#*"
 			return 1
 		}
-		[ -n "${ipv4_addr_IpAddr}" ] && Txt "IPv4: ${ipv4_addr_IpAddr}"
-		[ -n "${ipv6_addr_IpAddr}" ] && Txt "IPv6: ${ipv6_addr_IpAddr}"
+		[ -n "${ipv4_addr}" ] && Txt "IPv4: ${ipv4_addr}"
+		[ -n "${ipv6_addr}" ] && Txt "IPv6: ${ipv6_addr}"
 		return
 		;;
 	esac
 }
-function LastUpd() {
+
+function LAST_UPDATE() {
 	if [ -f /var/log/apt/history.log ]; then
-		upd_dat_LastUpd=$(awk '/End-Date:/ {print $2, $3, $4; exit}' /var/log/apt/history.log 2>/dev/null)
+		last_update=$(awk '/End-Date:/ {print $2, $3, $4; exit}' /var/log/apt/history.log 2>/dev/null)
 	elif [ -f /var/log/dpkg.log ]; then
-		upd_dat_LastUpd=$(tail -n 1 /var/log/dpkg.log | awk '{print $1, $2}')
+		last_update=$(tail -n 1 /var/log/dpkg.log | awk '{print $1, $2}')
 	elif command -v rpm &>/dev/null; then
-		upd_dat_LastUpd=$(rpm -qa --last | head -n 1 | awk '{print $3, $4, $5, $6, $7}')
+		last_update=$(rpm -qa --last | head -n 1 | awk '{print $3, $4, $5, $6, $7}')
 	fi
-	[ -z "${upd_dat_LastUpd}" ] && {
+	[ -z "${last_update}" ] && {
 		Err "*#Ht7nR5#*"
 		return 1
-	} || Txt "${upd_dat_LastUpd}"
+	} || Txt "${last_update}"
 }
-function Linet() {
-	chr_Linet="${1:--}"
-	len_Linet="${2:-80}"
-	printf '%*s\n' "${len_Linet}" | tr ' ' "${chr_Linet}" || {
+function LINE() {
+	char="${1:--}"
+	length="${2:-80}"
+	printf '%*s\n' "${length}" | tr ' ' "${char}" || {
 		Err "*#Lt8nK6#*"
 		return 1
 	}
 }
-function LoadAvg() {
+function LOAD_AVERAGE() {
 	if [ ! -f /proc/loadavg ]; then
-		dat_LoadAvg=$(uptime | sed 's/.*load average: //' | sed 's/,//g') || {
+		load_data=$(uptime | sed 's/.*load average: //' | sed 's/,//g') || {
 			Err "*#Nt5kR8#*"
 			return 1
 		}
-		read -r zo_mi_LoadAvg zv_mi_LoadAvg ov_mi_LoadAvg <<<"${dat_LoadAvg}"
 	else
 		read -r zo_mi_LoadAvg zv_mi_LoadAvg ov_mi_LoadAvg _ _ </proc/loadavg || {
 			Err "*#Ht6mL9#*"
 			return 1
 		}
 	fi
-	[[ ${zo_mi_LoadAvg} =~ ^[0-9.]+$ ]] || zo_mi_LoadAvg=0
-	[[ ${zv_mi_LoadAvg} =~ ^[0-9.]+$ ]] || zv_mi_LoadAvg=0
-	[[ ${ov_mi_LoadAvg} =~ ^[0-9.]+$ ]] || ov_mi_LoadAvg=0
+	[[ "${zo_mi_LoadAvg}" =~ ^[0-9.]+$ ]] || zo_mi_LoadAvg=0
+	[[ "${zv_mi_LoadAvg}" =~ ^[0-9.]+$ ]] || zv_mi_LoadAvg=0
+	[[ "${ov_mi_LoadAvg}" =~ ^[0-9.]+$ ]] || ov_mi_LoadAvg=0
 	LC_ALL=C printf "%.2f, %.2f, %.2f (%d cores)" "${zo_mi_LoadAvg}" "${zv_mi_LoadAvg}" "${ov_mi_LoadAvg}" "$(nproc)"
 }
-function Loc() {
-	get_Loc=$(curl -s "https://developers.cloudflare.com/cdn-cgi/trace" | grep "^loc=" | cut -d= -f2)
-	[ -n "${get_Loc}" ] && Txt "${get_Loc}" || {
+function LOCATION() {
+	loc=$(curl -s "https://developers.cloudflare.com/cdn-cgi/trace" | grep "^loc=" | cut -d= -f2)
+	[ -n "${loc}" ] && Txt "${loc}" || {
 		Err "*#Jt9nR7#*"
 		return 1
 	}
 }
-function MacAddr() {
-	get_MacAddr=$(ip link show | awk '/ether/ {print $2; exit}')
-	[[ -n ${get_MacAddr} ]] && Txt "${get_MacAddr}" || {
+
+function MAC_ADDR() {
+	mac_address=$(ip link show | awk '/ether/ {print $2; exit}')
+	[[ -n "${mac_address}" ]] && Txt "${mac_address}" || {
 		Err "*#Wt7nK4#*"
 		return 1
 	}
 }
-function MemUsage() {
-	used_MemUsage=$(free -b | awk '/^Mem:/ {print $3}') || used_MemUsage=$(vmstat -s | grep 'used memory' | awk '{print $1*1024}') || {
+function MEM_USAGE() {
+	used=$(free -b | awk '/^Mem:/ {print $3}') || used=$(vmstat -s | grep 'used memory' | awk '{print $1*1024}') || {
 		Err "*#Zt6nR4#*"
 		return 1
 	}
-	ttl_MemUsage=$(free -b | awk '/^Mem:/ {print $2}') || ttl_MemUsage=$(grep MemTotal /proc/meminfo | awk '{print $2*1024}')
-	pct_MemUsage=$(free | awk '/^Mem:/ {printf("%.2f"), $3/$2 * 100.0}') || pct_MemUsage=$(awk '/^MemTotal:/ {total=$2} /^MemAvailable:/ {available=$2} END {printf("%.2f", (total-available)/total * 100.0)}' /proc/meminfo)
+	total=$(free -b | awk '/^Mem:/ {print $2}') || total=$(grep MemTotal /proc/meminfo | awk '{print $2*1024}')
+	percentage=$(free | awk '/^Mem:/ {printf("%.2f"), $3/$2 * 100.0}') || percentage=$(awk '/^MemTotal:/ {total=$2} /^MemAvailable:/ {available=$2} END {printf("%.2f", (total-available)/total * 100.0)}' /proc/meminfo)
 	case "$1" in
-	-u) Txt "${used_MemUsage}" ;;
-	-t) Txt "${ttl_MemUsage}" ;;
-	-p) Txt "${pct_MemUsage}" ;;
-	*) Txt "$(ConvSz "${used_MemUsage}") / $(ConvSz "${ttl_MemUsage}") (${pct_MemUsage}%)" ;;
+	-u) Txt "${used}" ;;
+	-t) Txt "${total}" ;;
+	-p) Txt "${percentage}" ;;
+	*) Txt "$(CONVERT_SIZE ${used}) / $(CONVERT_SIZE ${total}) (${percentage}%)" ;;
 	esac
 }
-function Provider() {
-	ans_Provider=$(timeout 1s curl -sL ipinfo.io | grep -oP '"org"\s*:\s*"\K[^"]+') ||
-		ans_Provider=$(timeout 1s curl -sL ipwhois.app/json | grep -oP '"org"\s*:\s*"\K[^"]+') ||
-		ans_Provider=$(timeout 1s curl -sL ip-api.com/json | grep -oP '"org"\s*:\s*"\K[^"]+') ||
-		[ -n "${ans_Provider}" ] && Txt "${ans_Provider}" || {
+
+function NET_PROVIDER() {
+	result=$(timeout 1s curl -sL ipinfo.io | grep -oP '"org"\s*:\s*"\K[^"]+') ||
+		result=$(timeout 1s curl -sL ipwhois.app/json | grep -oP '"org"\s*:\s*"\K[^"]+') ||
+		result=$(timeout 1s curl -sL ip-api.com/json | grep -oP '"org"\s*:\s*"\K[^"]+') ||
+		[ -n "${result}" ] && Txt "${result}" || {
 		Err "*#Nt7mK5#*"
 		return 1
 	}
 }
-function PkgCnt() {
-	pkg_mgr_PkgCnt=$(command -v apk apt opkg pacman yum zypper dnf 2>/dev/null | head -n1)
-	case ${pkg_mgr_PkgCnt##*/} in
-	apk) cnt_cmd_PkgCnt="apk info" ;;
-	apt) cnt_cmd_PkgCnt="dpkg --get-selections" ;;
-	opkg) cnt_cmd_PkgCnt="opkg list-installed" ;;
-	pacman) cnt_cmd_PkgCnt="pacman -Q" ;;
-	yum | dnf) cnt_cmd_PkgCnt="rpm -qa" ;;
-	zypper) cnt_cmd_PkgCnt="zypper se --installed-only" ;;
+
+function PKG_COUNT() {
+	pkg_manager=$(command -v apk apt opkg pacman yum zypper dnf 2>/dev/null | head -n1)
+	case ${pkg_manager##*/} in
+	apk) count_cmd="apk info" ;;
+	apt) count_cmd="dpkg --get-selections" ;;
+	opkg) count_cmd="opkg list-installed" ;;
+	pacman) count_cmd="pacman -Q" ;;
+	yum | dnf) count_cmd="rpm -qa" ;;
+	zypper) count_cmd="zypper se --installed-only" ;;
 	*) {
 		Err "*#Nt8mK5#*"
 		return 1
 	} ;;
 	esac
-	if ! cnt_PkgCnt=$(${cnt_cmd_PkgCnt} 2>/dev/null | wc -l) || [[ -z ${cnt_PkgCnt} || ${cnt_PkgCnt} -eq 0 ]]; then
+	if ! pkg_count=$("${count_cmd}" 2>/dev/null | wc -l) || [[ -z "${pkg_count}" || "${pkg_count}" -eq 0 ]]; then
 		{
 			Err "*#Ht7nR6#*"
 			return 1
 		}
 	fi
-	Txt "${cnt_PkgCnt}"
+	Txt "${pkg_count}"
 }
-function Progress() {
-	num_cmd_Progress=${#cmds[@]}
-	term_wid_Progress=$(tput cols) || {
+function PROGRESS() {
+	num_cmds=${#cmds[@]}
+	term_width=$(tput cols) || {
 		Err "*#Nt6mR8#*"
 		return 1
 	}
-	bar_wid_Progress=$((term_wid_Progress - 23))
+	bar_width=$((term_width - 23))
 	stty -echo
 	trap '' SIGINT SIGQUIT SIGTSTP
-	for ((i = 0; i < num_cmd_Progress; i++)); do
-		prog_Progress=$((i * 100 / num_cmd_Progress))
-		fild_wid_Progress=$((prog_Progress * bar_wid_Progress / 100))
-		printf "\r\033[30;42mProgress: [%3d%%]\033[0m [%s%s]" "${prog_Progress}" "$(printf "%${fild_wid_Progress}s" | tr ' ' '#')" "$(printf "%$((bar_wid_Progress - fild_wid_Progress))s" | tr ' ' '.')"
-		if ! out_Progress=$(eval "${cmds[$i]}" 2>&1); then
-			Txt "\n${out_Progress}"
+	for ((i = 0; i < num_cmds; i++)); do
+		progress=$((i * 100 / num_cmds))
+		filled_width=$((progress * bar_width / 100))
+		printf "\r\033[30;42mProgress: [%3d%%]\033[0m [%s%s]" "${progress}" "$(printf "%${filled_width}s" | tr ' ' '#')" "$(printf "%$((bar_width - filled_width))s" | tr ' ' '.')"
+		if ! output=$(eval "${cmds[$i]}" 2>&1); then
+			Txt "\n$output"
 			stty echo
 			trap - SIGINT SIGQUIT SIGTSTP
 			{
@@ -1088,121 +1103,122 @@ function Progress() {
 			}
 		fi
 	done
-	printf "\r\033[30;42mProgress: [100%%]\033[0m [%s]" "$(printf "%${bar_wid_Progress}s" | tr ' ' '#')"
-	printf "\r%${term_wid_Progress}s\r"
+	printf "\r\033[30;42mProgress: [100%%]\033[0m [%s]" "$(printf "%${bar_width}s" | tr ' ' '#')"
+	printf "\r%${term_width}s\r"
 	stty echo
 	trap - SIGINT SIGQUIT SIGTSTP
 }
-function PublicIp() {
-	ip_PublicIp=$(curl -s "https://developers.cloudflare.com/cdn-cgi/trace" | grep "^ip=" | cut -d= -f2)
-	[ -n "${ip_PublicIp}" ] && Txt "${ip_PublicIp}" || {
+function PUBLIC_IP() {
+	ip=$(curl -s "https://developers.cloudflare.com/cdn-cgi/trace" | grep "^ip=" | cut -d= -f2)
+	[ -n "${ip}" ] && Txt "${ip}" || {
 		Err "*#Xt7nK6#*"
 		return 1
 	}
 }
-function Run() {
-	cmd_Run=()
-	# Add bash-completion &>/dev/null
-	RunCompletions() {
-		curr_word_Run="${COMP_WORDS[COMP_CWORD]}"
-		prev_word_Run="${COMP_WORDS[COMP_CWORD - 1]}"
-		completion_opt_Run="${cmd_Run[*]}"
-		compreply_Run=($(compgen -W "${completion_opt_Run}" -- "${curr_word_Run}"))
-		[[ ${#compreply_Run[@]} -eq 0 ]] && compreply_Run=($(compgen -c -- "${curr_word_Run}"))
+
+function RUN() {
+	commands=()
+	# ADD bash-completion &>/dev/null
+	_run_completions() {
+		cur="${COMP_WORDS[COMP_CWORD]}"
+		prev="${COMP_WORDS[COMP_CWORD - 1]}"
+		opts="${commands[*]}"
+		COMPREPLY=($(compgen -W "${opts}" -- "${cur}"))
+		[[ ${#COMPREPLY[@]} -eq 0 ]] && COMPREPLY=($(compgen -c -- "${cur}"))
 	}
-	complete -F RunCompletions RUN
+	complete -F _run_completions RUN
 	[ $# -eq 0 ] && {
 		Err "*#Nt6mK9#*"
 		return 2
 	}
-	if [[ $1 == *"/"* ]]; then
-		if [[ $1 =~ ^https?:// ]]; then
-			url_Run="$1"
-			script_Run=$(basename "$1")
-			del_after_Run=false
+	if [[ "$1" == *"/"* ]]; then
+		if [[ "$1" =~ ^https?:// ]]; then
+			url="$1"
+			script_name=$(basename "$1")
+			delete_after=false
 			shift
-			while [[ $# -gt 0 && $1 == -* ]]; do
+			while [[ $# -gt 0 && "$1" == -* ]]; do
 				case "$1" in
 				-d)
-					del_after_Run=true
+					delete_after=true
 					shift
 					;;
 				*) break ;;
 				esac
 			done
 			Txt "*#Xt9nK5#*"
-			Task "*#Ht9mL5#*" "
-				curl -sSLf "${url_Run}" -o "${script_Run}" || { Err "*#Ht7mK5#*"; return 1; }
-				chmod +x "${script_Run}" || { Err "*#Kt8nR4#*"; return 1; }
+			TASK "*#Ht9mL5#*" "
+				curl -sSLf "${url}" -o "${script_name}" || { Err "*#Ht7mK5#*"; return 1; }
+				chmod +x "${script_name}" || { Err "*#Kt8nR4#*"; return 1; }
 			"
-			Txt "${CLR8}$(Linet = "24")${CLR0}"
-			if [[ $1 == "--" ]]; then
+			Txt "${CLR8}$(LINE = "24")${CLR0}"
+			if [[ "$1" == "--" ]]; then
 				shift
-				./"${script_Run}" "$@" || {
+				./"${script_name}" "$@" || {
 					Err "*#Mt9nL5#*"
 					return 1
 				}
 			else
-				./"${script_Run}" || {
+				./"${script_name}" || {
 					Err "*#Mt9nL5#*"
 					return 1
 				}
 			fi
-			Txt "${CLR8}$(Linet = "24")${CLR0}"
+			Txt "${CLR8}$(LINE = "24")${CLR0}"
 			Txt "*#Rt9nK6#*\n"
-			[[ ${del_after_Run} == true ]] && rm -rf "${script_Run}"
-		elif [[ $1 =~ ^[^/]+/[^/]+/.+ ]]; then
-			repo_owner_Run=$(Txt "$1" | cut -d'/' -f1)
-			repo_name_Run=$(Txt "$1" | cut -d'/' -f2)
-			script_path_Run=$(Txt "$1" | cut -d'/' -f3-)
-			script_Run=$(basename "${script_path_Run}")
-			dnload_repo_Run=false
-			repo_branch_Run="main"
-			del_after_Run=false
+			[[ "${delete_after}" == true ]] && rm -rf "${script_name}"
+		elif [[ "$1" =~ ^[^/]+/[^/]+/.+ ]]; then
+			repo_owner=$(Txt "$1" | cut -d'/' -f1)
+			repo_name=$(Txt "$1" | cut -d'/' -f2)
+			script_path=$(Txt "$1" | cut -d'/' -f3-)
+			script_name=$(basename "${script_path}")
+			branch="main"
+			download_repo=false
+			delete_after=false
 			shift
-			while [[ $# -gt 0 && $1 == -* ]]; do
+			while [[ $# -gt 0 && "$1" == -* ]]; do
 				case "$1" in
 				-b)
-					[[ -z $2 || $2 == -* ]] && {
+					[[ -z "$2" || "$2" == -* ]] && {
 						Err "*#Pt5mK8#*"
 						return 2
 					}
-					repo_branch_Run="$2"
+					branch="$2"
 					shift 2
 					;;
 				-r)
-					dnload_repo_Run=true
+					download_repo=true
 					shift
 					;;
 				-d)
-					del_after_Run=true
+					delete_after=true
 					shift
 					;;
 				*) break ;;
 				esac
 			done
-			if [[ ${dnload_repo_Run} == true ]]; then
+			if [[ "$download_repo" == true ]]; then
 				Txt "*#Vt9nK4#*"
-				[[ -d ${repo_name_Run} ]] && {
+				[[ -d "${repo_name}" ]] && {
 					Err "*#Qt7nR6#*"
 					return 1
 				}
-				temp_dir_Run=$(mktemp -d)
-				if [[ ${repo_branch_Run} != "main" ]]; then
-					Task "*#At9kM8#*" "git clone --branch ${repo_branch_Run} https://github.com/${repo_owner_Run}/${repo_name_Run}.git "${temp_dir_Run}""
+				temp_dir=$(mktemp -d)
+				if [[ "${branch}" != "main" ]]; then
+					TASK "*#At9kM8#*" "git clone --branch ${branch} https://github.com/${repo_owner}/${repo_name}.git ${temp_dir}"
 					if [ $? -ne 0 ]; then
-						rm -rf "${temp_dir_Run}"
+						rm -rf "${temp_dir}"
 						{
 							Err "*#Rt8mK7#*"
 							return 1
 						}
 					fi
 				else
-					Task "*#Wt8mR5#*" "git clone --branch main https://github.com/${repo_owner_Run}/${repo_name_Run}.git "${temp_dir_Run}"" true
+					TASK "*#Wt8mR5#*" "git clone --branch main https://github.com/${repo_owner}/${repo_name}.git ${temp_dir}" true
 					if [ $? -ne 0 ]; then
-						Task "*#Bt9nP9#*" "git clone --branch master https://github.com/${repo_owner_Run}/${repo_name_Run}.git "${temp_dir_Run}""
+						TASK "*#Bt9nP9#*" "git clone --branch master https://github.com/${repo_owner}/${repo_name}.git ${temp_dir}"
 						if [ $? -ne 0 ]; then
-							rm -rf "${temp_dir_Run}"
+							rm -rf "${temp_dir}"
 							{
 								Err "*#St9nL4#*"
 								return 1
@@ -1210,44 +1226,44 @@ function Run() {
 						fi
 					fi
 				fi
-				Task "*#Ct9mK0#*" "Add -d "${repo_name_Run}" && cp -r "${temp_dir_Run}"/* "${repo_name_Run}"/"
-				Task "*#Dt9pL1#*" "rm -rf "${temp_dir_Run}""
+				TASK "*#Ct9mK0#*" "ADD -d "${repo_name}" && cp -r "${temp_dir}"/* "${repo_name}"/"
+				TASK "*#Dt9pL1#*" "rm -rf "${temp_dir}""
 				Txt "*#Yt9mR6#*"
-				if [[ -f "${repo_name_Run}/${script_path_Run}" ]]; then
-					Task "*#Et9nR2#*" "chmod +x "${repo_name_Run}/${script_path_Run}""
-					Txt "${CLR8}$(Linet = "24")${CLR0}"
-					if [[ $1 == "--" ]]; then
+				if [[ -f "${repo_name}/${script_path}" ]]; then
+					TASK "*#Et9nR2#*" "chmod +x "${repo_name}/${script_path}""
+					Txt "${CLR8}$(LINE = "24")${CLR0}"
+					if [[ "$1" == "--" ]]; then
 						shift
-						./"${repo_name_Run}/${script_path_Run}" "$@" || {
+						./"${repo_name}/${script_path}" "$@" || {
 							Err "*#Mt9nL5#*"
 							return 1
 						}
 					else
-						./"${repo_name_Run}/${script_path_Run}" || {
+						./"${repo_name}/${script_path}" || {
 							Err "*#Mt9nL5#*"
 							return 1
 						}
 					fi
-					Txt "${CLR8}$(Linet = "24")${CLR0}"
+					Txt "${CLR8}$(LINE = "24")${CLR0}"
 					Txt "*#Rt9nK6#*\n"
-					[[ ${del_after_Run} == true ]] && rm -rf "${repo_name_Run}"
+					[[ "${delete_after}" == true ]] && rm -rf "${repo_name}"
 				fi
 			else
 				Txt "*#Zt9pL7#*"
-				github_url_Run="https://raw.githubusercontent.com/${repo_owner_Run}/${repo_name_Run}/refs/heads/${repo_branch_Run}/${script_path_Run}"
-				if [[ ${repo_branch_Run} != "main" ]]; then
-					Task "*#Ft9kM3#*" "curl -sLf "${github_url_Run}" >/dev/null"
+				github_url="https://raw.githubusercontent.com/${repo_owner}/${repo_name}/refs/heads/${branch}/${script_path}"
+				if [[ "${branch}" != "main" ]]; then
+					TASK "*#Ft9kM3#*" "curl -sLf "${github_url}" >/dev/null"
 					[ $? -ne 0 ] && {
 						Err "*#Tt6nK5#*"
 						return 1
 					}
 				else
-					Task "*#Wt8mR5#*" "curl -sLf "${github_url_Run}" >/dev/null" true
+					TASK "*#Wt8mR5#*" "curl -sLf "${github_url}" >/dev/null" true
 					if [ $? -ne 0 ]; then
-						Task "*#Gt9pN4#*" "
-							repo_branch_Run="master"
-							github_url_Run="https://raw.githubusercontent.com/${repo_owner_Run}/${repo_name_Run}/refs/heads/master/${script_path_Run}"
-							curl -sLf "${github_url_Run}" >/dev/null
+						TASK "*#Gt9pN4#*" "
+							branch="master"
+							github_url="https://raw.githubusercontent.com/${repo_owner}/${repo_name}/refs/heads/master/${script_path}"
+							curl -sLf "${github_url}" >/dev/null
 						"
 						[ $? -ne 0 ] && {
 							Err "*#Ut7mR8#*"
@@ -1255,47 +1271,47 @@ function Run() {
 						}
 					fi
 				fi
-				Task "*#Ht9mL5#*" "
-					curl -sSLf \"${github_url_Run}\" -o \"${script_Run}\" || { 
+				TASK "*#Ht9mL5#*" "
+					curl -sSLf \"${github_url}\" -o \"${script_name}\" || { 
 						Err \"*#Ht7mK5#*\"
 						Err \"*#Jt9pL6#*\"
 						return 1
 					}
 
-					if [[ ! -f \"${script_Run}\" ]]; then
+					if [[ ! -f \"${script_name}\" ]]; then
 						Err \"*#Kt9mR7#*\"
 						return 1
 					fi
 
-					if [[ ! -s \"${script_Run}\" ]]; then
+					if [[ ! -s \"${script_name}\" ]]; then
 						Err \"*#Lt9nS8#*\"
-						cat \"${script_Run}\" 2>/dev/null || echo \"*#Mt9pT9#*\"
+						cat \"${script_name}\" 2>/dev/null || Txt \"*#Mt9pT9#*\"
 						return 1
 					fi
 
-					if ! grep -q '[^[:space:]]' \"${script_Run}\"; then
+					if ! grep -q '[^[:space:]]' \"${script_name}\"; then
 						Err \"*#Nt9qU1#*\"
 						return 1
 					fi
 
-					chmod +x \"${script_Run}\" || { 
+					chmod +x \"${script_name}\" || { 
 						Err \"*#Kt8nR4#*\"
 						Err \"*#Ot9rV2#*\"
-						ls -la \"${script_Run}\"
+						ls -la \"${script_name}\"
 						return 1
 					}
 				"
 
-				Txt "${CLR8}$(Linet = "24")${CLR0}"
-				if [[ -f ${script_Run} ]]; then
-					if [[ $1 == "--" ]]; then
+				Txt "${CLR8}$(LINE = "24")${CLR0}"
+				if [[ -f "${script_name}" ]]; then
+					if [[ "$1" == "--" ]]; then
 						shift
-						./"${script_Run}" "$@" || {
+						./"${script_name}" "$@" || {
 							Err "*#Mt9nL5#*"
 							return 1
 						}
 					else
-						./"${script_Run}" || {
+						./"${script_name}" || {
 							Err "*#Mt9nL5#*"
 							return 1
 						}
@@ -1304,22 +1320,22 @@ function Run() {
 					Err "*#Pt9sW3#*"
 					return 1
 				fi
-				Txt "${CLR8}$(Linet = "24")${CLR0}"
+				Txt "${CLR8}$(LINE = "24")${CLR0}"
 				Txt "*#Rt9nK6#*\n"
-				[[ ${del_after_Run} == true ]] && rm -rf "${script_Run}"
+				[[ "${delete_after}" == true ]] && rm -rf "${script_name}"
 			fi
 		else
 			[ -x "$1" ] || chmod +x "$1"
-			script_path_Run="$1"
-			if [[ $2 == "--" ]]; then
+			script_path="$1"
+			if [[ "$2" == "--" ]]; then
 				shift 2
-				"${script_path_Run}" "$@" || {
+				"${script_path}" "$@" || {
 					Err "*#Mt9nL5#*"
 					return 1
 				}
 			else
 				shift
-				"${script_path_Run}" "$@" || {
+				"${script_path}" "$@" || {
 					Err "*#Mt9nL5#*"
 					return 1
 				}
@@ -1330,7 +1346,8 @@ function Run() {
 	fi
 	rm -rf /tmp/* &>/dev/null
 }
-function ShellVer() {
+
+function SHELL_VER() {
 	LC_ALL=C
 	if [ -n "${BASH_VERSION-}" ]; then
 		Txt "Bash ${BASH_VERSION}"
@@ -1343,21 +1360,21 @@ function ShellVer() {
 		}
 	fi
 }
-function SwapUsage() {
-	used_SwapUsage=$(free -b | awk '/^Swap:/ {printf "%.0f", $3}')
-	ttl_SwapUsage=$(free -b | awk '/^Swap:/ {printf "%.0f", $2}')
-	pct_SwapUsage=$(free | awk '/^Swap:/ {if($2>0) printf("%.2f"), $3/$2 * 100.0; else print "0.00"}')
+function SWAP_USAGE() {
+	used=$(free -b | awk '/^Swap:/ {printf "%.0f", $3}')
+	total=$(free -b | awk '/^Swap:/ {printf "%.0f", $2}')
+	percentage=$(free | awk '/^Swap:/ {if($2>0) printf("%.2f"), $3/$2 * 100.0; else print "0.00"}')
 	case "$1" in
-	-u) Txt "${used_SwapUsage}" ;;
-	-t) Txt "${ttl_SwapUsage}" ;;
-	-p) Txt "${pct_SwapUsage}" ;;
-	*) Txt "$(ConvSz "${used_SwapUsage}") / $(ConvSz "${ttl_SwapUsage}") (${pct_SwapUsage}%)" ;;
+	-u) Txt "${used}" ;;
+	-t) Txt "${total}" ;;
+	-p) Txt "${percentage}" ;;
+	*) Txt "$(CONVERT_SIZE ${used}) / $(CONVERT_SIZE ${total}) (${percentage}%)" ;;
 	esac
 }
-function SysClean() {
-	ChkRoot
+function SYS_CLEAN() {
+	CHECK_ROOT
 	Txt "*#Xt8nK5#*"
-	Txt "${CLR8}$(Linet = "24")${CLR0}"
+	Txt "${CLR8}$(LINE = "24")${CLR0}"
 	case $(command -v apk apt opkg pacman yum zypper dnf | head -n1) in
 	*apk)
 		Txt "*#Nt9mK4#*"
@@ -1380,8 +1397,8 @@ function SysClean() {
 		while fuser /var/lib/dpkg/lock-frontend &>/dev/null; do
 			Txt "*#Jt6mK9#*"
 			sleep 1 || return 1
-			((waiting_time_SysClean++))
-			[ "${waiting_time_SysClean}" -gt 300 ] && {
+			((wait_time++))
+			[ "${wait_time}" -gt 300 ] && {
 				Err "*#Bx8vP5#*"
 				return 1
 			}
@@ -1493,104 +1510,104 @@ function SysClean() {
 	} ;;
 	esac
 	if command -v journalctl &>/dev/null; then
-		Task "*#St0mK6#*" "journalctl --rotate --vacuum-time=1d --vacuum-size=500M" || {
+		TASK "*#St0mK6#*" "journalctl --rotate --vacuum-time=1d --vacuum-size=500M" || {
 			Err "*#Dt6nK7#*"
 			return 1
 		}
 	fi
-	Task "*#Mt8pL5#*" "rm -rf /tmp/*" || {
+	TASK "*#Mt8pL5#*" "rm -rf /tmp/*" || {
 		Err "*#Ht6mK8#*"
 		return 1
 	}
-	for cmd_SysClean in docker npm pip; do
-		if command -v "${cmd_SysClean}" &>/dev/null; then
-			case "${cmd_SysClean}" in
-			docker) Task "*#Rt9nL5#*" "docker system prune -af" || {
+	for cmd in docker npm pip; do
+		if command -v "${cmd}" &>/dev/null; then
+			case "${cmd}" in
+			docker) TASK "*#Rt9nL5#*" "docker system prune -af" || {
 				Err "*#Et7nR4#*"
 				return 1
 			} ;;
-			npm) Task "*#Qt8mK4#*" "npm cache clean --force" || {
+			npm) TASK "*#Qt8mK4#*" "npm cache clean --force" || {
 				Err "*#Ft8mK5#*"
 				return 1
 			} ;;
-			pip) Task "*#Pt7nL3#*" "pip cache purge" || {
+			pip) TASK "*#Pt7nL3#*" "pip cache purge" || {
 				Err "*#Gt7nL6#*"
 				return 1
 			} ;;
 			esac
 		fi
 	done
-	Task "*#Ot6mK2#*" "rm -rf ~/.cache/*" || {
+	TASK "*#Ot6mK2#*" "rm -rf ~/.cache/*" || {
 		Err "*#Ht8nR4#*"
 		return 1
 	}
-	Task "*#Nt5nL1#*" "rm -rf ~/.thumbnails/*" || {
+	TASK "*#Nt5nL1#*" "rm -rf ~/.thumbnails/*" || {
 		Err "*#It7mK5#*"
 		return 1
 	}
-	Txt "${CLR8}$(Linet = "24")${CLR0}"
+	Txt "${CLR8}$(LINE = "24")${CLR0}"
 	Txt "*#Rt9nK6#*\n"
 }
-function SysInfo() {
+function SYS_INFO() {
 	Txt "*#Vx8nK4#*"
-	Txt "${CLR8}$(Linet = "24")${CLR0}"
+	Txt "${CLR8}$(LINE = "24")${CLR0}"
 
 	Txt "*#Rx7tP5#*${CLR2}$(uname -n || {
 		Err "*#Bx6mL9#*"
 		return 1
 	})${CLR0}"
-	Txt "*#Mx5nR8#*${CLR2}$(ChkOs)${CLR0}"
+	Txt "*#Mx5nR8#*${CLR2}$(CHECK_OS)${CLR0}"
 	Txt "*#Qw4tK9#*${CLR2}$(uname -r)${CLR0}"
 	Txt "*#Lx3nP6#*${CLR2}$LANG${CLR0}"
-	Txt "*#Yx5mK7#*${CLR2}$(ShellVer)${CLR0}"
-	Txt "*#Wx9tR4#*${CLR2}$(LastUpd)${CLR0}"
-	Txt "${CLR8}$(Linet - "32")${CLR0}"
+	Txt "*#Yx5mK7#*${CLR2}$(SHELL_VER)${CLR0}"
+	Txt "*#Wx9tR4#*${CLR2}$(LAST_UPDATE)${CLR0}"
+	Txt "${CLR8}$(LINE - "32")${CLR0}"
 
 	Txt "*#Hx7nP5#*${CLR2}$(uname -m)${CLR0}"
-	Txt "*#Fx4tK8#*${CLR2}$(CpuModel)${CLR0}"
+	Txt "*#Fx4tK8#*${CLR2}$(CPU_MODEL)${CLR0}"
 	Txt "*#Jx6mL3#*${CLR2}$(nproc)${CLR0}"
-	Txt "*#Bw2mK8#*${CLR2}$(CpuFreq)${CLR0}"
-	Txt "*#Tx8nR2#*${CLR2}$(CpuUsage)%${CLR0}"
-	Txt "*#Gx3mK6#*${CLR2}$(CpuCache)${CLR0}"
-	Txt "${CLR8}$(Linet - "32")${CLR0}"
+	Txt "*#Bw2mK8#*${CLR2}$(CPU_FREQ)${CLR0}"
+	Txt "*#Tx8nR2#*${CLR2}$(CPU_USAGE)%${CLR0}"
+	Txt "*#Gx3mK6#*${CLR2}$(CPU_CACHE)${CLR0}"
+	Txt "${CLR8}$(LINE - "32")${CLR0}"
 
-	Txt "*#Px9tR5#*${CLR2}$(MemUsage)${CLR0}"
-	Txt "*#Sx4nK7#*${CLR2}$(SwapUsage)${CLR0}"
-	Txt "*#Cx7mP2#*${CLR2}$(DiskUsage)${CLR0}"
+	Txt "*#Px9tR5#*${CLR2}$(MEM_USAGE)${CLR0}"
+	Txt "*#Sx4nK7#*${CLR2}$(SWAP_USAGE)${CLR0}"
+	Txt "*#Cx7mP2#*${CLR2}$(DISK_USAGE)${CLR0}"
 	Txt "*#Dx8tL4#*${CLR2}$(df -T / | awk 'NR==2 {print $2}')${CLR0}"
-	Txt "${CLR8}$(Linet - "32")${CLR0}"
+	Txt "${CLR8}$(LINE - "32")${CLR0}"
 
-	Txt "*#Ax6nK9#*${CLR2}$(IpAddr -4)${CLR0}"
-	Txt "*#Ux3tP5#*${CLR2}$(IpAddr -6)${CLR0}"
-	Txt "*#Zx7mL4#*${CLR2}$(MacAddr)${CLR0}"
-	Txt "*#Kx9nP6#*${CLR2}$(Provider)${CLR0}"
-	Txt "*#Ox4mK8#*${CLR2}$(DnsAddr)${CLR0}"
-	Txt "*#Ex5tL7#*${CLR2}$(PublicIp)${CLR0}"
-	Txt "*#Ix8nR4#*${CLR2}$(Iface -i)${CLR0}"
-	Txt "*#Mx7pK3#*${CLR2}$(TimeZone -i)${CLR0}"
-	Txt "*#Qx2tP9#*${CLR2}$(TimeZone -e)${CLR0}"
-	Txt "${CLR8}$(Linet - "32")${CLR0}"
+	Txt "*#Ax6nK9#*${CLR2}$(IP_ADDR -4)${CLR0}"
+	Txt "*#Ux3tP5#*${CLR2}$(IP_ADDR -6)${CLR0}"
+	Txt "*#Zx7mL4#*${CLR2}$(MAC_ADDR)${CLR0}"
+	Txt "*#Kx9nP6#*${CLR2}$(NET_PROVIDER)${CLR0}"
+	Txt "*#Ox4mK8#*${CLR2}$(DNS_ADDR)${CLR0}"
+	Txt "*#Ex5tL7#*${CLR2}$(PUBLIC_IP)${CLR0}"
+	Txt "*#Ix8nR4#*${CLR2}$(INTERFACE -i)${CLR0}"
+	Txt "*#Mx7pK3#*${CLR2}$(TIMEZONE -i)${CLR0}"
+	Txt "*#Qx2tP9#*${CLR2}$(TIMEZONE -e)${CLR0}"
+	Txt "${CLR8}$(LINE - "32")${CLR0}"
 
-	Txt "*#Wx6nL5#*${CLR2}$(LoadAvg)${CLR0}"
+	Txt "*#Wx6nL5#*${CLR2}$(LOAD_AVERAGE)${CLR0}"
 	Txt "*#Yx3tK7#*${CLR2}$(ps aux | wc -l)${CLR0}"
-	Txt "*#Bx8mP4#*${CLR2}$(PkgCnt)${CLR0}"
-	Txt "${CLR8}$(Linet - "32")${CLR0}"
+	Txt "*#Bx8mP4#*${CLR2}$(PKG_COUNT)${CLR0}"
+	Txt "${CLR8}$(LINE - "32")${CLR0}"
 
 	Txt "*#Nx7tL3#*${CLR2}$(uptime -p | sed 's/up //')${CLR0}"
 	Txt "*#Fx5nR9#*${CLR2}$(who -b | awk '{print $3, $4}')${CLR0}"
-	Txt "${CLR8}$(Linet - "32")${CLR0}"
+	Txt "${CLR8}$(LINE - "32")${CLR0}"
 
-	Txt "*#Jx4mK7#*${CLR2}$(ChkVirt)${CLR0}"
-	Txt "${CLR8}$(Linet = "24")${CLR0}"
+	Txt "*#Jx4mK7#*${CLR2}$(CHECK_VIRT)${CLR0}"
+	Txt "${CLR8}$(LINE = "24")${CLR0}"
 }
-function SysOptimize() {
-	ChkRoot
+function SYS_OPTIMIZE() {
+	CHECK_ROOT
 	Txt "*#Vx7nK4#*"
-	Txt "${CLR8}$(Linet = "24")${CLR0}"
+	Txt "${CLR8}$(LINE = "24")${CLR0}"
 	sysctl_conf_SysOptimize="/etc/sysctl.d/99-server-optimizations.conf"
 	Txt "*#Bx3tR8#*" >"${sysctl_conf_SysOptimize}"
 
-	Task "*#Ym4kL7#*" "
+	TASK "*#Ym4kL7#*" "
 		Txt 'vm.swappiness = 1' >> ${sysctl_conf_SysOptimize}
 		Txt 'vm.vfs_cache_pressure = 50' >> ${sysctl_conf_SysOptimize}
 		Txt 'vm.dirty_ratio = 15' >> ${sysctl_conf_SysOptimize}
@@ -1601,7 +1618,7 @@ function SysOptimize() {
 		return 1
 	}
 
-	Task "*#Rx6tK9#*" "
+	TASK "*#Rx6tK9#*" "
 		Txt 'net.core.somaxconn = 65535' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.core.netdev_max_backlog = 65535' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.ipv4.tcp_max_syn_backlog = 65535' >> ${sysctl_conf_SysOptimize}
@@ -1616,7 +1633,7 @@ function SysOptimize() {
 		return 1
 	}
 
-	Task "*#Yt6nK2#*" "
+	TASK "*#Yt6nK2#*" "
 		Txt 'net.core.rmem_max = 16777216' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.core.wmem_max = 16777216' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.ipv4.tcp_rmem = 4096 87380 16777216' >> ${sysctl_conf_SysOptimize}
@@ -1627,7 +1644,7 @@ function SysOptimize() {
 		return 1
 	}
 
-	Task "*#Ht8kP3#*" "
+	TASK "*#Ht8kP3#*" "
 		Txt 'fs.file-max = 2097152' >> ${sysctl_conf_SysOptimize}
 		Txt 'fs.nr_open = 2097152' >> ${sysctl_conf_SysOptimize}
 		Txt 'fs.inotify.max_user_watches = 524288' >> ${sysctl_conf_SysOptimize}
@@ -1636,7 +1653,7 @@ function SysOptimize() {
 		return 1
 	}
 
-	Task "*#Mx6nP8#*" "
+	TASK "*#Mx6nP8#*" "
 		Txt '* soft nofile 1048576' >> /etc/security/limits.conf
 		Txt '* hard nofile 1048576' >> /etc/security/limits.conf
 		Txt '* soft nproc 65535' >> /etc/security/limits.conf
@@ -1646,7 +1663,7 @@ function SysOptimize() {
 		return 1
 	}
 
-	Task "*#Gx4tP7#*" "
+	TASK "*#Gx4tP7#*" "
 		for disk in /sys/block/[sv]d*; do
 			Txt 'none' > \$disk/queue/scheduler 2>/dev/null || true
 			Txt '256' > \$disk/queue/nr_requests 2>/dev/null || true
@@ -1656,21 +1673,21 @@ function SysOptimize() {
 		return 1
 	}
 
-	Task "*#Qx7tK5#*" '
+	TASK "*#Qx7tK5#*" "
 		for service in bluetooth cups avahi-daemon postfix nfs-server rpcbind autofs; do
-			systemctl disable --now $service 2>/dev/null || true
+			systemctl disable --now \$service 2>/dev/null || true
 		done
-	' || {
+	" || {
 		Err "*#Fx3mP6#*"
 		return 1
 	}
 
-	Task "*#Dx5nR7#*" "sysctl -p ${sysctl_conf_SysOptimize}" || {
+	TASK "*#Dx5nR7#*" "sysctl -p ${sysctl_conf_SysOptimize}" || {
 		Err "*#Bx4tL8#*"
 		return 1
 	}
 
-	Task "*#Cx6kP9#*" "
+	TASK "*#Cx6kP9#*" "
 		sync
 		Txt 3 > /proc/sys/vm/drop_caches
 		ip -s -s neigh flush all
@@ -1679,111 +1696,112 @@ function SysOptimize() {
 		return 1
 	}
 
-	Txt "${CLR8}$(Linet = "24")${CLR0}"
+	Txt "${CLR8}$(LINE = "24")${CLR0}"
 	Txt "*#Rt9nK6#*\n"
 }
-function SysRboot() {
-	ChkRoot
+function SYS_REBOOT() {
+	CHECK_ROOT
 	Txt "*#Ht7nK4#*"
-	Txt "${CLR8}$(Linet = "24")${CLR0}"
-	active_usr_SysRboot=$(who | wc -l) || {
+	Txt "${CLR8}$(LINE = "24")${CLR0}"
+	active_users=$(who | wc -l) || {
 		Err "*#Bx6tR8#*"
 		return 1
 	}
-	if [ "${active_usr_SysRboot}" -gt 1 ]; then
+	if [ "${active_users}" -gt 1 ]; then
 		Txt "*#Vx9mK5#*\n"
 		Txt "*#Rx5nK9#*"
 		who | awk '{print $1 " since " $3 " " $4}'
 		Txt
 	fi
-	important_proc_SysRboot=$(ps aux --no-headers | awk '$3 > 1.0 || $4 > 1.0' | wc -l) || {
+	important_processes=$(ps aux --no-headers | awk '$3 > 1.0 || $4 > 1.0' | wc -l) || {
 		Err "*#Yx6mP7#*"
 		return 1
 	}
-	if [ "${important_proc_SysRboot}" -gt 0 ]; then
+	if [ "${important_processes}" -gt 0 ]; then
 		Txt "*#Zx8tK3#*\n"
 		Txt "*#Mx3nP6#*"
 		ps aux --sort=-%cpu | head -n 6
 		Txt
 	fi
-	Press "*#Dn4kR7#*" cont_SysRboot
+	read -p "*#Dn4kR7#*" -n 1 -r continue_reboot
 	Txt
-	[[ ! "${cont_SysRboot}" =~ ^[Yy]$ ]] && {
+	[[ ! "${continue_reboot}" =~ ^[Yy]$ ]] && {
 		Txt "*#Jx5tP8#*\n"
 		return 0
 	}
-	Task "*#Wx2mK9#*" "sync" || {
+	TASK "*#Wx2mK9#*" "sync" || {
 		Err "*#Nx8vR3#*"
 		return 1
 	}
-	Task "*#Bx7tL5#*" "reboot || sudo reboot" || {
+	TASK "*#Bx7tL5#*" "reboot || sudo reboot" || {
 		Err "*#Tx5mP4#*"
 		return 1
 	}
 	Txt "*#Gx6nK8#*"
 }
-function SysUpd() {
-	ChkRoot
+function SYS_UPDATE() {
+	CHECK_ROOT
 	Txt "*#Wx7nP5#*"
-	Txt "${CLR8}$(Linet = "24")${CLR0}"
-	UpdPkg() {
-		upd_cmd_SysUpd="$1"
-		upg_cmd_SysUpd="$2"
+	Txt "${CLR8}$(LINE = "24")${CLR0}"
+	update_pkgs() {
+		cmd="$1"
+		update_cmd="$2"
+		upgrade_cmd="$3"
 		Txt "*#Ym6tK9#*"
-		${upd_cmd_SysUpd} || {
+		${update_cmd} || {
 			Err "*#Qn5wL7#*"
 			return 1
 		}
 		Txt "*#Vx3nR8#*"
-		${upg_cmd_SysUpd} || {
+		${upgrade_cmd} || {
 			Err "*#Ht9pL4#*"
 			return 1
 		}
 	}
 	case $(command -v apk apt opkg pacman yum zypper dnf | head -n1) in
-	*apk) UpdPkg "apk update" "apk upgrade" ;;
+	*apk) update_pkgs "apk" "apk update" "apk upgrade" ;;
 	*apt)
 		while fuser /var/lib/dpkg/lock-frontend &>/dev/null; do
-			Task "*#Rw4mK7#*" "sleep 1" || return 1
-			((waiting_time_SysUpd++))
-			[ "$waiting_time_SysUpd" -gt 10 ] && {
+			TASK "*#Rw4mK7#*" "sleep 1" || return 1
+			((wait_time++))
+			[ "${wait_time}" -gt 10 ] && {
 				Err "*#Bx8vP5#*"
 				return 1
 			}
 		done
-		Task "*#Dn3tL6#*" "DEBIAN_FRONTEND=noninteractive dpkg --configure -a" || {
+		TASK "*#Dn3tL6#*" "DEBIAN_FRONTEND=noninteractive dpkg --configure -a" || {
 			Err "*#Kx7mP2#*"
 			return 1
 		}
-		UpdPkg "apt update -y" "apt full-upgrade -y"
+		update_pkgs "apt" "apt update -y" "apt full-upgrade -y"
 		;;
-	*opkg) UpdPkg "opkg update" "opkg upgrade" ;;
-	*pacman) Task "*#Lw6nR9#*" "pacman -Syu --noconfirm" || {
+	*opkg) update_pkgs "opkg" "opkg update" "opkg upgrade" ;;
+	*pacman) TASK "*#Lw6nR9#*" "pacman -Syu --noconfirm" || {
 		Err "*#Yx5vP8#*"
 		return 1
 	} ;;
-	*yum) UpdPkg "yum check-update" "yum -y update" ;;
-	*zypper) UpdPkg "zypper refresh" "zypper update -y" ;;
-	*dnf) UpdPkg "dnf check-update" "dnf -y update" ;;
+	*yum) update_pkgs "yum" "yum check-update" "yum -y update" ;;
+	*zypper) update_pkgs "zypper" "zypper refresh" "zypper update -y" ;;
+	*dnf) update_pkgs "dnf" "dnf check-update" "dnf -y update" ;;
 	*) {
 		Err "*#Zx7mP4#*"
 		return 1
 	} ;;
 	esac
 	Txt "*#Jn5tR8#*"
-	bash <(curl -L https://raw.githubusercontent.com/OG-Open-Source/UtilKit/refs/heads/main/sh/get_utilkit.sh) || {
+	bash <(curl -L https://raw.githubusercontent.com/OG-Open-Source/utilkit/refs/heads/main/sh/get_utilkit.sh) || {
 		Err "*#Wx4nP9#*"
 		return 1
 	}
-	Txt "${CLR8}$(Linet = "24")${CLR0}"
+	Txt "${CLR8}$(LINE = "24")${CLR0}"
 	Txt "*#Rt9nK6#*\n"
 }
-function SysUpg() {
-	ChkRoot
+function SYS_UPGRADE() {
+	CHECK_ROOT
 	Txt "*#Ht6nR9#*"
-	Txt "${CLR8}$(Linet = "24")${CLR0}"
-	os_nm_SysUpg=$(ChkOs -n)
-	case "${os_nm_SysUpg}" in
+	Txt "${CLR8}$(LINE = "24")${CLR0}"
+	os_name=$(CHECK_OS -n)
+	case "${os_name}" in
 	Debian)
 		Txt "*#Vx8tK5#*"
 		Txt "*#Ym6tK9#*"
@@ -1797,92 +1815,93 @@ function SysUpg() {
 			return 1
 		}
 		Txt "*#Kx4nP7#*"
-		curr_codenm_SysUpg=$(lsb_release -cs)
-		targ_codenm_SysUpg=$(curl -s http://ftp.debian.org/debian/dists/stable/Release | grep "^Codename:" | awk '{print $2}')
-		[ "${curr_codenm_SysUpg}" = "${targ_codenm_SysUpg}" ] && {
-			Err "*#Rw5mK9#* (${targ_codenm_SysUpg})"
+		current_codename=$(lsb_release -cs)
+		target_codename=$(curl -s http://ftp.debian.org/debian/dists/stable/Release | grep "^Codename:" | awk '{print $2}')
+		[ "${cur}rent_codename" = "${target_codename}" ] && {
+			Err "*#Rw5mK9#* (${target_codename})"
 			return 1
 		}
 		Txt "*#Jx5mP8#*"
-		Task "*#Yx3vL7#*" "cp /etc/apt/sources.list /etc/apt/sources.list.backup" || {
+		TASK "*#Yx3vL7#*" "cp /etc/apt/sources.list /etc/apt/sources.list.backup" || {
 			Err "*#Ht6nP9#*"
 			return 1
 		}
-		Task "*#Wx5tR8#*" "sed -i 's/${curr_codenm_SysUpg}/${targ_codenm_SysUpg}/g' /etc/apt/sources.list" || {
+		TASK "*#Wx5tR8#*" "sed -i 's/${current_codename}/${target_codename}/g' /etc/apt/sources.list" || {
 			Err "*#Zm7nL4#*"
 			return 1
 		}
-		Task "*#Kx9mP5#*" "apt update -y" || {
+		TASK "*#Kx9mP5#*" "apt update -y" || {
 			Err "*#Bx6tK8#*"
 			return 1
 		}
-		Task "*#Yw7nL5#*" "apt full-upgrade -y" || {
+		TASK "*#Yw7nL5#*" "apt full-upgrade -y" || {
 			Err "*#Dx4kR9#*"
 			return 1
 		}
 		;;
 	Ubuntu)
 		Txt "*#Nx5tP7#*"
-		Task "*#Ym6tK9#*" "apt update -y" || {
+		TASK "*#Ym6tK9#*" "apt update -y" || {
 			Err "*#An8zR7#*"
 			return 1
 		}
-		Task "*#Lw7mP4#*" "apt full-upgrade -y" || {
+		TASK "*#Lw7mP4#*" "apt full-upgrade -y" || {
 			Err "*#Bx3vR6#*"
 			return 1
 		}
-		Task "*#Rx8nK4#*" "apt install -y update-manager-core" || {
+		TASK "*#Rx8nK4#*" "apt install -y update-manager-core" || {
 			Err "*#Jx2vL7#*"
 			return 1
 		}
-		Task "*#Vx7tP5#*" "do-release-upgrade -f DistUpgradeViewNonInteractive" || {
+		TASK "*#Vx7tP5#*" "do-release-upgrade -f DistUpgradeViewNonInteractive" || {
 			Err "*#Lw4mR8#*"
 			return 1
 		}
-		SysRboot
+		SYS_REBOOT
 		;;
 	*) {
 		Err "*#Yx9nK6#*"
 		return 1
 	} ;;
 	esac
-	Txt "${CLR8}$(Linet = "24")${CLR0}"
+	Txt "${CLR8}$(LINE = "24")${CLR0}"
 	Txt "*#Mx5tR7#*\n"
 }
-function Task() {
-	msg_Task="$1"
-	cmd_Task="$2"
-	ign_err_Task=${3:-false}
-	tmp_file_Task=$(mktemp)
-	Txt -n "${msg_Task}..."
-	if eval "${cmd_Task}" >"${tmp_file_Task}" 2>&1; then
+
+function TASK() {
+	message="$1"
+	command="$2"
+	ignore_error=${3:-false}
+	temp_file=$(mktemp)
+	Txt -n "${message}..."
+	if eval "${command}" >"${temp_file}" 2>&1; then
 		Txt "*#Kw5nP9#*"
-		ret_Task=0
+		ret=0
 	else
-		ret_Task=$?
-		Txt "*#Vx8tR4#* ("${ret_Task}")"
-		[[ -s "${tmp_file_Task}" ]] && Txt "${CLR1}$(cat "${tmp_file_Task}")${CLR0}"
-		[[ "${ign_err_Task}" != "true" ]] && return "${ret_Task}"
+		ret=$?
+		Txt "*#Vx8tR4#* (${ret})"
+		[[ -s "${temp_file}" ]] && Txt "${CLR1}$(cat ${temp_file})${CLR0}"
+		[[ "${ignore_error}" != "true" ]] && return "${ret}"
 	fi
-	Del -f "${tmp_file_Task}"
-	return "${ret_Task}"
+	rm -f "${temp_file}"
+	return "${ret}"
 }
-function TimeZone() {
+function TIMEZONE() {
 	case "$1" in
 	-e)
-		ans_TimeZone=$(timeout 1s curl -sL ipapi.co/timezone) ||
-			ans_TimeZone=$(timeout 1s curl -sL worldtimeapi.org/api/ip | grep -oP '"timezone":"\K[^"]+') ||
-			ans_TimeZone=$(timeout 1s curl -sL ip-api.com/json | grep -oP '"timezone":"\K[^"]+') ||
-			[ -n "${ans_TimeZone}" ] && Txt "${ans_TimeZone}" || {
+		result=$(timeout 1s curl -sL ipapi.co/timezone) ||
+			result=$(timeout 1s curl -sL worldtimeapi.org/api/ip | grep -oP '"timezone":"\K[^"]+') ||
+			result=$(timeout 1s curl -sL ip-api.com/json | grep -oP '"timezone":"\K[^"]+') ||
+			[ -n "${result}" ] && Txt "${result}" || {
 			Err "*#Ym7tK4#*"
 			return 1
 		}
 		;;
 	-i | *)
-		ans_TimeZone=$(readlink /etc/localtime | sed 's|^.*/zoneinfo/||') 2>/dev/null ||
-			ans_TimeZone=$(command -v timedatectl &>/dev/null && timedatectl status | awk '/Time zone:/ {print $3}') ||
-			ans_TimeZone=$(cat /etc/timezone 2>/dev/null | uniq) ||
-			[ -n "${ans_TimeZone}" ] && Txt "$ans_TimeZone" || {
+		result=$(readlink /etc/localtime | sed 's|^.*/zoneinfo/||') 2>/dev/null ||
+			result=$(command -v timedatectl &>/dev/null && timedatectl status | awk '/Time zone:/ {print $3}') ||
+			result=$(cat /etc/timezone 2>/dev/null | uniq) ||
+			[ -n "${result}" ] && Txt "${result}" || {
 			Err "*#Bx5vR8#*"
 			return 1
 		}
@@ -1894,138 +1913,4 @@ function Press() {
 		Err "*#Nt6mK8#*"
 		return 1
 	}
-}
-
-function TEST() {
-	Txt "${CLR8}--- Starting UtilKit Test Suite ---${CLR0}"
-
-	Linet "=" 40
-	Txt "Testing Basic I/O Functions"
-	Linet "-" 40
-	Txt "Testing Txt:"
-	Txt "  Hello World"
-	Txt "Testing Err:"
-	Err "  This is a test error message."
-	Txt "Testing Font:"
-	Font BOLD "  Bold Text"
-	Font GREEN "  Green Text"
-	Font BG.RED WHITE "  White text on Red background"
-	Font RGB "100,150,200" "  Custom RGB color text"
-	Txt "Testing Linet:"
-	Linet "*" 20
-
-	Linet "=" 40
-	Txt "Testing File and Directory Operations"
-	Linet "-" 40
-	Txt "Testing Add -f (file):"
-	Add -f test_file.tmp
-	Txt "Testing Add -d (directory):"
-	Add -d test_dir.tmp
-	Txt "Listing created items:"
-	ls -ld test_file.tmp test_dir.tmp
-	Txt "Testing Del -f (file):"
-	Del -f test_file.tmp
-	Txt "Testing Del -d (directory):"
-	Del -d test_dir.tmp
-	Txt "Listing items after deletion:"
-	ls -ld test_file.tmp test_dir.tmp 2>/dev/null || Txt "  Items successfully deleted."
-
-	Linet "=" 40
-	Txt "Testing System Information Functions"
-	Linet "-" 40
-	Txt "Authors: ${AUTHORS}"
-	Txt "Script: ${SCRIPTS}"
-	Txt "Version: ${VERSION}"
-	Copyright
-	Txt "OS Info: $(ChkOs)"
-	Txt "OS Name: $(ChkOs -n)"
-	Txt "OS Version: $(ChkOs -v)"
-	Txt "Virt-Type: $(ChkVirt)"
-	Txt "CPU Model: $(CpuModel)"
-	Txt "CPU Freq: $(CpuFreq)"
-	Txt "CPU Cache: $(CpuCache)"
-	Txt "CPU Usage: $(CpuUsage)%"
-	Txt "Shell: $(ShellVer)"
-	Txt "Uptime: $(uptime -p)"
-	Txt "Last Update: $(LastUpd)"
-	Txt "Load Average: $(LoadAvg)"
-	Txt "Package Count: $(PkgCnt)"
-
-	Linet "=" 40
-	Txt "Testing Resource Usage Functions"
-	Linet "-" 40
-	Txt "Memory Usage: $(MemUsage)"
-	Txt "Swap Usage: $(SwapUsage)"
-	Txt "Disk Usage: $(DiskUsage)"
-
-	Linet "=" 40
-	Txt "Testing Network Functions"
-	Linet "-" 40
-	Txt "Interface: $(Iface)"
-	Txt "Interface Stats: $(Iface -i)"
-	Txt "Public IP: $(PublicIp)"
-	Txt "IP Address (v4): $(IpAddr -4)"
-	Txt "IP Address (v6): $(IpAddr -6)"
-	Txt "MAC Address: $(MacAddr)"
-	Txt "DNS Servers: $(DnsAddr)"
-	Txt "Location: $(Loc)"
-	Txt "Provider: $(Provider)"
-	Txt "Internal Timezone: $(TimeZone -i)"
-	Txt "External Timezone: $(TimeZone -e)"
-
-	Linet "=" 40
-	Txt "Testing Utility Functions"
-	Linet "-" 40
-	Txt "Testing ConvSz:"
-	Txt "  1024 B -> $(ConvSz 1024 B)"
-	Txt "  2048000 KB -> $(ConvSz 2048000 KB)"
-	Txt "  5.5 GiB -> $(ConvSz 5.5 GiB)"
-	Txt "Testing Format:"
-	Txt "  Format -AA 'hello world' -> $(Format -AA 'hello world')"
-	Txt "  Format -aa 'HELLO WORLD' -> $(Format -aa 'HELLO WORLD')"
-	Txt "  Format -Aa 'hello world' -> $(Format -Aa 'hello world')"
-	Txt "Testing Get (small file):"
-	Get https://raw.githubusercontent.com/OG-Open-Source/UtilKit/main/LICENSE -r test_license.tmp
-	cat test_license.tmp
-	Del -f test_license.tmp
-	Txt "Testing Find (package 'curl'):"
-	Find curl
-	Txt "Testing ChkDep (dependency 'bash'):"
-	deps=("bash" "non_existent_command")
-	ChkDep
-
-	Linet "=" 40
-	Txt "Testing Interactive and Task Functions"
-	Linet "-" 40
-	Txt "Testing Task:"
-	Task "  Running 'echo test' command" "echo test"
-	Txt "Testing Progress:"
-	cmds=("sleep 0.1" "sleep 0.2" "sleep 0.1")
-	Progress
-	Txt "\nTesting Run:"
-	Run echo "  'Run' command executed successfully."
-	# Txt "Testing Ask (will prompt for input):"
-	# Ask "  Please enter your name: " myname
-	# Txt "  Hello, \$myname"
-	# Txt "Testing Press (will wait for a key press):"
-	# Press "  Press any key to continue..."
-
-	Linet "=" 40
-	Txt "Testing Potentially Destructive Functions (COMMENTED OUT)"
-	Linet "-" 40
-	Txt "  The following functions are not executed automatically to prevent unwanted system changes."
-	Txt "  Uncomment them in the TEST function to test them manually."
-	# Txt "Testing SysClean:"
-	# SysClean
-	# Txt "Testing SysUpd:"
-	# SysUpd
-	# Txt "Testing SysUpg:"
-	# SysUpg
-	# Txt "Testing SysOptimize:"
-	# SysOptimize
-	# Txt "Testing SysRboot:"
-	# SysRboot
-
-	Linet "=" 40
-	Txt "${CLR8}--- UtilKit Test Suite Finished ---${CLR0}"
 }

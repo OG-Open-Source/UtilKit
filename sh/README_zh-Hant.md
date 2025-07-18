@@ -23,7 +23,7 @@
 UtilKit.sh 是一個全面的 Shell 函數庫，專為系統管理員和開發者設計。它提供了豐富的函式可用，包括套件管理、系統監控、網路配置等，大大簡化了日常系統維護工作。
 
 | 可用函式                      |                               |                               |                           |
-|-------------------------------|-------------------------------|-------------------------------|---------------------------|
+| ----------------------------- | ----------------------------- | ----------------------------- | ------------------------- |
 | [ADD](#add)                   | [CHECK_DEPS](#check_deps)     | [CHECK_OS](#check_os)         | [CHECK_ROOT](#check_root) |
 | [CHECK_VIRT](#check_virt)     | [CLEAN](#clean)               | [CONVERT_SIZE](#convert_size) | [COPYRIGHT](#copyright)   |
 | [CPU_CACHE](#cpu_cache)       | [CPU_FREQ](#cpu_freq)         | [CPU_MODEL](#cpu_model)       | [CPU_USAGE](#cpu_usage)   |

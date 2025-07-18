@@ -23,7 +23,7 @@ A comprehensive Shell function library that provides functions for system admini
 UtilKit.sh is a comprehensive Shell function library designed for system administrators and developers. It provides a rich set of functions, including package management, system monitoring, network configuration, etc., which greatly simplifies daily system maintenance tasks.
 
 | Available Functions           |                               |                               |                           |
-|-------------------------------|-------------------------------|-------------------------------|---------------------------|
+| ----------------------------- | ----------------------------- | ----------------------------- | ------------------------- |
 | [ADD](#add)                   | [CHECK_DEPS](#check_deps)     | [CHECK_OS](#check_os)         | [CHECK_ROOT](#check_root) |
 | [CHECK_VIRT](#check_virt)     | [CLEAN](#clean)               | [CONVERT_SIZE](#convert_size) | [COPYRIGHT](#copyright)   |
 | [CPU_CACHE](#cpu_cache)       | [CPU_FREQ](#cpu_freq)         | [CPU_MODEL](#cpu_model)       | [CPU_USAGE](#cpu_usage)   |

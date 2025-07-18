@@ -22,11 +22,11 @@ esac
 lang="${1:-$(detect_language)}"
 if [ -f ~/utilkit.sh ];then
 Txt "${CLR2}Updating UtilKit.sh...$CLR0"
-if curl -sSL "https://raw.githubusercontent.com/OG-Open-Source/utilkit/refs/heads/main/sh/localized/utilkit_$lang.sh" -o "utilkit.sh" 2>/dev/null;then
+if curl -sSL "https://raw.githubusercontent.com/OG-Open-Source/UtilKit/refs/heads/main/sh/localized/utilkit_$lang.sh" -o "utilkit.sh" 2>/dev/null;then
 Txt "${CLR2}Downloaded pre-localized version for $lang$CLR0"
 else
 Txt "${CLR3}Pre-localized version not available, downloading default version...$CLR0"
-if ! curl -sSL "https://raw.githubusercontent.com/OG-Open-Source/utilkit/refs/heads/main/sh/utilkit.sh" -o "utilkit.sh";then
+if ! curl -sSL "https://raw.githubusercontent.com/OG-Open-Source/UtilKit/refs/heads/main/sh/utilkit.sh" -o "utilkit.sh";then
 Err "Failed to download UtilKit.sh"
 exit 1
 fi
@@ -36,16 +36,16 @@ else
 if ! crontab -l 2>/dev/null|grep -q "get_utilkit.sh";then
 (crontab -l 2>/dev/null||echo "")|{
 cat
-echo "0 0 * * * curl -sL https://raw.githubusercontent.com/OG-Open-Source/utilkit/refs/heads/main/sh/get_utilkit.sh | bash -s -- $lang"
+echo "0 0 * * * curl -sL https://raw.githubusercontent.com/OG-Open-Source/UtilKit/refs/heads/main/sh/get_utilkit.sh | bash -s -- $lang"
 }|crontab -
 Txt "${CLR2}Added daily auto-update to crontab$CLR0"
 fi
 Txt "${CLR2}Downloading UtilKit.sh...$CLR0"
-if curl -sSL "https://raw.githubusercontent.com/OG-Open-Source/utilkit/refs/heads/main/sh/localized/utilkit_$lang.sh" -o "utilkit.sh" 2>/dev/null;then
+if curl -sSL "https://raw.githubusercontent.com/OG-Open-Source/UtilKit/refs/heads/main/sh/localized/utilkit_$lang.sh" -o "utilkit.sh" 2>/dev/null;then
 Txt "${CLR2}Downloaded pre-localized version for $lang$CLR0"
 else
 Txt "${CLR3}Pre-localized version not available, downloading default version...$CLR0"
-if ! curl -sSL "https://raw.githubusercontent.com/OG-Open-Source/utilkit/refs/heads/main/sh/utilkit.sh" -o "utilkit.sh";then
+if ! curl -sSL "https://raw.githubusercontent.com/OG-Open-Source/UtilKit/refs/heads/main/sh/utilkit.sh" -o "utilkit.sh";then
 Err "Failed to download UtilKit.sh"
 exit 1
 fi
