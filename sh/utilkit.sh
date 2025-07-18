@@ -2,7 +2,7 @@
 
 AUTHORS="OG-Open-Source"
 SCRIPTS="UtilKit.sh"
-VERSION="6.044.002.264"
+VERSION="7.044.002.284"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
