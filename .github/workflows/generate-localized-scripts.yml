@@ -45,7 +45,7 @@ jobs:
               escaped_value=$(echo "$value" | sed -e 's/[\/&]/\\&/g' -e 's/\[/\\[/g' -e 's/\]/\\]/g')
               echo "s/\\*#${key}#\\*/${escaped_value}/g" >> "$sed_script"
             done
-            cp sh/utilkit.min.sh "sh/localized/utilkit_${lang}.sh"
+            cp sh/utilkit.sh "sh/localized/utilkit_${lang}.sh"
             sed -i -f "$sed_script" "sh/localized/utilkit_${lang}.sh"
             rm "$sed_script"
           done
