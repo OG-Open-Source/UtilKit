@@ -30,7 +30,7 @@ function Err() {
 	fi
 }
 
-function ADD() {
+function Add() {
 	[ $# -eq 0 ] && {
 		Err "未指定要新增的項目。請提供至少一個要新增的項目"
 		return 2
@@ -58,10 +58,10 @@ function ADD() {
 			continue
 			;;
 		*.deb)
-			CHECK_ROOT
+			ChkRoot
 			deb_file=$(basename "$1")
 			Txt "${CLR3}安裝 DEB 套件［${deb_file}］${CLR0}\n"
-			GET "$1"
+			Get "$1"
 			if [ -f "${deb_file}" ]; then
 				dpkg -i "${deb_file}" || {
 					Err "安裝 ${deb_file} 失敗。請檢查套件相容性和相依性\n"
@@ -138,7 +138,7 @@ function ADD() {
 				;;
 			"pkg")
 				Txt "${CLR3}安裝套件［$1］${CLR0}"
-				CHECK_ROOT
+				ChkRoot
 				pkg_manager=$(command -v apk apt opkg pacman yum zypper dnf | head -n1)
 				pkg_manager=${pkg_manager##*/}
 				case ${pkg_manager} in
@@ -202,7 +202,7 @@ function ADD() {
 	return "${failed}"
 }
 
-function CHECK_DEPS() {
+function ChkDeps() {
 	mode="display"
 	missing_deps=()
 	while [[ "$1" == -* ]]; do
@@ -231,15 +231,15 @@ function CHECK_DEPS() {
 		Txt "\n${CLR3}缺少的套件：${CLR0} ${missing_deps[*]}"
 		Ask "是否要安裝缺少的套件？(y/N) " -n 1 continue_install
 		Txt
-		[[ "${continue_install}" =~ ^[Yy]$ ]] && ADD "${missing_deps[@]}"
+		[[ "${continue_install}" =~ ^[Yy]$ ]] && Add "${missing_deps[@]}"
 		;;
 	"auto")
 		Txt
-		ADD "${missing_deps[@]}"
+		Add "${missing_deps[@]}"
 		;;
 	esac
 }
-function CHECK_OS() {
+function ChkOs() {
 	case "$1" in
 	-v)
 		if [ -f /etc/os-release ]; then
@@ -288,20 +288,20 @@ function CHECK_OS() {
 		;;
 	esac
 }
-function CHECK_ROOT() {
+function ChkRoot() {
 	if [ "${EUID}" -ne 0 ] || [ "$(id -u)" -ne 0 ]; then
 		Err "請以 root 使用者執行此腳本"
 		exit 1
 	fi
 }
-function CHECK_VIRT() {
+function ChkVirt() {
 	if command -v systemd-detect-virt >/dev/null 2>&1; then
-		virt_type=$(systemd-detect-virt 2>/dev/null)
-		[ -z "${virt_type}" ] && {
+		virt_typ_ChkVirt=$(systemd-detect-virt 2>/dev/null)
+		[ -z "${virt_typ_ChkVirt}" ] && {
 			Err "無法偵測虛擬化環境"
 			return 1
 		}
-		case "${virt_type}" in
+		case "${virt_typ_ChkVirt}" in
 		kvm) grep -qi "proxmox" /sys/class/dmi/id/product_name 2>/dev/null && Txt "Proxmox VE (KVM)" || Txt "KVM" ;;
 		microsoft) Txt "Microsoft Hyper-V" ;;
 		none)
@@ -313,12 +313,12 @@ function CHECK_VIRT() {
 				Txt "未偵測到（可能為實體機器）"
 			fi
 			;;
-		*) Txt "${virt_type:-未偵測到（可能為實體機器）}" ;;
+		*) Txt "${virt_typ_ChkVirt:-未偵測到（可能為實體機器）}" ;;
 		esac
 	elif [ -f /proc/cpuinfo ]; then
-		virt_type=$(grep -i "hypervisor" /proc/cpuinfo >/dev/null && Txt "虛擬機器" || Txt "無")
+		virt_typ_ChkVirt=$(grep -i "hypervisor" /proc/cpuinfo >/dev/null && Txt "虛擬機器" || Txt "無")
 	else
-		virt_type="未知"
+		virt_typ_ChkVirt="未知"
 	fi
 }
 function Clear() {
@@ -329,7 +329,7 @@ function Clear() {
 	}
 	clear
 }
-function CPU_CACHE() {
+function CpuCache() {
 	[ ! -f /proc/cpuinfo ] && {
 		Err "無法存取 CPU 資訊。/proc/cpuinfo 不可用"
 		return 1
@@ -341,7 +341,7 @@ function CPU_CACHE() {
 	}
 	Txt "${cpu_cache} KB"
 }
-function CPU_FREQ() {
+function CpuFreq() {
 	[ ! -f /proc/cpuinfo ] && {
 		Err "無法存取 CPU 資訊。/proc/cpuinfo 不可用"
 		return 1
@@ -353,7 +353,7 @@ function CPU_FREQ() {
 	}
 	Txt "${cpu_freq} GHz"
 }
-function CPU_MODEL() {
+function CpuModel() {
 	if command -v lscpu &>/dev/null; then
 		lscpu | awk -F': +' '/Model name/ {print $2; exit}'
 	elif [ -f /proc/cpuinfo ]; then
@@ -367,7 +367,7 @@ function CPU_MODEL() {
 		}
 	fi
 }
-function CPU_USAGE() {
+function CpuUsage() {
 	read -r cpu user nice system idle iowait irq softirq <<<$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8}' /proc/stat) || {
 		Err "從 /proc/stat 讀取 CPU 統計資料失敗"
 		return 1
@@ -386,14 +386,14 @@ function CPU_USAGE() {
 	usage=$((100 * (total_diff - idle_diff) / total_diff))
 	Txt "${usage}"
 }
-function CONVERT_SIZE() {
+function ConvSz() {
 	[ -z "$1" ] && {
 		Err "未提供要轉換的大小值"
 		return 2
 	}
 	size=$1
 	unit=${2:-iB}
-	unit_lower=$(FORMAT -aa "$unit")
+	unit_lower=$(Format -aa "$unit")
 	if ! [[ "${size}" =~ ^[+-]?[0-9]*\.?[0-9]+$ ]]; then
 		{
 			Err "無效的大小值。必須為數值"
@@ -444,12 +444,12 @@ function CONVERT_SIZE() {
 		}
 	}'
 }
-function COPYRIGHT() {
+function Copyright() {
 	Txt "${SCRIPTS} ${VERSION}"
 	Txt "Copyright (C) $(date +%Y) ${ANTHORS}."
 }
 
-function DEL() {
+function Del() {
 	[ $# -eq 0 ] && {
 		Err "未指定要刪除的項目。請提供至少一個要刪除的項目"
 		return 2
@@ -516,7 +516,7 @@ function DEL() {
 				;;
 			"pkg")
 				Txt "${CLR3}移除套件［$1］${CLR0}"
-				CHECK_ROOT
+				ChkRoot
 				pkg_manager=$(command -v apk apt opkg pacman yum zypper dnf | head -n1)
 				pkg_manager=${pkg_manager##*/}
 				case ${pkg_manager} in
@@ -578,7 +578,7 @@ function DEL() {
 	done
 	return "${failed}"
 }
-function DISK_USAGE() {
+function DiskUsage() {
 	used=$(df -B1 / | awk '/^\/dev/ {print $3}') || {
 		Err "取得磁碟使用統計資料失敗"
 		return 1
@@ -592,10 +592,10 @@ function DISK_USAGE() {
 	-u) Txt "${used}" ;;
 	-t) Txt "${total}" ;;
 	-p) Txt "${percentage}" ;;
-	*) Txt "$(CONVERT_SIZE ${used}) / $(CONVERT_SIZE ${total}) (${percentage}%)" ;;
+	*) Txt "$(ConvSz ${used}) / $(ConvSz ${total}) (${percentage}%)" ;;
 	esac
 }
-function DNS_ADDR() {
+function DnsAddr() {
 	[ ! -f /etc/resolv.conf ] && {
 		Err "找不到 DNS 設定檔 /etc/resolv.conf"
 		return 1
@@ -638,7 +638,7 @@ function DNS_ADDR() {
 	esac
 }
 
-function FIND() {
+function Find() {
 	[ $# -eq 0 ] && {
 		Err "未指定搜尋條件。請指定要搜尋的內容"
 		return 2
@@ -666,7 +666,7 @@ function FIND() {
 		Txt "${CLR2}完成${CLR0}\n"
 	done
 }
-function FONT() {
+function Font() {
 	font=""
 	declare -A style=(
 		[B]="\033[1m" [U]="\033[4m"
@@ -695,7 +695,7 @@ function FONT() {
 	done
 	Txt "${font}${1}${CLR0}"
 }
-function FORMAT() {
+function Format() {
 	option="$1"
 	value="$2"
 	result=""
@@ -716,7 +716,7 @@ function FORMAT() {
 	Txt "${result}"
 }
 
-function GET() {
+function Get() {
 	extract="false"
 	target_dir="."
 	rename_file=""
@@ -827,7 +827,7 @@ function Ask() {
 		return 1
 	}
 }
-function INTERFACE() {
+function Iface() {
 	interface=""
 	declare -a interfaces=()
 	all_interfaces=$(
@@ -940,7 +940,7 @@ function INTERFACE() {
 		for iface in ${interface}; do
 			if stats=$(awk -v iface="${iface}" '$1 ~ iface":" {print $2, $3, $5, $10, $11, $13}' /proc/net/dev 2>/dev/null); then
 				read rx_bytes rx_packets rx_drop tx_bytes tx_packets tx_drop <<<"${stats}"
-				Txt "${iface}: RX: $(CONVERT_SIZE ${rx_bytes}), TX: $(CONVERT_SIZE ${tx_bytes})"
+				Txt "${iface}: RX: $(ConvSz ${rx_bytes}), TX: $(ConvSz ${tx_bytes})"
 			fi
 		done
 		;;
@@ -951,7 +951,7 @@ function INTERFACE() {
 		;;
 	esac
 }
-function IP_ADDR() {
+function IpAddr() {
 	flg_IpAddr="$1"
 	case "${flg_IpAddr}" in
 	-4)
@@ -972,8 +972,8 @@ function IP_ADDR() {
 		}
 		;;
 	*)
-		ipv4_addr=$(IP_ADDR -4)
-		ipv6_addr=$(IP_ADDR -6)
+		ipv4_addr=$(IpAddr -4)
+		ipv6_addr=$(IpAddr -6)
 		[ -z "${ipv4_addr}${ipv6_addr}" ] && {
 			Err "取得 IP 位址失敗"
 			return 1
@@ -985,7 +985,7 @@ function IP_ADDR() {
 	esac
 }
 
-function LAST_UPDATE() {
+function LastUpd() {
 	if [ -f /var/log/apt/history.log ]; then
 		last_update=$(awk '/End-Date:/ {print $2, $3, $4; exit}' /var/log/apt/history.log 2>/dev/null)
 	elif [ -f /var/log/dpkg.log ]; then
@@ -1006,7 +1006,7 @@ function Linet() {
 		return 1
 	}
 }
-function LOAD_AVERAGE() {
+function LoadAvg() {
 	if [ ! -f /proc/loadavg ]; then
 		load_data=$(uptime | sed 's/.*load average: //' | sed 's/,//g') || {
 			Err "從 uptime 指令取得負載平均值失敗"
@@ -1023,7 +1023,7 @@ function LOAD_AVERAGE() {
 	[[ "${ov_mi_LoadAvg}" =~ ^[0-9.]+$ ]] || ov_mi_LoadAvg=0
 	LC_ALL=C printf "%.2f, %.2f, %.2f (%d cores)" "${zo_mi_LoadAvg}" "${zv_mi_LoadAvg}" "${ov_mi_LoadAvg}" "$(nproc)"
 }
-function LOCATION() {
+function Location() {
 	loc=$(curl -s "https://developers.cloudflare.com/cdn-cgi/trace" | grep "^loc=" | cut -d= -f2)
 	[ -n "${loc}" ] && Txt "${loc}" || {
 		Err "無法偵測地理位置。請檢查網路連線"
@@ -1031,14 +1031,14 @@ function LOCATION() {
 	}
 }
 
-function MAC_ADDR() {
+function MacAddr() {
 	mac_address=$(ip link show | awk '/ether/ {print $2; exit}')
 	[[ -n "${mac_address}" ]] && Txt "${mac_address}" || {
 		Err "無法取得 MAC 位址。找不到網路介面"
 		return 1
 	}
 }
-function MEM_USAGE() {
+function MemUsage() {
 	used=$(free -b | awk '/^Mem:/ {print $3}') || used=$(vmstat -s | grep 'used memory' | awk '{print $1*1024}') || {
 		Err "取得記憶體使用統計資料失敗"
 		return 1
@@ -1049,11 +1049,11 @@ function MEM_USAGE() {
 	-u) Txt "${used}" ;;
 	-t) Txt "${total}" ;;
 	-p) Txt "${percentage}" ;;
-	*) Txt "$(CONVERT_SIZE ${used}) / $(CONVERT_SIZE ${total}) (${percentage}%)" ;;
+	*) Txt "$(ConvSz ${used}) / $(ConvSz ${total}) (${percentage}%)" ;;
 	esac
 }
 
-function NET_PROVIDER() {
+function NetProv() {
 	result=$(timeout 1s curl -sL ipinfo.io | grep -oP '"org"\s*:\s*"\K[^"]+') ||
 		result=$(timeout 1s curl -sL ipwhois.app/json | grep -oP '"org"\s*:\s*"\K[^"]+') ||
 		result=$(timeout 1s curl -sL ip-api.com/json | grep -oP '"org"\s*:\s*"\K[^"]+') ||
@@ -1063,7 +1063,7 @@ function NET_PROVIDER() {
 	}
 }
 
-function PKG_COUNT() {
+function PkgCount() {
 	pkg_manager=$(command -v apk apt opkg pacman yum zypper dnf 2>/dev/null | head -n1)
 	case ${pkg_manager##*/} in
 	apk) count_cmd="apk info" ;;
@@ -1085,7 +1085,7 @@ function PKG_COUNT() {
 	fi
 	Txt "${pkg_count}"
 }
-function PROGRESS() {
+function Prog() {
 	num_cmds=${#cmds[@]}
 	term_width=$(tput cols) || {
 		Err "取得終端機寬度失敗"
@@ -1113,7 +1113,7 @@ function PROGRESS() {
 	stty echo
 	trap - SIGINT SIGQUIT SIGTSTP
 }
-function PUBLIC_IP() {
+function PubIp() {
 	ip=$(curl -s "https://developers.cloudflare.com/cdn-cgi/trace" | grep "^ip=" | cut -d= -f2)
 	[ -n "${ip}" ] && Txt "${ip}" || {
 		Err "無法偵測公開 IP 位址。請檢查網路連線"
@@ -1121,9 +1121,9 @@ function PUBLIC_IP() {
 	}
 }
 
-function RUN() {
+function Run() {
 	commands=()
-	# ADD bash-completion &>/dev/null
+	# Add bash-completion &>/dev/null
 	_run_completions() {
 		cur="${COMP_WORDS[COMP_CWORD]}"
 		prev="${COMP_WORDS[COMP_CWORD - 1]}"
@@ -1231,7 +1231,7 @@ function RUN() {
 						fi
 					fi
 				fi
-				Task "* 建立目標目錄" "ADD -d "${repo_name}" && cp -r "${temp_dir}"/* "${repo_name}"/"
+				Task "* 建立目標目錄" "Add -d "${repo_name}" && cp -r "${temp_dir}"/* "${repo_name}"/"
 				Task "* 清理暫存檔案" "rm -rf "${temp_dir}""
 				Txt "儲存庫已克隆到目錄：${CLR2}${repo_name}"
 				if [[ -f "${repo_name}/${script_path}" ]]; then
@@ -1352,7 +1352,7 @@ function RUN() {
 	rm -rf /tmp/* &>/dev/null
 }
 
-function SHELL_VER() {
+function ShellVer() {
 	LC_ALL=C
 	if [ -n "${BASH_VERSION-}" ]; then
 		Txt "Bash ${BASH_VERSION}"
@@ -1365,7 +1365,7 @@ function SHELL_VER() {
 		}
 	fi
 }
-function SWAP_USAGE() {
+function SwapUsage() {
 	used=$(free -b | awk '/^Swap:/ {printf "%.0f", $3}')
 	total=$(free -b | awk '/^Swap:/ {printf "%.0f", $2}')
 	percentage=$(free | awk '/^Swap:/ {if($2>0) printf("%.2f"), $3/$2 * 100.0; else print "0.00"}')
@@ -1373,11 +1373,11 @@ function SWAP_USAGE() {
 	-u) Txt "${used}" ;;
 	-t) Txt "${total}" ;;
 	-p) Txt "${percentage}" ;;
-	*) Txt "$(CONVERT_SIZE ${used}) / $(CONVERT_SIZE ${total}) (${percentage}%)" ;;
+	*) Txt "$(ConvSz ${used}) / $(ConvSz ${total}) (${percentage}%)" ;;
 	esac
 }
 function SYS_CLEAN() {
-	CHECK_ROOT
+	ChkRoot
 	Txt "${CLR3}正在執行系統清理...${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 	case $(command -v apk apt opkg pacman yum zypper dnf | head -n1) in
@@ -1553,57 +1553,57 @@ function SYS_CLEAN() {
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 	Txt "${CLR2}完成${CLR0}\n"
 }
-function SYS_INFO() {
+function SysInfo() {
 	Txt "${CLR3}系統資訊${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 
 	Txt "- 主機名稱：		${CLR2}$(uname -n || hostname)${CLR0}"
-	Txt "- 作業系統：		${CLR2}$(CHECK_OS)${CLR0}"
+	Txt "- 作業系統：		${CLR2}$(ChkOs)${CLR0}"
 	Txt "- 核心版本：		${CLR2}$(uname -r)${CLR0}"
 	Txt "- 系統語言：		${CLR2}$LANG${CLR0}"
-	Txt "- Shell 版本：		${CLR2}$(SHELL_VER)${CLR0}"
-	Txt "- 最後系統更新：	${CLR2}$(LAST_UPDATE)${CLR0}"
+	Txt "- Shell 版本：		${CLR2}$(ShellVer)${CLR0}"
+	Txt "- 最後系統更新：	${CLR2}$(LastUpd)${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
 
 	Txt "- 架構：		${CLR2}$(uname -m)${CLR0}"
-	Txt "- CPU 型號：		${CLR2}$(CPU_MODEL)${CLR0}"
+	Txt "- CPU 型號：		${CLR2}$(CpuModel)${CLR0}"
 	Txt "- CPU 核心數：		${CLR2}$(nproc)${CLR0}"
-	Txt "- CPU 頻率：		${CLR2}$(CPU_FREQ)${CLR0}"
-	Txt "- CPU 使用率：		${CLR2}$(CPU_USAGE)%${CLR0}"
-	Txt "- CPU 快取：		${CLR2}$(CPU_CACHE)${CLR0}"
+	Txt "- CPU 頻率：		${CLR2}$(CpuFreq)${CLR0}"
+	Txt "- CPU 使用率：		${CLR2}$(CpuUsage)%${CLR0}"
+	Txt "- CPU 快取：		${CLR2}$(CpuCache)${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
 
-	Txt "- 記憶體使用率：	${CLR2}$(MEM_USAGE)${CLR0}"
-	Txt "- Swap 使用率：		${CLR2}$(SWAP_USAGE)${CLR0}"
-	Txt "- 磁碟使用率：		${CLR2}$(DISK_USAGE)${CLR0}"
+	Txt "- 記憶體使用率：	${CLR2}$(MemUsage)${CLR0}"
+	Txt "- Swap 使用率：		${CLR2}$(SwapUsage)${CLR0}"
+	Txt "- 磁碟使用率：		${CLR2}$(DiskUsage)${CLR0}"
 	Txt "- 檔案系統類型：	${CLR2}$(df -T / | awk 'NR==2 {print $2}')${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
 
-	Txt "- IPv4 地址：		${CLR2}$(IP_ADDR -4)${CLR0}"
-	Txt "- IPv6 地址：		${CLR2}$(IP_ADDR -6)${CLR0}"
-	Txt "- MAC 位址：		${CLR2}$(MAC_ADDR)${CLR0}"
-	Txt "- 網路供應商：		${CLR2}$(NET_PROVIDER)${CLR0}"
-	Txt "- DNS 伺服器：		${CLR2}$(DNS_ADDR)${CLR0}"
-	Txt "- 公開 IP：		${CLR2}$(PUBLIC_IP)${CLR0}"
-	Txt "- 網路介面：		${CLR2}$(INTERFACE -i)${CLR0}"
-	Txt "- 內部時區：		${CLR2}$(TIMEZONE -i)${CLR0}"
-	Txt "- 外部時區：		${CLR2}$(TIMEZONE -e)${CLR0}"
+	Txt "- IPv4 地址：		${CLR2}$(IpAddr -4)${CLR0}"
+	Txt "- IPv6 地址：		${CLR2}$(IpAddr -6)${CLR0}"
+	Txt "- MAC 位址：		${CLR2}$(MacAddr)${CLR0}"
+	Txt "- 網路供應商：		${CLR2}$(NetProv)${CLR0}"
+	Txt "- DNS 伺服器：		${CLR2}$(DnsAddr)${CLR0}"
+	Txt "- 公開 IP：		${CLR2}$(PubIp)${CLR0}"
+	Txt "- 網路介面：		${CLR2}$(Iface -i)${CLR0}"
+	Txt "- 內部時區：		${CLR2}$(TimeZn -i)${CLR0}"
+	Txt "- 外部時區：		${CLR2}$(TimeZn -e)${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
 
-	Txt "- 負載平均：		${CLR2}$(LOAD_AVERAGE)${CLR0}"
+	Txt "- 負載平均：		${CLR2}$(LoadAvg)${CLR0}"
 	Txt "- 程序數量：		${CLR2}$(ps aux | wc -l)${CLR0}"
-	Txt "- 已安裝套件：		${CLR2}$(PKG_COUNT)${CLR0}"
+	Txt "- 已安裝套件：		${CLR2}$(PkgCount)${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
 
 	Txt "- 運行時間：		${CLR2}$(uptime -p | sed 's/up //')${CLR0}"
 	Txt "- 啟動時間：		${CLR2}$(who -b | awk '{print $3, $4}')${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
 
-	Txt "- 虛擬化：		${CLR2}$(CHECK_VIRT)${CLR0}"
+	Txt "- 虛擬化：		${CLR2}$(ChkVirt)${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 }
-function SYS_OPTIMIZE() {
-	CHECK_ROOT
+function SysOptz() {
+	ChkRoot
 	Txt "${CLR3}正在優化長期運行伺服器的系統設定...${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 	sysctl_conf_SysOptimize="/etc/sysctl.d/99-server-optimizations.conf"
@@ -1701,8 +1701,8 @@ function SYS_OPTIMIZE() {
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 	Txt "${CLR2}完成${CLR0}\n"
 }
-function SYS_REBOOT() {
-	CHECK_ROOT
+function SysRboot() {
+	ChkRoot
 	Txt "${CLR3}正在準備重新啟動系統...${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 	active_users=$(who | wc -l) || {
@@ -1741,8 +1741,8 @@ function SYS_REBOOT() {
 	}
 	Txt "${CLR2}已成功發出重新啟動命令。系統將立即重新啟動${CLR0}"
 }
-function SYS_UPDATE() {
-	CHECK_ROOT
+function SysUpd() {
+	ChkRoot
 	Txt "${CLR3}正在更新系統軟體...${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 	update_pkgs() {
@@ -1798,11 +1798,11 @@ function SYS_UPDATE() {
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 	Txt "${CLR2}完成${CLR0}\n"
 }
-function SYS_UPGRADE() {
-	CHECK_ROOT
+function SysUpg() {
+	ChkRoot
 	Txt "${CLR3}正在升級系統至下一個主要版本...${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
-	os_name=$(CHECK_OS -n)
+	os_name=$(ChkOs -n)
 	case "${os_name}" in
 	Debian)
 		Txt "* 偵測到 'Debian' 系統"
@@ -1859,7 +1859,7 @@ function SYS_UPGRADE() {
 			Err "升級 Ubuntu 版本失敗"
 			return 1
 		}
-		SYS_REBOOT
+		SysRboot
 		;;
 	*) {
 		Err "您的系統尚不支援主要版本升級"
@@ -1888,7 +1888,7 @@ function Task() {
 	rm -f "${temp_file}"
 	return "${ret}"
 }
-function TIMEZONE() {
+function TimeZn() {
 	case "$1" in
 	-e)
 		result=$(timeout 1s curl -sL ipapi.co/timezone) ||
