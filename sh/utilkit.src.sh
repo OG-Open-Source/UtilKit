@@ -531,7 +531,7 @@ function Del() {
 				ChkRoot
 				case ${PKG_MGR} in
 				apk | apt | opkg | pacman | yum | zypper | dnf)
-					in_instd_Del() {
+					is_instd_Del() {
 						case ${PKG_MGR} in
 						apk) apk info -e "$1" &>/dev/null ;;
 						apt) dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q "ok installed" ;;
@@ -551,12 +551,12 @@ function Del() {
 						zypper) zypper remove -y "$1" ;;
 						esac
 					}
-					if ! in_instd_Del "$1"; then
+					if ! is_instd_Del "$1"; then
 						Txt "* 套件 $1 不存在"
 						Txt "${CLR2}完成${CLR0}\n"
 					else
 						if rm_pkg_Del "$1"; then
-							if ! in_instd_Del "$1"; then
+							if ! is_instd_Del "$1"; then
 								Txt "* 套件 $1 移除成功"
 								Txt "${CLR2}完成${CLR0}\n"
 							else
@@ -757,61 +757,61 @@ function Get() {
 		return 2
 	}
 	[[ ${url_Get} =~ ^(http|https|ftp):// ]] || url_Get="https://${url_Get}"
-	ou_file_Get="${url_Get##*/}"
-	[ -z "${ou_file_Get}" ] && ou_file_Get="index.html"
+	oup_file_Get="${url_Get##*/}"
+	[ -z "${oup_file_Get}" ] && oup_file_Get="index.html"
 	[ "${targ_dir_Get}" != "." ] && { mkdir -p "${targ_dir_Get}" || {
 		Err "建立目錄 ${targ_dir_Get} 失敗"
 		return 1
 	}; }
-	[ -n "${rnm_file_Get}" ] && ou_file_Get="${rnm_file_Get}"
-	ou_path_Get="${targ_dir_Get}/${ou_file_Get}"
+	[ -n "${rnm_file_Get}" ] && oup_file_Get="${rnm_file_Get}"
+	oup_path_Get="${targ_dir_Get}/${oup_file_Get}"
 	url_Get=$(Txt "${url_Get}" | sed -E 's#([^:])/+#\1/#g; s#^(https?|ftp):/+#\1://#')
 	Txt "${CLR3}下載［${url_Get}］${CLR0}"
 	file_sz_Get=$(curl -sI "${url_Get}" | grep -i content-length | awk '{print $2}' | tr -d '\r')
 	if [ -n "${file_sz_Get}" ] && [ "${file_sz_Get}" -gt 26214400 ]; then
-		wget --no-check-certificate --timeout=5 --tries=2 "${url_Get}" -O "${ou_path_Get}" || {
+		wget --no-check-certificate --timeout=5 --tries=2 "${url_Get}" -O "${oup_path_Get}" || {
 			Err "使用 Wget 下載檔案失敗"
 			return 1
 		}
 	else
-		curl --location --insecure --connect-timeout 5 --retry 2 "${url_Get}" -o "${ou_path_Get}" || {
+		curl --location --insecure --connect-timeout 5 --retry 2 "${url_Get}" -o "${oup_path_Get}" || {
 			Err "使用 cUrl 下載檔案失敗"
 			return 1
 		}
 	fi
-	if [ -f "${ou_path_Get}" ]; then
-		Txt "* 檔案成功下載至 ${ou_path_Get}"
+	if [ -f "${oup_path_Get}" ]; then
+		Txt "* 檔案成功下載至 ${oup_path_Get}"
 		if [ "${unzip_Get}" = true ]; then
-			case "${ou_file_Get}" in
-			*.tar.gz | *.tgz) tar -xzf "${ou_path_Get}" -C "${targ_dir_Get}" || {
+			case "${oup_file_Get}" in
+			*.tar.gz | *.tgz) tar -xzf "${oup_path_Get}" -C "${targ_dir_Get}" || {
 				Err "解壓縮 tar.gz 檔案失敗"
 				return 1
 			} ;;
-			*.tar) tar -xf "${ou_path_Get}" -C "${targ_dir_Get}" || {
+			*.tar) tar -xf "${oup_path_Get}" -C "${targ_dir_Get}" || {
 				Err "解壓縮 tar 檔案失敗"
 				return 1
 			} ;;
-			*.tar.bz2 | *.tbz2) tar -xjf "${ou_path_Get}" -C "${targ_dir_Get}" || {
+			*.tar.bz2 | *.tbz2) tar -xjf "${oup_path_Get}" -C "${targ_dir_Get}" || {
 				Err "解壓縮 tar.bz2 檔案失敗"
 				return 1
 			} ;;
-			*.tar.xz | *.txz) tar -xJf "${ou_path_Get}" -C "${targ_dir_Get}" || {
+			*.tar.xz | *.txz) tar -xJf "${oup_path_Get}" -C "${targ_dir_Get}" || {
 				Err "解壓縮 tar.xz 檔案失敗"
 				return 1
 			} ;;
-			*.zip) unzip "${ou_path_Get}" -d "${targ_dir_Get}" || {
+			*.zip) unzip "${oup_path_Get}" -d "${targ_dir_Get}" || {
 				Err "解壓縮 zip 檔案失敗"
 				return 1
 			} ;;
-			*.7z) 7z x "${ou_path_Get}" -o"${targ_dir_Get}" || {
+			*.7z) 7z x "${oup_path_Get}" -o"${targ_dir_Get}" || {
 				Err "解壓縮 7z 檔案失敗"
 				return 1
 			} ;;
-			*.rar) unrar x "${ou_path_Get}" "${targ_dir_Get}" || {
+			*.rar) unrar x "${oup_path_Get}" "${targ_dir_Get}" || {
 				Err "解壓縮 rar 檔案失敗"
 				return 1
 			} ;;
-			*.zst) zstd -d "${ou_path_Get}" -o "${targ_dir_Get}" || {
+			*.zst) zstd -d "${oup_path_Get}" -o "${targ_dir_Get}" || {
 				Err "解壓縮 zst 檔案失敗"
 				return 1
 			} ;;
@@ -1098,8 +1098,8 @@ function Prog() {
 		prog_Prog=$((i * 100 / num_cmds_Prog))
 		fild_wid_Prog=$((prog_Prog * bar_wid_Prog / 100))
 		printf "\r\033[30;42mProgress: [%3d%%]\033[0m [%s%s]" "${prog_Prog}" "$(printf "%${fild_wid_Prog}s" | tr ' ' '#')" "$(printf "%$((bar_wid_Prog - fild_wid_Prog))s" | tr ' ' '.')"
-		if ! cmd_ou_Prog=$(eval "${cmds[$i]}" 2>&1); then
-			Txt "\n${cmd_ou_Prog}"
+		if ! cmd_oup_Prog=$(eval "${cmds[$i]}" 2>&1); then
+			Txt "\n${cmd_oup_Prog}"
 			stty echo
 			trap - SIGINT SIGQUIT SIGTSTP
 			{
