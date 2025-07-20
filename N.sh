@@ -2,7 +2,7 @@
 
 ANTHORS="OG-Open-Source"
 SCRIPTS="UtilKit.sh"
-VERSION="7.046.002"
+VERSION="7.046.003"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -15,8 +15,7 @@ CLR8="\033[0;96m"
 CLR9="\033[0;97m"
 CLR0="\033[0m"
 
-PKG_MGR=$(command -v apk apt opkg pacman yum zypper dnf | head -n1)
-PKG_MGR=${PKG_MGR##*/}
+PKG_MGR=""
 
 function Txt() { echo -e "$1" "$2"; }
 function Err() {
@@ -1253,7 +1252,7 @@ function Run() {
 				fi
 			else
 				Txt "${CLR3}正在從 ${repo_owner_Run}/${repo_name_Run} 下載並執行腳本 [${script_nm_Run}]${CLR0}"
-				github_url_Run="https://raw.githubusercontent.com/${repo_owner_Run}/${repo_name_Run}/refs/heads/${branch_Run}/${script_path_Run}"
+				github_url_Run="https://raw.githubusercontent.com/${repo_owner_Run}/${repo_name_Run}/${branch_Run}/${script_path_Run}"
 				if [[ ${branch_Run} != "main" ]]; then
 					Task "* 檢查分支 ${branch_Run}" "curl -sLf "${github_url_Run}" >/dev/null"
 					[ $? -ne 0 ] && {
@@ -1265,7 +1264,7 @@ function Run() {
 					if [ $? -ne 0 ]; then
 						Task "* 檢查 master 分支" "
 							branch_Run="master"
-							github_url_Run="https://raw.githubusercontent.com/${repo_owner_Run}/${repo_name_Run}/refs/heads/master/${script_path_Run}"
+							github_url_Run="https://raw.githubusercontent.com/${repo_owner_Run}/${repo_name_Run}/master/${script_path_Run}"
 							curl -sLf "${github_url_Run}" >/dev/null
 						"
 						[ $? -ne 0 ] && {
@@ -1783,7 +1782,7 @@ function SysUpd() {
 	} ;;
 	esac
 	Txt "* 正在更新 ${SCRIPTS}"
-	bash <(curl -L https://raw.githubusercontent.com/OG-Open-Source/UtilKit/refs/heads/main/sh/get_utilkit.sh) || {
+	bash <(curl -L https://raw.githubusercontent.com/OG-Open-Source/UtilKit/main/sh/get_utilkit.sh) || {
 		Err "更新 ${SCRIPTS} 失敗"
 		return 1
 	}
