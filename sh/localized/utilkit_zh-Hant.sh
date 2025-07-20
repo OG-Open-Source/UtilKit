@@ -2,7 +2,7 @@
 
 ANTHORS="OG-Open-Source"
 SCRIPTS="UtilKit.sh"
-VERSION="7.046.003"
+VERSION="7.046.004"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -828,7 +828,9 @@ function Get() {
 	fi
 }
 function Ask() {
-	read -e -p "$1" -r $2 || {
+	prompt_msg_Ask="$1"
+	shift
+	read -e -p "$prompt_msg_Ask" -r "$@" || {
 		Err "讀取使用者輸入失敗"
 		return 1
 	}
@@ -1274,7 +1276,7 @@ function Run() {
 					fi
 				fi
 				Task "* 下載腳本" "
-					curl -sSLf "${github_url_Run}" -o "${script_nm_Run}" || { 
+					curl -sSLf "${github_url_Run}" -o "${script_nm_Run}" || {
 						Err "下載腳本 ${script_nm_Run} 失敗"
 						Err "從 ${github_url_Run} 下載失敗"
 						return 1
@@ -1292,7 +1294,7 @@ function Run() {
 						Err "下載的檔案僅包含空白字元"
 						return 1
 					fi
-					chmod +x "${script_nm_Run}" || { 
+					chmod +x "${script_nm_Run}" || {
 						Err "設定腳本 ${script_nm_Run} 執行權限失敗"
 						Err "無法設定 ${script_nm_Run} 的執行權限"
 						ls -la "${script_nm_Run}"
@@ -1547,7 +1549,6 @@ function SysClean() {
 function SysInfo() {
 	Txt "${CLR3}系統資訊${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
-
 	Txt "- 主機名稱：		${CLR2}$(uname -n || hostname)${CLR0}"
 	Txt "- 作業系統：		${CLR2}$(ChkOs)${CLR0}"
 	Txt "- 核心版本：		${CLR2}$(uname -r)${CLR0}"
@@ -1555,7 +1556,6 @@ function SysInfo() {
 	Txt "- Shell 版本：		${CLR2}$(ShellVer)${CLR0}"
 	Txt "- 最後系統更新：	${CLR2}$(LastUpd)${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
-
 	Txt "- 架構：		${CLR2}$(uname -m)${CLR0}"
 	Txt "- CPU 型號：		${CLR2}$(CpuModel)${CLR0}"
 	Txt "- CPU 核心數：		${CLR2}$(nproc)${CLR0}"
@@ -1563,13 +1563,11 @@ function SysInfo() {
 	Txt "- CPU 使用率：		${CLR2}$(CpuUsage)%${CLR0}"
 	Txt "- CPU 快取：		${CLR2}$(CpuCache)${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
-
 	Txt "- 記憶體使用率：	${CLR2}$(MemUsage)${CLR0}"
 	Txt "- SWAP 使用率：		${CLR2}$(SwapUsage)${CLR0}"
 	Txt "- 磁碟使用率：		${CLR2}$(DiskUsage)${CLR0}"
 	Txt "- 檔案系統類型：	${CLR2}$(df -T / | awk 'NR==2 {print $2}')${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
-
 	Txt "- IPv4 地址：		${CLR2}$(IpAddr --ipv4)${CLR0}"
 	Txt "- IPv6 地址：		${CLR2}$(IpAddr --ipv6)${CLR0}"
 	Txt "- MAC 位址：		${CLR2}$(MacAddr)${CLR0}"
@@ -1580,16 +1578,13 @@ function SysInfo() {
 	Txt "- 內部時區：		${CLR2}$(TimeZn --internal)${CLR0}"
 	Txt "- 外部時區：		${CLR2}$(TimeZn --external)${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
-
 	Txt "- 負載平均：		${CLR2}$(LoadAvg)${CLR0}"
 	Txt "- 程序數量：		${CLR2}$(ps aux | wc -l)${CLR0}"
 	Txt "- 已安裝套件：		${CLR2}$(PkgCnt)${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
-
 	Txt "- 運行時間：		${CLR2}$(uptime -p | sed 's/up //')${CLR0}"
 	Txt "- 啟動時間：		${CLR2}$(who -b | awk '{print $3, $4}')${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
-
 	Txt "- 虛擬化：		${CLR2}$(ChkVirt)${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 }
@@ -1599,7 +1594,6 @@ function SysOptz() {
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 	sysctl_conf_SysOptimize="/etc/sysctl.d/99-server-optimizations.conf"
 	Txt "# 長期運行系統的伺服器優化" >"${sysctl_conf_SysOptimize}"
-
 	Task "* 正在優化記憶體管理" "
 		Txt 'vm.swappiness = 1' >> ${sysctl_conf_SysOptimize}
 		Txt 'vm.vfs_cache_pressure = 50' >> ${sysctl_conf_SysOptimize}
@@ -1610,7 +1604,6 @@ function SysOptz() {
 		Err "優化記憶體管理失敗"
 		return 1
 	}
-
 	Task "* 正在優化網路設定" "
 		Txt 'net.core.somaxconn = 65535' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.core.netdev_max_backlog = 65535' >> ${sysctl_conf_SysOptimize}
@@ -1625,7 +1618,6 @@ function SysOptz() {
 		Err "優化網路設定失敗"
 		return 1
 	}
-
 	Task "* 正在優化 TCP 緩衝區" "
 		Txt 'net.core.rmem_max = 16777216' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.core.wmem_max = 16777216' >> ${sysctl_conf_SysOptimize}
@@ -1636,7 +1628,6 @@ function SysOptz() {
 		Err "優化 TCP 緩衝區失敗"
 		return 1
 	}
-
 	Task "* 正在優化檔案系統設定" "
 		Txt 'fs.file-max = 2097152' >> ${sysctl_conf_SysOptimize}
 		Txt 'fs.nr_open = 2097152' >> ${sysctl_conf_SysOptimize}
@@ -1645,7 +1636,6 @@ function SysOptz() {
 		Err "優化檔案系統設定失敗"
 		return 1
 	}
-
 	Task "* 正在優化系統限制" "
 		Txt '* soft nofile 1048576' >> /etc/security/limits.conf
 		Txt '* hard nofile 1048576' >> /etc/security/limits.conf
@@ -1655,7 +1645,6 @@ function SysOptz() {
 		Err "優化系統限制失敗"
 		return 1
 	}
-
 	Task "* 正在優化 I/O 排程器" "
 		for disk in /sys/block/[sv]d*; do
 			Txt 'none' > \$disk/queue/scheduler 2>/dev/null || true
@@ -1665,7 +1654,6 @@ function SysOptz() {
 		Err "優化 I/O 排程器失敗"
 		return 1
 	}
-
 	Task "* 停用非必要服務" "
 		for service_SysOptz in bluetooth cups avahi-daemon postfix nfs-server rpcbind autofs; do
 			systemctl disable --now $service_SysOptz 2>/dev/null || true
@@ -1674,12 +1662,10 @@ function SysOptz() {
 		Err "停用服務失敗"
 		return 1
 	}
-
 	Task "* 套用系統參數" "sysctl -p ${sysctl_conf_SysOptimize}" || {
 		Err "套用系統參數失敗"
 		return 1
 	}
-
 	Task "* 清除系統快取" "
 		sync
 		Txt 3 > /proc/sys/vm/drop_caches
@@ -1688,7 +1674,6 @@ function SysOptz() {
 		Err "清除系統快取失敗"
 		return 1
 	}
-
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 	Txt "${CLR2}完成${CLR0}\n"
 }
