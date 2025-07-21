@@ -52,8 +52,11 @@ jobs:
                   print "  \"zh-Hant\": {"
               }
               {
-                  # Escape double quotes within the string itself
+                  # Escape control characters (like newlines) and double quotes
+                  gsub(/\\/, "\\\\")
                   gsub(/"/, "\\\"")
+                  gsub(/\n/, "\\n")
+                  gsub(/\t/, "\\t")
                   if (NR > 1) {
                       printf ",\n"
                   }
