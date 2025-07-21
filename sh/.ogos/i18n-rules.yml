@@ -1,0 +1,28 @@
+# Configuration for the localization process.
+# This file defines how source files are processed, translated, and localized.
+
+# --- Translator Settings ---
+# Defines the translation service to be used.
+# Supported translators are based on the 'deep_translator' library (e.g., 'google', 'pons', 'linguee', 'mytmemory').
+translator: "google"
+
+# --- Language Settings ---
+# Defines the source and target languages for translation.
+# The codes should be specified in a way that 'deep_translator' understands.
+# The engine will automatically handle mappings (e.g., zh-Hant -> zh-TW).
+languages:
+  source: "zh-Hant" # The original language of the source file.
+  targets:
+    - "en"
+    - "zh-Hans"
+
+# --- Extraction Rules ---
+# A list of rules to find and extract strings for translation from source files.
+# You can define multiple regex patterns.
+extraction_rules:
+  - type: "regex"
+    # This pattern captures strings within quotes for commands like Ask, Txt, Task, Err.
+    pattern: '(Ask|Txt|Task|Err)\s+"([^"]+)"'
+    # The capture group index for the string to be extracted.
+    # In the pattern above, group 2 is the text content inside the quotes.
+    capture_group: 2

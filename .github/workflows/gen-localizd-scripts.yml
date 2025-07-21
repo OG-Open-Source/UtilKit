@@ -13,6 +13,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Fetch all history for accurate file change detection
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -22,77 +25,21 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install deep-translator
-          sudo apt-get update && sudo apt-get install -y jq
+          if [ -f scripts/requirements.txt ]; then pip install -r scripts/requirements.txt; fi
 
-      - name: Process and Translate Source Files
-        id: process_files
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v41
+        with:
+          files: "**/utilkit.src.*"
+
+      - name: Run Localization Engine for Changed Files
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: |
-          find . -type f -name "utilkit.src.*" | while read src_file; do
-            dir=$(dirname "$src_file")
-            base_name=$(basename "$src_file" | sed -E 's/\.src\..*//')
-            extension="${src_file##*.}"
-            
-            intl_file="$dir/$base_name.$extension"
-            json_file="$dir/$base_name.$extension.json"
-            
-            echo "--- Processing: $src_file ---"
-
-            # Step 1: Extract text and create translation file if needed
-            if [ ! -f "$json_file" ]; then
-              echo "Creating new translation file: $json_file"
-              # This regex extracts the strings and builds a JSON object.
-              # The default languages are en, zh-Hans, and zh-Hant.
-              grep -oP '(Ask|Txt|Task|Err)\s+"\K[^"]+' "$src_file" | \
-              awk '
-              BEGIN {
-                  print "{"
-                  print "  \"en\": {},"
-                  print "  \"zh-Hans\": {},"
-                  print "  \"zh-Hant\": {"
-              }
-              {
-                  # Escape control characters (like newlines) and double quotes
-                  gsub(/\\/, "\\\\")
-                  gsub(/"/, "\\\"")
-                  gsub(/\n/, "\\n")
-                  gsub(/\t/, "\\t")
-                  if (NR > 1) {
-                      printf ",\n"
-                  }
-                  printf "    \"*#%06d#*\": \"%s\"", NR, $0
-              }
-              END {
-                  print "\n  }"
-                  print "}"
-              }' | jq . > "$json_file" # Use jq to format the JSON
-            fi
-
-            # Step 2: Auto-translate the JSON file
-            echo "Translating $json_file..."
-            python scripts/translator.py "$json_file"
-
-            # Step 3: Create the internationalized file (with placeholders)
-            cp "$src_file" "$intl_file"
-            jq -r '.["zh-Hant"] | to_entries[] | [.key, .value] | @tsv' "$json_file" |
-            while IFS=$'\t' read -r key value; do
-              sed -i "s/\"${value}\"/\"${key}\"/g" "$intl_file"
-            done
-
-            # Step 4: Generate final localized versions
-            mkdir -p "$dir/localized"
-            languages=$(jq -r 'keys[]' "$json_file")
-            for lang in $languages; do
-              echo "Generating $lang version for $extension..."
-              output_file="$dir/localized/${base_name}_${lang}.$extension"
-              cp "$intl_file" "$output_file"
-
-              jq -r ".[\"$lang\"] | to_entries[] | [.key, .value] | @tsv" "$json_file" |
-              while IFS=$'\t' read -r key value; do
-                escaped_value=$(printf '%s\n' "$value" | sed -e 's/[\/&]/\\&/g' -e 's/\"/\\"/g')
-                sed -i "s/${key}/${escaped_value}/g" "$output_file"
-              done
-            done
+          echo "Processing changed source files..."
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            echo "--- Running engine for $file ---"
+            python scripts/localization_engine.py "$file"
           done
 
       - name: Upload localized scripts
@@ -107,5 +54,6 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .
-          git commit -m "Auto-generate and translate localized scripts" || echo "No changes to commit"
+          # Commit message now reflects the rule-driven nature of the process
+          git commit -m "chore: Auto-generate and translate localized scripts based on rules" || echo "No changes to commit"
           git push
