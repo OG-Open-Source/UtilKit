@@ -33,6 +33,10 @@ function DetectLang() {
 	*) echo "en" ;;
 	esac
 }
+DetectPkgMgr() {
+	PKG_MGR=$(command -v apk apt opkg pacman yum zypper dnf | head -n1)
+	echo "${PKG_MGR##*/}"
+}
 lang="${1:-$(DetectLang)}"
 pkg_mgr=$(DetectPkgMgr)
 if [ -f "${HOME}/utilkit.sh" ]; then
