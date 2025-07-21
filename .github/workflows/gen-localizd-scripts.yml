@@ -1,0 +1,81 @@
+name: generate-localized-scripts
+
+on:
+  push:
+    # This workflow now triggers on changes to any .json translation file
+    # in any subdirectory of the project.
+    paths:
+      - "**/*.json"
+  workflow_dispatch:
+
+jobs:
+  generate-localized-scripts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Generate localized versions
+        run: |
+          # Find all source files based on the naming convention 'utilkit.src.{extension}'
+          find . -type f -name "utilkit.src.*" | while read src_file; do
+            dir=$(dirname "$src_file")
+            extension="${src_file##*.}"
+            
+            # Define the expected names for the internationalized file and the translation file
+            intl_file="$dir/utilkit.$extension"
+            json_file="$dir/utilkit.$extension.json"
+
+            echo "Processing directory: $dir"
+            echo "Source file: $src_file"
+            echo "Internationalized file: $intl_file"
+            echo "Translation file: $json_file"
+
+            # Check if the translation file exists
+            if [ ! -f "$json_file" ]; then
+              echo "Translation file not found, skipping: $json_file"
+              continue
+            fi
+
+            # Copy the source file to the internationalized file
+            cp "$src_file" "$intl_file"
+
+            # Create a directory for the localized versions
+            mkdir -p "$dir/localized"
+
+            # Get the list of languages from the JSON file
+            languages=$(jq -r 'keys[]' "$json_file")
+
+            for lang in $languages; do
+              echo "Generating $lang version for $extension..."
+              output_file="$dir/localized/utilkit_${lang}.$extension"
+              cp "$intl_file" "$output_file"
+
+              # Read keys and values from json and apply them with sed
+              jq -r ".[\"$lang\"] | to_entries[] | [.key, .value] | @tsv" "$json_file" |
+              while IFS=$'\t' read -r key value; do
+                # Escape for sed
+                escaped_value=$(printf '%s\n' "$value" | sed -e 's/[\/&]/\\&/g' -e 's/\"/\\"/g')
+                sed -i "s/*#${key}#*/${escaped_value}/g" "$output_file"
+              done
+            done
+          done
+
+      - name: Upload localized scripts
+        uses: actions/upload-artifact@v4
+        with:
+          name: localized-scripts
+          path: "**/localized/"
+
+      - name: Commit and push localized scripts
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          # The commit message is now more generic as it handles multiple file types
+          git commit -m "Update localized scripts" || echo "No changes to commit"
+          git push
