@@ -46,22 +46,22 @@ jobs:
               grep -oP '(Ask|Txt|Task|Err)\s+"\K[^"]+' "$src_file" | \
               awk '
               BEGIN {
-                  print "{";
-                  print "  \"en\": {},";
-                  print "  \"zh-Hans\": {},";
-                  print "  \"zh-Hant\": {}";
-                  first = 1;
+                  print "{"
+                  print "  \"en\": {},"
+                  print "  \"zh-Hans\": {},"
+                  print "  \"zh-Hant\": {"
               }
               {
-                  id = sprintf("%06d", NR);
-                  if (!first) {
-                      print ",";
+                  # Escape double quotes within the string itself
+                  gsub(/"/, "\\\"")
+                  if (NR > 1) {
+                      printf ",\n"
                   }
-                  printf "  \"*#%s#*\": \"%s\"", id, $0;
-                  first = 0;
+                  printf "    \"*#%06d#*\": \"%s\"", NR, $0
               }
               END {
-                  print "\n}";
+                  print "\n  }"
+                  print "}"
               }' | jq . > "$json_file" # Use jq to format the JSON
             fi
 
