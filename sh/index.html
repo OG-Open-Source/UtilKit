@@ -58,9 +58,9 @@ else
 	if ! crontab -l 2>/dev/null | grep -q "get_utilkit.sh"; then
 		(crontab -l 2>/dev/null || echo "") | {
 			cat
-			echo "0 0 * * * curl -sL https://raw.githubusercontent.com/OG-Open-Source/UtilKit/main/sh/get_utilkit.sh | bash -s -- ${lang}"
+			echo "0 0 * * 0 curl -sL https://raw.githubusercontent.com/OG-Open-Source/UtilKit/main/sh/get_utilkit.sh | bash -s -- ${lang}"
 		} | crontab -
-		Txt "${CLR2}Added daily auto-update to crontab${CLR0}"
+		Txt "${CLR2}Added weekly auto-update to crontab${CLR0}"
 	fi
 	Txt "${CLR2}Downloading UtilKit.sh...${CLR0}"
 	if curl -sSL "https://raw.githubusercontent.com/OG-Open-Source/UtilKit/main/sh/localized/utilkit_${lang}.sh" -o "${HOME}/utilkit.sh" 2>/dev/null; then

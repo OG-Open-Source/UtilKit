@@ -1,0 +1,68 @@
+# Universal Localization Engine Configuration
+
+# --- General Settings ---
+# Defines language mappings and the source language for the entire project.
+languages:
+  source: "zh-Hant" # The single source language for all files covered by this config.
+  targets:
+    - "en"
+    - "zh-Hans"
+  map:
+    "en": "en"
+    "zh-Hant": "zh-TW"
+    "zh-Hans": "zh-CN"
+
+# --- File Processing Rules ---
+# A list of rules that define which files to process and how.
+# The engine will iterate through these rules.
+file_rules:
+  - name: "UtilKit Shell Script"
+    # Defines the source file and the target for the internationalized version.
+    # The script will replace original text with *#key#* in the source and save it to the target.
+    file_mapping:
+      "utilkit.src.sh": "utilkit.sh"
+
+    # --- Extraction & JSON ---
+    # Rules to extract text. The extracted text will be stored in a JSON file
+    # named after the internationalized file (e.g., "utilkit.sh.json").
+    extraction_rules:
+      - type: "regex"
+        pattern: '(Ask|Txt|Task|Err)\s+"([^"]+)"'
+        capture_group: 2
+
+    # --- Translator Settings for this rule set ---
+    translator:
+      provider: "google" # Can be 'openai' or any provider from deep_translator library
+      # OpenAI specific configuration (only used if provider is 'openai')
+      config:
+        api_key: "YOUR_OPENAI_API_KEY"
+        base_url: "https://api.openai.com/v1"
+        model: "gpt-4.1-nano"
+        prompts:
+          system: "You are a professional translator..."
+          user: "Translate to {{to}}: {{text}}"
+  - name: "Get UtilKit Shell Script"
+      # Defines the source file and the target for the internationalized version.
+    # The script will replace original text with *#key#* in the source and save it to the target.
+    file_mapping:
+      "get_utilkit.sh": "get_utilkit.src.sh"
+
+    # --- Extraction & JSON ---
+    # Rules to extract text. The extracted text will be stored in a JSON file
+    # named after the internationalized file (e.g., "utilkit.sh.json").
+    extraction_rules:
+      - type: "regex"
+        pattern: '(Ask|Txt|Task|Err)\s+"([^"]+)"'
+        capture_group: 2
+
+    # --- Translator Settings for this rule set ---
+    translator:
+      provider: "google" # Can be 'openai' or any provider from deep_translator library
+      # OpenAI specific configuration (only used if provider is 'openai')
+      config:
+        api_key: "YOUR_OPENAI_API_KEY"
+        base_url: "https://api.openai.com/v1"
+        model: "gpt-4.1-nano"
+        prompts:
+          system: "You are a professional translator..."
+          user: "Translate to {{to}}: {{text}}"

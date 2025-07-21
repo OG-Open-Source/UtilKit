@@ -1,0 +1,2 @@
+openai
+deep_translator

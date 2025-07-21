@@ -3,29 +3,36 @@
 # --- General Settings ---
 # Defines language mappings and the source language for the entire project.
 languages:
-  source: "cn" # The single source language for all files covered by this config.
+  source: "en" # The single source language for all files covered by this config.
   targets:
-    - "ru"
+    - "zh-TW"
+    - "zh-CN"
+    - "ja"
+    - "ko"
   map:
-    "ru": "ru"
-    "cn": "zh-CN"
+    "en": "en"
+    "zh-TW": "zh-TW"
+    "zh-CN": "zh-CN"
+    "ja": "ja"
+    "ko": "ko"
 
 # --- File Processing Rules ---
 # A list of rules that define which files to process and how.
 # The engine will iterate through these rules.
 file_rules:
-  - name: "KejiLion's Shell Script"
+  - name: "UtilKit Shell Scripts"
     # Defines the source file and the target for the internationalized version.
     # The script will replace original text with *#key#* in the source and save it to the target.
     file_mapping:
-      "kejilion.src.sh": "kejilion.sh"
+      "sh/utilkit.src.sh": "sh/utilkit.sh"
+      "shx/utilkit.src.shx": "shx/utilkit.shx"
 
     # --- Extraction & JSON ---
     # Rules to extract text. The extracted text will be stored in a JSON file
     # named after the internationalized file (e.g., "utilkit.sh.json").
     extraction_rules:
       - type: "regex"
-        pattern: '(?:echo\s*(?:-e)?|read\s+-(?:e|r)\s+-p)\s+("((?:[^"]|\\")*)")'
+        pattern: '(Ask|Txt|Task|Err)\s+"([^"]+)"'
         capture_group: 2
 
     # --- Translator Settings for this rule set ---
