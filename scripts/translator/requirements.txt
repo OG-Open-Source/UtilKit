@@ -1,2 +1,5 @@
 openai
 deep_translator
+tqdm
+google-generativeai
+ollama

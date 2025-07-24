@@ -25,49 +25,41 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Correct the path to the requirements file
-          if [ -f scripts/requirements.txt ]; then pip install -r scripts/requirements.txt; fi
+          if [ -f scripts/translator/requirements.txt ]; then pip install -r scripts/translator/requirements.txt; fi
 
-      - name: Get changed files on push
+      - name: Get changed source files
         id: changed-files
         if: github.event_name == 'push'
         uses: tj-actions/changed-files@v46
         with:
           files: "**/utilkit.src.*"
 
-      - name: Run Engine for Changed Files (on push)
-        if: github.event_name == 'push' && steps.changed-files.outputs.any_changed == 'true'
-        run: |
-          echo "Processing changed source files from push..."
-          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
-            echo "--- Running engine for $file ---"
-            python scripts/localization_engine.py "$file"
-          done
-
-      - name: Run Engine for All Files (on workflow_dispatch)
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          echo "Processing all source files on manual trigger..."
-          find . -type f -name "utilkit.src.*" | while read file; do
-            echo "--- Running engine for $file ---"
-            python scripts/localization_engine.py "$file"
-          done
-
-      - name: Upload localized scripts
-        uses: actions/upload-artifact@v4
-        with:
-          name: localized-scripts
-          path: "**/localized/"
-          if-no-files-found: warn
+      - name: Run Localization Engine
+        run: python scripts/translator/localization_engine.py
 
       - name: Commit and push changes
         run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A
+          
           # Check if there are any changes to commit
-          if [[ -n $(git status -s) ]]; then
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Action"
-            git add .
-            git commit -m "chore: Auto-generate and translate localized scripts" || echo "No changes to commit"
+          if ! git diff-index --quiet HEAD; then
+            COMMIT_MSG_TITLE="chore: Auto-generate and translate localized scripts"
+            COMMIT_MSG_BODY=""
+
+            if [[ "${{ github.event_name }}" == "push" && "${{ steps.changed-files.outputs.any_changed }}" == "true" ]]; then
+              COMMIT_MSG_BODY="Triggered by changes in the following source file(s):\n"
+              # Get commit info for each changed file
+              for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+                COMMIT_HASH=$(git log -1 --pretty=format:%h -- "$file")
+                COMMIT_DATE=$(git log -1 --pretty=format:%cI -- "$file")
+                COMMIT_MSG_BODY="${COMMIT_MSG_BODY}\n- ${COMMIT_HASH} | ${COMMIT_DATE} | ${file}"
+              done
+            fi
+            
+            # Commit with a multi-line message
+            git commit -m "$COMMIT_MSG_TITLE" -m "$COMMIT_MSG_BODY"
             git push
           else
             echo "No changes to commit."

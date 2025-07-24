@@ -1,0 +1,29 @@
+languages:
+  source: "zh-Hant"
+  targets:
+    - "en"
+    - "zh-Hans"
+  map:
+    "en": "en"
+    "zh-Hant": "zh-TW"
+    "zh-Hans": "zh-CN"
+
+file_rules:
+  - name: "UtilKit Shell Script"
+    file_mapping:
+      "utilkit.src.sh": "utilkit.sh"
+
+    extraction_rules:
+      - pattern: '(Ask|Txt|Task|Err)\s+"([^"]+)"'
+        capture_group: 2
+      - pattern: 'status_ChkDeps="([^"]+)"'
+        capture_group: 1
+      - pattern: 'virt_typ_ChkVirt="([^"]+)"'
+        capture_group: 1
+
+    translator:
+      provider: "gemini"
+      api_key: "AIzaSyChv7y0xDP0LLnWz-EUSTaFwC1bDMHrR4w"
+      model: "gemini-2.5-flash-lite"
+      rpm: 15
+      tpm: 250000

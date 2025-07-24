@@ -2,7 +2,7 @@
 
 ANTHORS="OG-Open-Source"
 SCRIPTS="UtilKit.sh"
-VERSION="7.046.004"
+VERSION="7.046.005"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -16,6 +16,7 @@ CLR9="\033[0;97m"
 CLR0="\033[0m"
 
 PKG_MGR=""
+UNIT_PREF="iB"
 
 function Txt() { echo -e "$1" "$2"; }
 function Err() {
@@ -26,7 +27,7 @@ function Err() {
 	Txt "${CLR1}$1${CLR0}"
 	if [ -w "/var/log" ]; then
 		log_file_Err="/var/log/utilkit.sh.log"
-		timestamp_Err="$(date '+%Y-%m-%d %H:%M:%S')"
+		timestamp_Err="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 		log_entry_Err="${timestamp_Err} | ${SCRIPTS} - ${VERSION} - $(Txt "$1" | tr -d '\n')"
 		Txt "${log_entry_Err}" >>"${log_file_Err}" 2>/dev/null
 	fi
@@ -48,12 +49,12 @@ function Add() {
 	err_code_Add=0
 	while [ $# -gt 0 ]; do
 		case "$1" in
-		-f)
+		-f | --file)
 			mod_Add="file"
 			shift
 			continue
 			;;
-		-d)
+		-d | --directory)
 			mod_Add="dir"
 			shift
 			continue
@@ -205,8 +206,8 @@ function ChkDeps() {
 	missg_deps_ChkDeps=()
 	while [[ $1 == -* ]]; do
 		case "$1" in
-		-i) mod_ChkDeps="interactive" ;;
-		-a) mod_ChkDeps="auto" ;;
+		-i | --interactive) mod_ChkDeps="interactive" ;;
+		-a | --automatic) mod_ChkDeps="automatic" ;;
 		*)
 			Err "無效的選項：$1"
 			return 1
@@ -216,12 +217,12 @@ function ChkDeps() {
 	done
 	for dep_ChkDeps in "${deps[@]}"; do
 		if command -v "${dep_ChkDeps}" &>/dev/null; then
-			status="${CLR2}［可用］${CLR0}"
+			status_ChkDeps="${CLR2}［可用］${CLR0}"
 		else
-			status="${CLR1}［缺失］${CLR0}"
+			status_ChkDeps="${CLR1}［缺失］${CLR0}"
 			missg_deps_ChkDeps+=("${dep_ChkDeps}")
 		fi
-		Txt "${status}\t${dep_ChkDeps}"
+		Txt "${status_ChkDeps}\t${dep_ChkDeps}"
 	done
 	[[ ${#missg_deps_ChkDeps[@]} -eq 0 ]] && return 0
 	case "${mod_ChkDeps}" in
@@ -231,7 +232,7 @@ function ChkDeps() {
 		Txt
 		[[ ${cont_inst_ChkDeps} =~ ^[Yy]$ ]] && Add "${missg_deps_ChkDeps[@]}"
 		;;
-	"auto")
+	"automatic")
 		Txt
 		Add "${missg_deps_ChkDeps[@]}"
 		;;
@@ -390,7 +391,7 @@ function ConvSz() {
 		return 2
 	}
 	size_ConvSz=$1
-	unit_ConvSz=${2:-iB}
+	unit_ConvSz=${2:-$UNIT_PREF}
 	if ! [[ ${size_ConvSz} =~ ^[+-]?[0-9]*\.?[0-9]+$ ]]; then
 		Err "無效的大小值。必須為數值"
 		return 2
@@ -478,12 +479,12 @@ function Del() {
 	err_code_Del=0
 	while [ $# -gt 0 ]; do
 		case "$1" in
-		-f)
+		-f | --file)
 			mod_Del="file"
 			shift
 			continue
 			;;
-		-d)
+		-d | --directory)
 			mod_Del="dir"
 			shift
 			continue
@@ -599,9 +600,9 @@ function DiskUsage() {
 	}
 	pct_DiskUsage=$(df / | awk '/^\/dev/ {printf("%.2f"), $3/$2 * 100.0}')
 	case "$1" in
-	-u) Txt "${usd_DiskUsage}" ;;
-	-t) Txt "${tot_DiskUsage}" ;;
-	-p) Txt "${pct_DiskUsage}" ;;
+	-u | --used) Txt "${usd_DiskUsage}" ;;
+	-t | --total) Txt "${tot_DiskUsage}" ;;
+	-p | --percentage) Txt "${pct_DiskUsage}" ;;
 	*) Txt "$(ConvSz ${usd_DiskUsage}) / $(ConvSz ${tot_DiskUsage}) (${pct_DiskUsage}%)" ;;
 	esac
 }
@@ -624,14 +625,14 @@ function DnsAddr() {
 		return 1
 	}
 	case "$1" in
-	-4)
+	-4 | --ipv4)
 		[ ${#ipv4_servers_DnsAddr[@]} -eq 0 ] && {
 			Err "找不到 IPv4 DNS 伺服器"
 			return 1
 		}
 		Txt "${ipv4_servers_DnsAddr[*]}"
 		;;
-	-6)
+	-6 | --ipv6)
 		[ ${#ipv6_servers_DnsAddr[@]} -eq 0 ] && {
 			Err "找不到 IPv6 DNS 伺服器"
 			return 1
@@ -730,11 +731,11 @@ function Get() {
 	url_Get=""
 	while [ $# -gt 0 ]; do
 		case "$1" in
-		-x)
+		-x | --unzip)
 			unzip_Get=true
 			shift
 			;;
-		-r)
+		-r | --rename)
 			[ -z "$2" ] || [[ $2 == -* ]] && {
 				Err "-r 選項後未指定檔案名稱"
 				return 2
@@ -830,7 +831,7 @@ function Get() {
 function Ask() {
 	prompt_msg_Ask="$1"
 	shift
-	read -e -p "$prompt_msg_Ask" -r "$@" || {
+	read -e -p "$(Txt "${prompt_msg_Ask}")" -r "$@" || {
 		Err "讀取使用者輸入失敗"
 		return 1
 	}
@@ -944,7 +945,7 @@ function Iface() {
 			fi
 		done
 		;;
-	-i)
+	-i | --information)
 		for iface_Iface in ${interface_Iface}; do
 			if stats_Iface=$(awk -v iface="${iface_Iface}" '$1 ~ iface":" {print $2, $3, $5, $10, $11, $13}' /proc/net/dev 2>/dev/null); then
 				read rx_bytes_Iface rx_packets_Iface rx_drop_Iface tx_bytes_Iface tx_packets_Iface tx_drop_Iface <<<"${stats_Iface}"
@@ -1028,7 +1029,14 @@ function LoadAvg() {
 	LC_ALL=C printf "%.2f, %.2f, %.2f (%d cores)" "${zo_mi_LoadAvg}" "${zv_mi_LoadAvg}" "${ov_mi_LoadAvg}" "$(nproc)"
 }
 function Loc() {
-	data_Loc=$(curl -s "https://developers.cloudflare.com/cdn-cgi/trace" | grep "^loc=" | cut -d= -f2)
+	case "$1" in
+	--city)
+		data_Loc=$(curl -s "ipinfo.io/city")
+		;;
+	--country | *)
+		data_Loc=$(curl -s "ipinfo.io/country")
+		;;
+	esac
 	[ -n "${data_Loc}" ] && Txt "${data_Loc}" || {
 		Err "無法偵測地理位置。請檢查網路連線"
 		return 1
@@ -1049,9 +1057,9 @@ function MemUsage() {
 	tot_MemUsage=$(free -b | awk '/^Mem:/ {print $2}') || tot_MemUsage=$(grep MemTotal /proc/meminfo | awk '{print $2*1024}')
 	pct_MemUsage=$(free | awk '/^Mem:/ {printf("%.2f"), $3/$2 * 100.0}') || pct_MemUsage=$(awk '/^MemTotal:/ {total=$2} /^MemAvailable:/ {available=$2} END {printf("%.2f", (total-available)/total * 100.0)}' /proc/meminfo)
 	case "$1" in
-	-u) Txt "${usd_MemUsage}" ;;
-	-t) Txt "${tot_MemUsage}" ;;
-	-p) Txt "${pct_MemUsage}" ;;
+	-u | --used) Txt "${usd_MemUsage}" ;;
+	-t | --total) Txt "${tot_MemUsage}" ;;
+	-p | --percentage) Txt "${pct_MemUsage}" ;;
 	*) Txt "$(ConvSz ${usd_MemUsage}) / $(ConvSz ${tot_MemUsage}) (${pct_MemUsage}%)" ;;
 	esac
 }
@@ -1143,7 +1151,7 @@ function Run() {
 			shift
 			while [[ $# -gt 0 && $1 == -* ]]; do
 				case "$1" in
-				-d)
+				-d | --delete-after)
 					rm_aftr_Run=true
 					shift
 					;;
@@ -1287,7 +1295,7 @@ function Run() {
 					fi
 					if [[ ! -s "${script_nm_Run}" ]]; then
 						Err "下載的檔案為空"
-						cat "${script_nm_Run}" 2>/dev/null || Txt "（無法顯示檔案內容）"
+						cat "${script_nm_Run}" 2>/dev/null || Txt "無法顯示檔案內容"
 						return 1
 					fi
 					if ! grep -q '[^[:space:]]' "${script_nm_Run}"; then
@@ -1363,9 +1371,9 @@ function SwapUsage() {
 	tot_SwapUsage=$(free -b | awk '/^Swap:/ {printf "%.0f", $2}')
 	pct_SwapUsage=$(free | awk '/^Swap:/ {if($2>0) printf("%.2f"), $3/$2 * 100.0; else print "0.00"}')
 	case "$1" in
-	-u) Txt "${usd_SwapUsage}" ;;
-	-t) Txt "${tot_SwapUsage}" ;;
-	-p) Txt "${pct_SwapUsage}" ;;
+	-u | --used) Txt "${usd_SwapUsage}" ;;
+	-t | --total) Txt "${tot_SwapUsage}" ;;
+	-p | --percentage) Txt "${pct_SwapUsage}" ;;
 	*) Txt "$(ConvSz ${usd_SwapUsage}) / $(ConvSz ${tot_SwapUsage}) (${pct_SwapUsage}%)" ;;
 	esac
 }

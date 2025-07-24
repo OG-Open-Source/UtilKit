@@ -1003,10 +1003,10 @@ iptables_panel() {
 		echo "1.  开放指定端口                 2.  关闭指定端口"
 		echo "3.  开放所有端口                 4.  关闭所有端口"
 		echo "------------------------"
-		echo "5.  IP白名单                  	 6.  IP黑名单"
+		echo "5.  IP白名单                  \t 6.  IP黑名单"
 		echo "7.  清除指定IP"
 		echo "------------------------"
-		echo "11. 允许PING                  	 12. 禁止PING"
+		echo "11. 允许PING                  \t 12. 禁止PING"
 		echo "------------------------"
 		echo "13. 启动DDOS防御                 14. 关闭DDOS防御"
 		echo "------------------------"
@@ -3042,7 +3042,7 @@ ldnmp_web_status() {
 		echo "3.  清理站点缓存                    4.  创建关联站点"
 		echo "5.  查看访问日志                    6.  查看错误日志"
 		echo "7.  编辑全局配置                    8.  编辑站点配置"
-		echo "9.  管理站点数据库		    10. 查看站点分析报告"
+		echo "9.  管理站点数据库\t\t    10. 查看站点分析报告"
 		echo "------------------------"
 		echo "20. 删除指定站点数据"
 		echo "------------------------"
@@ -3702,7 +3702,7 @@ yt_menu_pro() {
 			send_stats "批量视频下载"
 			install nano
 			if [ ! -f "$URL_FILE" ]; then
-				echo -e "# 输入多个视频链接地址\n# https://www.bilibili.com/bangumi/play/ep733316?spm_id_from=333.337.0.0&from_spmid=666.25.episode.0" >"$URL_FILE"
+				echo -e '# 输入多个视频链接地址\n# https://www.bilibili.com/bangumi/play/ep733316?spm_id_from=333.337.0.0&from_spmid=666.25.episode.0' >"$URL_FILE"
 			fi
 			nano $URL_FILE
 			echo "现在开始批量下载..."
@@ -5039,12 +5039,12 @@ shell_bianse() {
 		clear
 		echo "命令行美化工具"
 		echo "------------------------"
-		echo -e "1. \033[1;32mroot \033[1;34mlocalhost \033[1;31m~ \033[0m${gl_bai}#"
-		echo -e "2. \033[1;35mroot \033[1;36mlocalhost \033[1;33m~ \033[0m${gl_bai}#"
-		echo -e "3. \033[1;31mroot \033[1;32mlocalhost \033[1;34m~ \033[0m${gl_bai}#"
-		echo -e "4. \033[1;36mroot \033[1;33mlocalhost \033[1;37m~ \033[0m${gl_bai}#"
-		echo -e "5. \033[1;37mroot \033[1;31mlocalhost \033[1;32m~ \033[0m${gl_bai}#"
-		echo -e "6. \033[1;33mroot \033[1;34mlocalhost \033[1;35m~ \033[0m${gl_bai}#"
+		echo -e "1. \\033[1;32mroot \\033[1;34mlocalhost \\033[1;31m~ \\033[0m${gl_bai}#"
+		echo -e "2. \\033[1;35mroot \\033[1;36mlocalhost \\033[1;33m~ \\033[0m${gl_bai}#"
+		echo -e "3. \\033[1;31mroot \\033[1;32mlocalhost \\033[1;34m~ \\033[0m${gl_bai}#"
+		echo -e "4. \\033[1;36mroot \\033[1;33mlocalhost \\033[1;37m~ \\033[0m${gl_bai}#"
+		echo -e "5. \\033[1;37mroot \\033[1;31mlocalhost \\033[1;32m~ \\033[0m${gl_bai}#"
+		echo -e "6. \\033[1;33mroot \\033[1;34mlocalhost \\033[1;35m~ \\033[0m${gl_bai}#"
 		echo -e "7. root localhost ~ #"
 		echo "------------------------"
 		echo "0. 返回上一级选单"
@@ -7833,19 +7833,19 @@ linux_panel() {
 		echo -e "${gl_kjlan}37.  ${gl_bai}MyIP工具箱 ${gl_huang}★${gl_bai}                        ${gl_kjlan}38.  ${gl_bai}小雅alist全家桶"
 		echo -e "${gl_kjlan}39.  ${gl_bai}Bililive直播录制工具                ${gl_kjlan}40.  ${gl_bai}webssh网页版SSH连接工具"
 		echo -e "${gl_kjlan}------------------------"
-		echo -e "${gl_kjlan}41.  ${gl_bai}耗子管理面板                	 ${gl_kjlan}42.  ${gl_bai}Nexterm远程连接工具"
+		echo -e "${gl_kjlan}41.  ${gl_bai}耗子管理面板                \t ${gl_kjlan}42.  ${gl_bai}Nexterm远程连接工具"
 		echo -e "${gl_kjlan}43.  ${gl_bai}RustDesk远程桌面(服务端) ${gl_huang}★${gl_bai}          ${gl_kjlan}44.  ${gl_bai}RustDesk远程桌面(中继端) ${gl_huang}★${gl_bai}"
-		echo -e "${gl_kjlan}45.  ${gl_bai}Docker加速站            		 ${gl_kjlan}46.  ${gl_bai}GitHub加速站 ${gl_huang}★${gl_bai}"
-		echo -e "${gl_kjlan}47.  ${gl_bai}普罗米修斯监控			 ${gl_kjlan}48.  ${gl_bai}普罗米修斯(主机监控)"
-		echo -e "${gl_kjlan}49.  ${gl_bai}普罗米修斯(容器监控)		 ${gl_kjlan}50.  ${gl_bai}补货监控工具"
+		echo -e "${gl_kjlan}45.  ${gl_bai}Docker加速站            \t\t ${gl_kjlan}46.  ${gl_bai}GitHub加速站 ${gl_huang}★${gl_bai}"
+		echo -e "${gl_kjlan}47.  ${gl_bai}普罗米修斯监控\t\t\t ${gl_kjlan}48.  ${gl_bai}普罗米修斯(主机监控)"
+		echo -e "${gl_kjlan}49.  ${gl_bai}普罗米修斯(容器监控)\t\t ${gl_kjlan}50.  ${gl_bai}补货监控工具"
 		echo -e "${gl_kjlan}------------------------"
-		echo -e "${gl_kjlan}51.  ${gl_bai}PVE开小鸡面板			 ${gl_kjlan}52.  ${gl_bai}DPanel容器管理面板"
+		echo -e "${gl_kjlan}51.  ${gl_bai}PVE开小鸡面板\t\t\t ${gl_kjlan}52.  ${gl_bai}DPanel容器管理面板"
 		echo -e "${gl_kjlan}53.  ${gl_bai}llama3聊天AI大模型                  ${gl_kjlan}54.  ${gl_bai}AMH主机建站管理面板"
-		echo -e "${gl_kjlan}55.  ${gl_bai}FRP内网穿透(服务端) ${gl_huang}★${gl_bai}	         ${gl_kjlan}56.  ${gl_bai}FRP内网穿透(客户端) ${gl_huang}★${gl_bai}"
+		echo -e "${gl_kjlan}55.  ${gl_bai}FRP内网穿透(服务端) ${gl_huang}★${gl_bai}\t         ${gl_kjlan}56.  ${gl_bai}FRP内网穿透(客户端) ${gl_huang}★${gl_bai}"
 		echo -e "${gl_kjlan}57.  ${gl_bai}Deepseek聊天AI大模型                ${gl_kjlan}58.  ${gl_bai}Dify大模型知识库 ${gl_huang}★${gl_bai}"
 		echo -e "${gl_kjlan}59.  ${gl_bai}NewAPI大模型资产管理                ${gl_kjlan}60.  ${gl_bai}JumpServer开源堡垒机"
 		echo -e "${gl_kjlan}------------------------"
-		echo -e "${gl_kjlan}61.  ${gl_bai}在线翻译服务器			 ${gl_kjlan}62.  ${gl_bai}RAGFlow大模型知识库"
+		echo -e "${gl_kjlan}61.  ${gl_bai}在线翻译服务器\t\t\t ${gl_kjlan}62.  ${gl_bai}RAGFlow大模型知识库"
 		echo -e "${gl_kjlan}63.  ${gl_bai}OpenWebUI自托管AI平台 ${gl_huang}★${gl_bai}             ${gl_kjlan}64.  ${gl_bai}it-tools工具箱"
 		echo -e "${gl_kjlan}65.  ${gl_bai}n8n自动化工作流平台 ${gl_huang}★${gl_bai}               ${gl_kjlan}66.  ${gl_bai}yt-dlp视频下载工具"
 		echo -e "${gl_kjlan}67.  ${gl_bai}ddns-go动态DNS管理工具 ${gl_huang}★${gl_bai}            ${gl_kjlan}68.  ${gl_bai}AllinSSL证书管理平台"
@@ -8679,7 +8679,7 @@ linux_panel() {
 
 			local docker_describe="Nextcloud拥有超过 400,000 个部署，是您可以下载的最受欢迎的本地内容协作平台"
 			local docker_url="官网介绍: https://nextcloud.com/"
-			local docker_use="echo \"账号: nextcloud  密码: $rootpasswd\""
+			local docker_use="echo \\\"账号: nextcloud  密码: $rootpasswd\\\""
 			local docker_passwd=""
 			local app_size="3"
 			docker_app
@@ -8789,7 +8789,7 @@ linux_panel() {
 
 			local docker_describe="photoprism非常强大的私有相册系统"
 			local docker_url="官网介绍: https://www.photoprism.app/"
-			local docker_use="echo \"账号: admin  密码: $rootpasswd\""
+			local docker_use="echo \\\"账号: admin  密码: $rootpasswd\\\""
 			local docker_passwd=""
 			local app_size="1"
 			docker_app
@@ -11620,7 +11620,7 @@ linux_cluster() {
 		echo -e "${gl_kjlan}批量执行任务${gl_bai}"
 		echo -e "${gl_kjlan}11. ${gl_bai}安装科技lion脚本         ${gl_kjlan}12. ${gl_bai}更新系统              ${gl_kjlan}13. ${gl_bai}清理系统"
 		echo -e "${gl_kjlan}14. ${gl_bai}安装docker               ${gl_kjlan}15. ${gl_bai}安装BBR3              ${gl_kjlan}16. ${gl_bai}设置1G虚拟内存"
-		echo -e "${gl_kjlan}17. ${gl_bai}设置时区到上海           ${gl_kjlan}18. ${gl_bai}开放所有端口	       ${gl_kjlan}51. ${gl_bai}自定义指令"
+		echo -e "${gl_kjlan}17. ${gl_bai}设置时区到上海           ${gl_kjlan}18. ${gl_bai}开放所有端口\t       ${gl_kjlan}51. ${gl_bai}自定义指令"
 		echo -e "${gl_kjlan}------------------------${gl_bai}"
 		echo -e "${gl_kjlan}0.  ${gl_bai}返回主菜单"
 		echo -e "${gl_kjlan}------------------------${gl_bai}"
@@ -11823,7 +11823,7 @@ kejilion_update() {
 			fi
 			check_crontab_installed
 			(crontab -l | grep -v "kejilion.sh") | crontab -
-			# (crontab -l 2>/dev/null; echo "0 2 * * * bash -c \"$SH_Update_task\"") | crontab -
+			# (crontab -l 2>/dev/null; echo "0 2 * * * bash -c \\"$SH_Update_task\"") | crontab -
 			(
 				crontab -l 2>/dev/null
 				NO_TRAN="$(shuf -i 0-59 -n 1) 2 * * * bash -c \"\$SH_Update_task\""

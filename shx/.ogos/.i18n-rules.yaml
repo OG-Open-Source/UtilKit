@@ -1,0 +1,95 @@
+# Universal Localization Engine Configuration
+
+# --- General Settings ---
+# Defines language mappings and the source language for the entire project.
+languages:
+  source: "cn" # The single source language for all files covered by this config.
+  targets:
+    - "tw"
+    - "jp"
+    - "kr"
+    - "ru"
+    - "ir"
+    - "en"
+  map:
+    "cn": "简体中文 (中国)"
+    "tw": "繁體中文 (台灣)"
+    "jp": "日本語"
+    "kr": "한국어"
+    "ru": "русский язык"
+    "ir": "فارسی"
+    "en": "English"
+
+# --- File Processing Rules ---
+# A list of rules that define which files to process and how.
+# The engine will iterate through these rules.
+file_rules:
+  - name: "KejiLion's Shell Script"
+    file_mapping:
+      "kejilion.src.sh": "kejilion.sh"
+    extraction_rules:
+      - pattern: 'echo\s"(.*?)"'
+        capture_group: 1
+      - pattern: 'echo\s-e\s"(.*?)"'
+        capture_group: 1
+      - pattern: 'Press\s"(.*?)"'
+        capture_group: 1
+      - pattern: 'Ask\s"(.*?)"'
+        capture_group: 1
+      - pattern: 'waf_status="(.*?)"'
+        capture_group: 1
+      - pattern: 'CFmessage="(.*?)"'
+        capture_group: 1
+      - pattern: 'mode_info="(.*?)"'
+        capture_group: 1
+      - pattern: 'zstd_status="(.*?)"'
+        capture_group: 1
+      - pattern: 'br_status="(.*?)"'
+        capture_group: 1
+      - pattern: 'gzip_status="(.*?)"'
+        capture_group: 1
+      - pattern: 'check_panel="(.*?)"'
+        capture_group: 1
+      - pattern: 'check_frp="(.*?)"'
+        capture_group: 1
+      - pattern: 'YTDLP_STATUS="(.*?)"'
+        capture_group: 1
+      - pattern: 'tiaoyou_moshi="(.*?)"'
+        capture_group: 1
+      - pattern: 'trash_status="(.*?)"'
+        capture_group: 1
+      - pattern: 'output="(.*?)"'
+        capture_group: 1
+      - pattern: 'db_output="(.*?)"'
+        capture_group: 1
+      - pattern: 'webname="(.*?)"'
+        capture_group: 1
+      - pattern: 'app_name="(.*?)"'
+        capture_group: 1
+      - pattern: 'app_text="(.*?)"'
+        capture_group: 1
+      - pattern: 'app_url="(.*?)"'
+        capture_group: 1
+      - pattern: 'panelname="(.*?)"'
+        capture_group: 1
+      - pattern: 'panelurl="(.*?)"'
+        capture_group: 1
+      - pattern: 'tmux_sshd_status="(.*?)"'
+        capture_group: 1
+      - pattern: 'docker_describe="(.*?)"'
+        capture_group: 1
+      - pattern: 'docker_url="(.*?)"'
+        capture_group: 1
+      - pattern: |
+          docker_use=(["'])(.*?)\1
+        capture_group: 2
+      - pattern: |
+          docker_passwd=(["'])(.*?)\1
+        capture_group: 2
+      - pattern: 'check_docker="(.*?)"'
+        capture_group: 1
+      - pattern: 'update_status="(.*?)"'
+        capture_group: 1
+    translator:
+      provider: "ollama"
+      model: "hf.co/unsloth/gemma-3n-E4B-it-GGUF:Q4_K_M"

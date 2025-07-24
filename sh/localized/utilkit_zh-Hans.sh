@@ -2,7 +2,7 @@
 
 ANTHORS="OG-Open-Source"
 SCRIPTS="UtilKit.sh"
-VERSION="7.046.004"
+VERSION="7.046.005"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -16,6 +16,7 @@ CLR9="\033[0;97m"
 CLR0="\033[0m"
 
 PKG_MGR=""
+UNIT_PREF="iB"
 
 function Txt() { echo -e "$1" "$2"; }
 function Err() {
@@ -26,34 +27,34 @@ function Err() {
 	Txt "${CLR1}$1${CLR0}"
 	if [ -w "/var/log" ]; then
 		log_file_Err="/var/log/utilkit.sh.log"
-		timestamp_Err="$(date '+%Y-%m-%d %H:%M:%S')"
+		timestamp_Err="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 		log_entry_Err="${timestamp_Err} | ${SCRIPTS} - ${VERSION} - $(Txt "$1" | tr -d '\n')"
 		Txt "${log_entry_Err}" >>"${log_file_Err}" 2>/dev/null
 	fi
 }
 function Add() {
 	[ $# -eq 0 ] && {
-		Err "未指定要新增的项目。请提供至少一个要新增的项目"
+		Err "未指定要添加的项目。请提供至少一个要添加的项目"
 		return 2
 	}
 	[ "$1" = "-f" -o "$1" = "-d" ] && [ $# -eq 1 ] && {
-		Err "-f 或 -d 后未指定档案或目录路径"
+		Err "-f 或 -d 后未指定文件或目录路径"
 		return 2
 	}
 	[ "$1" = "-f" -o "$1" = "-d" ] && [ "$2" = "" ] && {
-		Err "-f 或 -d 后未指定档案或目录路径"
+		Err "-f 或 -d 后未指定文件或目录路径"
 		return 2
 	}
 	mod_Add="pkg"
 	err_code_Add=0
 	while [ $# -gt 0 ]; do
 		case "$1" in
-		-f)
+		-f | --file)
 			mod_Add="file"
 			shift
 			continue
 			;;
-		-d)
+		-d | --directory)
 			mod_Add="dir"
 			shift
 			continue
@@ -61,18 +62,18 @@ function Add() {
 		*.deb)
 			ChkRoot
 			deb_file_Add=$(basename "$1")
-			Txt "${CLR3}安装 DEB 套件［${deb_file_Add}］${CLR0}\\n"
+			Txt "${CLR3}安装 DEB 套件［${deb_file_Add}］${CLR0}\n"
 			Get "$1"
 			if [ -f "${deb_file_Add}" ]; then
 				dpkg -i "${deb_file_Add}" || {
-					Err "安装 ${deb_file_Add} 失败。请检查套件相容性和相依性\\n"
+					Err "安装 ${deb_file_Add} 失败。请检查套件兼容性和依赖性\n"
 					rm -f "${deb_file_Add}"
 					err_code_Add=1
 					shift
 					continue
 				}
 				apt --fix-broken install -y || {
-					Err "修复相依性失败"
+					Err "修复依赖性失败"
 					rm -f "${deb_file_Add}"
 					err_code_Add=1
 					shift
@@ -80,9 +81,9 @@ function Add() {
 				}
 				Txt "* DEB 套件 ${deb_file_Add} 安装成功"
 				rm -f "${deb_file_Add}"
-				Txt "${CLR2}完成${CLR0}\\n"
+				Txt "${CLR2}完成${CLR0}\n"
 			else
-				Err "找不到 DEB 套件 ${deb_file_Add} 或下载失败\\n"
+				Err "找不到 DEB 套件 ${deb_file_Add} 或下载失败\n"
 				err_code_Add=1
 				shift
 				continue
@@ -92,50 +93,50 @@ function Add() {
 		*)
 			case "${mod_Add}" in
 			"file")
-				Txt "${CLR3}新增档案［$1］${CLR0}"
+				Txt "${CLR3}添加文件［$1］${CLR0}"
 				[ -d "$1" ] && {
-					Err "目录 $1 已存在。无法建立同名档案\\n"
+					Err "目录 $1 已存在。无法创建同名文件\n"
 					err_code_Add=1
 					shift
 					continue
 				}
 				[ -f "$1" ] && {
-					Err "档案 $1 已存在\\n"
+					Err "文件 $1 已存在\n"
 					err_code_Add=1
 					shift
 					continue
 				}
 				touch "$1" || {
-					Err "建立档案 $1 失败。请检查权限和磁碟空间\\n"
+					Err "创建文件 $1 失败。请检查权限和磁盘空间\n"
 					err_code_Add=1
 					shift
 					continue
 				}
-				Txt "* 档案 $1 建立成功"
-				Txt "${CLR2}完成${CLR0}\\n"
+				Txt "* 文件 $1 创建成功"
+				Txt "${CLR2}完成${CLR0}\n"
 				;;
 			"dir")
-				Txt "${CLR3}新增目录［$1］${CLR0}"
+				Txt "${CLR3}添加目录［$1］${CLR0}"
 				[ -f "$1" ] && {
-					Err "档案 $1 已存在。无法建立同名目录\\n"
+					Err "文件 $1 已存在。无法创建同名目录\n"
 					err_code_Add=1
 					shift
 					continue
 				}
 				[ -d "$1" ] && {
-					Err "目录 $1 已存在\\n"
+					Err "目录 $1 已存在\n"
 					err_code_Add=1
 					shift
 					continue
 				}
 				mkdir -p "$1" || {
-					Err "建立目录 $1 失败。请检查权限和路径有效性\\n"
+					Err "创建目录 $1 失败。请检查权限和路径有效性\n"
 					err_code_Add=1
 					shift
 					continue
 				}
-				Txt "* 目录 $1 建立成功"
-				Txt "${CLR2}完成${CLR0}\\n"
+				Txt "* 目录 $1 创建成功"
+				Txt "${CLR2}完成${CLR0}\n"
 				;;
 			"pkg")
 				Txt "${CLR3}安装套件［$1］${CLR0}"
@@ -167,26 +168,26 @@ function Add() {
 						if inst_pkg_Add "$1"; then
 							if is_instd_Add "$1"; then
 								Txt "* 套件 $1 安装成功"
-								Txt "${CLR2}完成${CLR0}\\n"
+								Txt "${CLR2}完成${CLR0}\n"
 							else
-								Err "使用 ${PKG_MGR} 安装 $1 失败\\n"
+								Err "使用 ${PKG_MGR} 安装 $1 失败\n"
 								err_code_Add=1
 								shift
 								continue
 							fi
 						else
-							Err "使用 ${PKG_MGR} 安装 $1 失败\\n"
+							Err "使用 ${PKG_MGR} 安装 $1 失败\n"
 							err_code_Add=1
 							shift
 							continue
 						fi
 					else
 						Txt "* 套件 $1 已经安装"
-						Txt "${CLR2}完成${CLR0}\\n"
+						Txt "${CLR2}完成${CLR0}\n"
 					fi
 					;;
 				*)
-					Err "不支援的套件管理器\\n"
+					Err "不支持的套件管理器\n"
 					err_code_Add=1
 					shift
 					continue
@@ -205,8 +206,8 @@ function ChkDeps() {
 	missg_deps_ChkDeps=()
 	while [[ $1 == -* ]]; do
 		case "$1" in
-		-i) mod_ChkDeps="interactive" ;;
-		-a) mod_ChkDeps="auto" ;;
+		-i | --interactive) mod_ChkDeps="interactive" ;;
+		-a | --automatic) mod_ChkDeps="automatic" ;;
 		*)
 			Err "无效的选项：$1"
 			return 1
@@ -216,22 +217,22 @@ function ChkDeps() {
 	done
 	for dep_ChkDeps in "${deps[@]}"; do
 		if command -v "${dep_ChkDeps}" &>/dev/null; then
-			status="${CLR2}［可用］${CLR0}"
+			status_ChkDeps="${CLR2}［可用］${CLR0}"
 		else
-			status="${CLR1}［缺失］${CLR0}"
+			status_ChkDeps="${CLR1}［缺失］${CLR0}"
 			missg_deps_ChkDeps+=("${dep_ChkDeps}")
 		fi
-		Txt "${status}\\t${dep_ChkDeps}"
+		Txt "${status_ChkDeps}\t${dep_ChkDeps}"
 	done
 	[[ ${#missg_deps_ChkDeps[@]} -eq 0 ]] && return 0
 	case "${mod_ChkDeps}" in
 	"interactive")
-		Txt "\\n${CLR3}缺少的套件：${CLR0} ${missg_deps_ChkDeps[*]}"
-		Ask "是否要安装缺少的套件？ (y/N)" -n 1 cont_inst_ChkDeps
+		Txt "\n${CLR3}缺失的套件：${CLR0} ${missg_deps_ChkDeps[*]}"
+		Ask "是否要安装缺失的套件？(y/N) " -n 1 cont_inst_ChkDeps
 		Txt
 		[[ ${cont_inst_ChkDeps} =~ ^[Yy]$ ]] && Add "${missg_deps_ChkDeps[@]}"
 		;;
-	"auto")
+	"automatic")
 		Txt
 		Add "${missg_deps_ChkDeps[@]}"
 		;;
@@ -288,7 +289,7 @@ function ChkOs() {
 }
 function ChkRoot() {
 	if [ "${EUID}" -ne 0 ] || [ "$(id -u)" -ne 0 ]; then
-		Err "请以 root 使用者执行此脚本"
+		Err "请以 root 用户执行此脚本"
 		exit 1
 	fi
 }
@@ -296,7 +297,7 @@ function ChkVirt() {
 	if command -v systemd-detect-virt >/dev/null 2>&1; then
 		virt_typ_ChkVirt=$(systemd-detect-virt 2>/dev/null)
 		[ -z "${virt_typ_ChkVirt}" ] && {
-			Err "无法侦测虚拟化环境"
+			Err "无法检测虚拟化环境"
 			return 1
 		}
 		case "${virt_typ_ChkVirt}" in
@@ -306,15 +307,15 @@ function ChkVirt() {
 			if grep -q "container=lxc" /proc/1/environ 2>/dev/null; then
 				Txt "LXC 容器"
 			elif grep -qi "hypervisor" /proc/cpuinfo 2>/dev/null; then
-				Txt "虚拟机器（未知类型）"
+				Txt "虚拟机（未知类型）"
 			else
-				Txt "未侦测到（可能为实体机器）"
+				Txt "未检测到（可能为物理机）"
 			fi
 			;;
-		*) Txt "${virt_typ_ChkVirt:-未侦测到（可能为实体机器）}" ;;
+		*) Txt "${virt_typ_ChkVirt:-未检测到（可能为物理机）}" ;;
 		esac
 	elif [ -f /proc/cpuinfo ]; then
-		virt_typ_ChkVirt=$(grep -i "hypervisor" /proc/cpuinfo >/dev/null && Txt "虚拟机器" || Txt "无")
+		virt_typ_ChkVirt=$(grep -i "hypervisor" /proc/cpuinfo >/dev/null && Txt "虚拟机" || Txt "无")
 	else
 		virt_typ_ChkVirt="未知"
 	fi
@@ -329,19 +330,19 @@ function Clear() {
 }
 function CpuCache() {
 	[ ! -f /proc/cpuinfo ] && {
-		Err "无法存取 CPU 资讯。 /proc/cpuinfo 不可用"
+		Err "无法访问 CPU 信息。/proc/cpuinfo 不可用"
 		return 1
 	}
 	cpu_cache_CpuCache=$(awk '/^cache size/ {sum+=$4; count++} END {print (count>0) ? sum/count : "N/A"}' /proc/cpuinfo)
 	[ "${cpu_cache_CpuCache}" = "N/A" ] && {
-		Err "无法确定 CPU 快取大小"
+		Err "无法确定 CPU 缓存大小"
 		return 1
 	}
 	Txt "${cpu_cache_CpuCache} KB"
 }
 function CpuFreq() {
 	[ ! -f /proc/cpuinfo ] && {
-		Err "无法存取 CPU 资讯。 /proc/cpuinfo 不可用"
+		Err "无法访问 CPU 信息。/proc/cpuinfo 不可用"
 		return 1
 	}
 	cpu_freq_CpuFreq=$(awk '/^cpu MHz/ {sum+=$4; count++} END {print (count>0) ? sprintf("%.2f", sum/count/1000) : "N/A"}' /proc/cpuinfo)
@@ -367,14 +368,14 @@ function CpuModel() {
 }
 function CpuUsage() {
 	read -r cpu_CpuUsage usr_CpuUsage nice_CpuUsage sys_CpuUsage idle_CpuUsage iowait_CpuUsage irq_CpuUsage softirq_CpuUsage <<<$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8}' /proc/stat) || {
-		Err "从 /proc/stat 读取 CPU 统计资料失败"
+		Err "从 /proc/stat 读取 CPU 统计数据失败"
 		return 1
 	}
 	prev_total_CpuUsage=$((usr_CpuUsage + nice_CpuUsage + sys_CpuUsage + idle_CpuUsage + iowait_CpuUsage + irq_CpuUsage + softirq_CpuUsage))
 	prev_idle_CpuUsage=${idle_CpuUsage}
 	sleep 0.3
 	read -r cpu_CpuUsage usr_CpuUsage nice_CpuUsage sys_CpuUsage idle_CpuUsage iowait_CpuUsage irq_CpuUsage softirq_CpuUsage <<<$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8}' /proc/stat) || {
-		Err "从 /proc/stat 读取 CPU 统计资料失败"
+		Err "从 /proc/stat 读取 CPU 统计数据失败"
 		return 1
 	}
 	curr_tot_CpuUsage=$((usr_CpuUsage + nice_CpuUsage + sys_CpuUsage + idle_CpuUsage + iowait_CpuUsage + irq_CpuUsage + softirq_CpuUsage))
@@ -390,7 +391,7 @@ function ConvSz() {
 		return 2
 	}
 	size_ConvSz=$1
-	unit_ConvSz=${2:-iB}
+	unit_ConvSz=${2:-$UNIT_PREF}
 	if ! [[ ${size_ConvSz} =~ ^[+-]?[0-9]*\.?[0-9]+$ ]]; then
 		Err "无效的大小值。必须为数值"
 		return 2
@@ -467,23 +468,23 @@ function Del() {
 		return 2
 	}
 	[ "$1" = "-f" -o "$1" = "-d" ] && [ $# -eq 1 ] && {
-		Err "-f 或 -d 后未指定档案或目录路径"
+		Err "-f 或 -d 后未指定文件或目录路径"
 		return 2
 	}
 	[ "$1" = "-f" -o "$1" = "-d" ] && [ "$2" = "" ] && {
-		Err "-f 或 -d 后未指定档案或目录路径"
+		Err "-f 或 -d 后未指定文件或目录路径"
 		return 2
 	}
 	mod_Del="pkg"
 	err_code_Del=0
 	while [ $# -gt 0 ]; do
 		case "$1" in
-		-f)
+		-f | --file)
 			mod_Del="file"
 			shift
 			continue
 			;;
-		-d)
+		-d | --directory)
 			mod_Del="dir"
 			shift
 			continue
@@ -491,40 +492,40 @@ function Del() {
 		*)
 			case "${mod_Del}" in
 			"file")
-				Txt "${CLR3}删除档案［$1］${CLR0}"
+				Txt "${CLR3}删除文件［$1］${CLR0}"
 				[ ! -f "$1" ] && {
-					Err "档案 $1 不存在\\n"
+					Err "文件 $1 不存在\n"
 					err_code_Del=1
 					shift
 					continue
 				}
-				Txt "* 档案 $1 存在"
+				Txt "* 文件 $1 存在"
 				rm -f "$1" || {
-					Err "删除档案 $1 失败\\n"
+					Err "删除文件 $1 失败\n"
 					err_code_Del=1
 					shift
 					continue
 				}
-				Txt "* 档案 $1 删除成功"
-				Txt "${CLR2}完成${CLR0}\\n"
+				Txt "* 文件 $1 删除成功"
+				Txt "${CLR2}完成${CLR0}\n"
 				;;
 			"dir")
 				Txt "${CLR3}删除目录［$1］${CLR0}"
 				[ ! -d "$1" ] && {
-					Err "目录 $1 不存在\\n"
+					Err "目录 $1 不存在\n"
 					err_code_Del=1
 					shift
 					continue
 				}
 				Txt "* 目录 $1 存在"
 				rm -rf "$1" || {
-					Err "删除目录 $1 失败\\n"
+					Err "删除目录 $1 失败\n"
 					err_code_Del=1
 					shift
 					continue
 				}
 				Txt "* 目录 $1 删除成功"
-				Txt "${CLR2}完成${CLR0}\\n"
+				Txt "${CLR2}完成${CLR0}\n"
 				;;
 			"pkg")
 				Txt "${CLR3}移除套件［$1］${CLR0}"
@@ -553,20 +554,20 @@ function Del() {
 					}
 					if ! is_instd_Del "$1"; then
 						Txt "* 套件 $1 不存在"
-						Txt "${CLR2}完成${CLR0}\\n"
+						Txt "${CLR2}完成${CLR0}\n"
 					else
 						if rm_pkg_Del "$1"; then
 							if ! is_instd_Del "$1"; then
 								Txt "* 套件 $1 移除成功"
-								Txt "${CLR2}完成${CLR0}\\n"
+								Txt "${CLR2}完成${CLR0}\n"
 							else
-								Err "使用 ${PKG_MGR} 移除 $1 失败\\n"
+								Err "使用 ${PKG_MGR} 移除 $1 失败\n"
 								err_code_Del=1
 								shift
 								continue
 							fi
 						else
-							Err "使用 ${PKG_MGR} 移除 $1 失败\\n"
+							Err "使用 ${PKG_MGR} 移除 $1 失败\n"
 							err_code_Del=1
 							shift
 							continue
@@ -574,7 +575,7 @@ function Del() {
 					fi
 					;;
 				*)
-					Err "不支援的套件管理器\\n"
+					Err "不支持的套件管理器\n"
 					err_code_Del=1
 					shift
 					continue
@@ -590,24 +591,24 @@ function Del() {
 }
 function DiskUsage() {
 	usd_DiskUsage=$(df -B1 / | awk '/^\/dev/ {print $3}') || {
-		Err "取得磁碟使用统计资料失败"
+		Err "获取磁盘使用统计数据失败"
 		return 1
 	}
 	tot_DiskUsage=$(df -B1 / | awk '/^\/dev/ {print $2}') || {
-		Err "取得总磁碟空间失败"
+		Err "获取总磁盘空间失败"
 		return 1
 	}
 	pct_DiskUsage=$(df / | awk '/^\/dev/ {printf("%.2f"), $3/$2 * 100.0}')
 	case "$1" in
-	-u) Txt "${usd_DiskUsage}" ;;
-	-t) Txt "${tot_DiskUsage}" ;;
-	-p) Txt "${pct_DiskUsage}" ;;
+	-u | --used) Txt "${usd_DiskUsage}" ;;
+	-t | --total) Txt "${tot_DiskUsage}" ;;
+	-p | --percentage) Txt "${pct_DiskUsage}" ;;
 	*) Txt "$(ConvSz ${usd_DiskUsage}) / $(ConvSz ${tot_DiskUsage}) (${pct_DiskUsage}%)" ;;
 	esac
 }
 function DnsAddr() {
 	[ ! -f /etc/resolv.conf ] && {
-		Err "找不到 DNS 设定档 /etc/resolv.conf"
+		Err "找不到 DNS 配置文件 /etc/resolv.conf"
 		return 1
 	}
 	ipv4_servers_DnsAddr=()
@@ -620,27 +621,27 @@ function DnsAddr() {
 		fi
 	done < <(grep -E '^nameserver' /etc/resolv.conf | awk '{print $2}')
 	[[ ${#ipv4_servers_DnsAddr[@]} -eq 0 && ${#ipv6_servers_DnsAddr[@]} -eq 0 ]] && {
-		Err "/etc/resolv.conf 中未设定 DNS 伺服器"
+		Err "/etc/resolv.conf 中未设置 DNS 服务器"
 		return 1
 	}
 	case "$1" in
-	-4)
+	-4 | --ipv4)
 		[ ${#ipv4_servers_DnsAddr[@]} -eq 0 ] && {
-			Err "找不到 IPv4 DNS 伺服器"
+			Err "找不到 IPv4 DNS 服务器"
 			return 1
 		}
 		Txt "${ipv4_servers_DnsAddr[*]}"
 		;;
-	-6)
+	-6 | --ipv6)
 		[ ${#ipv6_servers_DnsAddr[@]} -eq 0 ] && {
-			Err "找不到 IPv6 DNS 伺服器"
+			Err "找不到 IPv6 DNS 服务器"
 			return 1
 		}
 		Txt "${ipv6_servers_DnsAddr[*]}"
 		;;
 	*)
 		[ ${#ipv4_servers_DnsAddr[@]} -eq 0 -a ${#ipv6_servers_DnsAddr[@]} -eq 0 ] && {
-			Err "找不到 DNS 伺服器"
+			Err "找不到 DNS 服务器"
 			return 1
 		}
 		Txt "${ipv4_servers_DnsAddr[*]}   ${ipv6_servers_DnsAddr[*]}"
@@ -649,7 +650,7 @@ function DnsAddr() {
 }
 function Find() {
 	[ $# -eq 0 ] && {
-		Err "未指定搜寻条件。请指定要搜寻的内容"
+		Err "未指定搜索条件。请指定要搜索的内容"
 		return 2
 	}
 	case ${PKG_MGR} in
@@ -661,17 +662,17 @@ function Find() {
 	zypper) srch_cmd_Find="zypper search" ;;
 	dnf) srch_cmd_Find="dnf search" ;;
 	*) {
-		Err "找不到或不支援的套件管理器"
+		Err "找不到或不支持的套件管理器"
 		return 1
 	} ;;
 	esac
 	for targ_Find in "$@"; do
-		Txt "${CLR3}搜寻［${targ_Find}］${CLR0}"
+		Txt "${CLR3}搜索［${targ_Find}］${CLR0}"
 		${srch_cmd_Find} "${targ_Find}" || {
-			Err "找不到 ${targ_Find} 的结果\\n"
+			Err "找不到 ${targ_Find} 的结果\n"
 			return 1
 		}
-		Txt "${CLR2}完成${CLR0}\\n"
+		Txt "${CLR2}完成${CLR0}\n"
 	done
 }
 function Font() {
@@ -730,13 +731,13 @@ function Get() {
 	url_Get=""
 	while [ $# -gt 0 ]; do
 		case "$1" in
-		-x)
+		-x | --unzip)
 			unzip_Get=true
 			shift
 			;;
-		-r)
+		-r | --rename)
 			[ -z "$2" ] || [[ $2 == -* ]] && {
-				Err "-r 选项后未指定档案名称"
+				Err "-r 选项后未指定文件名"
 				return 2
 			}
 			rnm_file_Get="$2"
@@ -760,7 +761,7 @@ function Get() {
 	oup_file_Get="${url_Get##*/}"
 	[ -z "${oup_file_Get}" ] && oup_file_Get="index.html"
 	[ "${targ_dir_Get}" != "." ] && { mkdir -p "${targ_dir_Get}" || {
-		Err "建立目录 ${targ_dir_Get} 失败"
+		Err "创建目录 ${targ_dir_Get} 失败"
 		return 1
 	}; }
 	[ -n "${rnm_file_Get}" ] && oup_file_Get="${rnm_file_Get}"
@@ -770,59 +771,59 @@ function Get() {
 	file_sz_Get=$(curl -sI "${url_Get}" | grep -i content-length | awk '{print $2}' | tr -d '\r')
 	if [ -n "${file_sz_Get}" ] && [ "${file_sz_Get}" -gt 26214400 ]; then
 		wget --no-check-certificate --timeout=5 --tries=2 "${url_Get}" -O "${oup_path_Get}" || {
-			Err "使用 Wget 下载档案失败"
+			Err "使用 Wget 下载文件失败"
 			return 1
 		}
 	else
 		curl --location --insecure --connect-timeout 5 --retry 2 "${url_Get}" -o "${oup_path_Get}" || {
-			Err "使用 cUrl 下载档案失败"
+			Err "使用 cUrl 下载文件失败"
 			return 1
 		}
 	fi
 	if [ -f "${oup_path_Get}" ]; then
-		Txt "* 档案成功下载至 ${oup_path_Get}"
+		Txt "* 文件成功下载至 ${oup_path_Get}"
 		if [ "${unzip_Get}" = true ]; then
 			case "${oup_file_Get}" in
 			*.tar.gz | *.tgz) tar -xzf "${oup_path_Get}" -C "${targ_dir_Get}" || {
-				Err "解压缩 tar.gz 档案失败"
+				Err "解压缩 tar.gz 文件失败"
 				return 1
 			} ;;
 			*.tar) tar -xf "${oup_path_Get}" -C "${targ_dir_Get}" || {
-				Err "解压缩 tar 档案失败"
+				Err "解压缩 tar 文件失败"
 				return 1
 			} ;;
 			*.tar.bz2 | *.tbz2) tar -xjf "${oup_path_Get}" -C "${targ_dir_Get}" || {
-				Err "解压缩 tar.bz2 档案失败"
+				Err "解压缩 tar.bz2 文件失败"
 				return 1
 			} ;;
 			*.tar.xz | *.txz) tar -xJf "${oup_path_Get}" -C "${targ_dir_Get}" || {
-				Err "解压缩 tar.xz 档案失败"
+				Err "解压缩 tar.xz 文件失败"
 				return 1
 			} ;;
 			*.zip) unzip "${oup_path_Get}" -d "${targ_dir_Get}" || {
-				Err "解压缩 zip 档案失败"
+				Err "解压缩 zip 文件失败"
 				return 1
 			} ;;
 			*.7z) 7z x "${oup_path_Get}" -o"${targ_dir_Get}" || {
-				Err "解压缩 7z 档案失败"
+				Err "解压缩 7z 文件失败"
 				return 1
 			} ;;
 			*.rar) unrar x "${oup_path_Get}" "${targ_dir_Get}" || {
-				Err "解压缩 rar 档案失败"
+				Err "解压缩 rar 文件失败"
 				return 1
 			} ;;
 			*.zst) zstd -d "${oup_path_Get}" -o "${targ_dir_Get}" || {
-				Err "解压缩 zst 档案失败"
+				Err "解压缩 zst 文件失败"
 				return 1
 			} ;;
-			*) Txt "* 无法识别的档案格式，不进行自动解压缩" ;;
+			*) Txt "* 无法识别的文件格式，不进行自动解压缩" ;;
 			esac
-			[ $? -eq 0 ] && Txt "* 档案成功解压缩至 ${targ_dir_Get}"
+			[ $? -eq 0 ] && Txt "* 文件成功解压缩至 ${targ_dir_Get}"
 		fi
-		Txt "${CLR2}完成${CLR0}\\n"
+		Txt "${CLR2}完成${CLR0}\n"
 	else
 		{
-			Err "下载失败。请检查网路连线和 URL 有效性"
+			Err "下载失败。请检查网络连接和 URL 有效性"
 			return 1
 		}
 	fi
@@ -830,8 +831,8 @@ function Get() {
 function Ask() {
 	prompt_msg_Ask="$1"
 	shift
-	read -e -p "$prompt_msg_Ask" -r "$@" || {
-		Err "读取使用者输入失败"
+	read -e -p "$(Txt "${prompt_msg_Ask}")" -r "$@" || {
+		Err "读取用户输入失败"
 		return 1
 	}
 }
@@ -846,7 +847,7 @@ function Iface() {
 			grep -iv '^lo\|^sit\|^stf\|^gif\|^dummy\|^vmnet\|^vir\|^gre\|^ipip\|^ppp\|^bond\|^tun\|^tap\|^ip6gre\|^ip6tnl\|^teql\|^ocserv\|^vpn\|^warp\|^wgcf\|^wg\|^docker\|^br-\|^veth' |
 			sort -n
 	) || {
-		Err "从 /proc/net/dev 取得网路介面失败"
+		Err "从 /proc/net/dev 获取网络接口失败"
 		return 1
 	}
 	i=1
@@ -944,7 +945,7 @@ function Iface() {
 			fi
 		done
 		;;
-	-i)
+	-i | --information)
 		for iface_Iface in ${interface_Iface}; do
 			if stats_Iface=$(awk -v iface="${iface_Iface}" '$1 ~ iface":" {print $2, $3, $5, $10, $11, $13}' /proc/net/dev 2>/dev/null); then
 				read rx_bytes_Iface rx_packets_Iface rx_drop_Iface tx_bytes_Iface tx_packets_Iface tx_drop_Iface <<<"${stats_Iface}"
@@ -963,7 +964,7 @@ function IpAddr() {
 			ipv4_addr_IpAddr=$(timeout 1s curl -sL ipv4.ip.sb 2>/dev/null) ||
 			ipv4_addr_IpAddr=$(timeout 1s wget -qO- -4 ifconfig.me 2>/dev/null) ||
 			[ -n "${ipv4_addr_IpAddr}" ] && Txt "${ipv4_addr_IpAddr}" || {
-			Err "取得 IPv4 位址失败。请检查网路连线"
+			Err "获取 IPv4 地址失败。请检查网络连接"
 			return 1
 		}
 		;;
@@ -971,7 +972,7 @@ function IpAddr() {
 		ipv6_addr_IpAddr=$(timeout 1s curl -sL ipv6.ip.sb 2>/dev/null) ||
 			ipv6_addr_IpAddr=$(timeout 1s wget -qO- -6 ifconfig.me 2>/dev/null) ||
 			[ -n "${ipv6_addr_IpAddr}" ] && Txt "${ipv6_addr_IpAddr}" || {
-			Err "取得 IPv6 位址失败。请检查网路连线"
+			Err "获取 IPv6 地址失败。请检查网络连接"
 			return 1
 		}
 		;;
@@ -979,7 +980,7 @@ function IpAddr() {
 		ipv4_addr_IpAddr=$(IpAddr --ipv4)
 		ipv6_addr_IpAddr=$(IpAddr --ipv6)
 		[ -z "${ipv4_addr_IpAddr}${ipv6_addr_IpAddr}" ] && {
-			Err "取得 IP 位址失败"
+			Err "获取 IP 地址失败"
 			return 1
 		}
 		[ -n "${ipv4_addr_IpAddr}" ] && Txt "IPv4: ${ipv4_addr_IpAddr}"
@@ -1012,7 +1013,7 @@ function Linet() {
 function LoadAvg() {
 	if [ ! -f /proc/loadavg ]; then
 		data_LoadAvg=$(uptime | sed 's/.*load average: //' | sed 's/,//g') || {
-			Err "从 uptime 指令取得负载平均值失败"
+			Err "从 uptime 指令获取负载平均值失败"
 			return 1
 		}
 		read -r zo_mi_LoadAvg zv_mi_LoadAvg ov_mi_LoadAvg <<<"${data_LoadAvg}"
@@ -1028,30 +1029,37 @@ function LoadAvg() {
 	LC_ALL=C printf "%.2f, %.2f, %.2f (%d cores)" "${zo_mi_LoadAvg}" "${zv_mi_LoadAvg}" "${ov_mi_LoadAvg}" "$(nproc)"
 }
 function Loc() {
-	data_Loc=$(curl -s "https://developers.cloudflare.com/cdn-cgi/trace" | grep "^loc=" | cut -d= -f2)
+	case "$1" in
+	--city)
+		data_Loc=$(curl -s "ipinfo.io/city")
+		;;
+	--country | *)
+		data_Loc=$(curl -s "ipinfo.io/country")
+		;;
+	esac
 	[ -n "${data_Loc}" ] && Txt "${data_Loc}" || {
-		Err "无法侦测地理位置。请检查网路连线"
+		Err "无法检测地理位置。请检查网络连接"
 		return 1
 	}
 }
 function MacAddr() {
 	data_MacAddr=$(ip link show | awk '/ether/ {print $2; exit}')
 	[[ -n ${data_MacAddr} ]] && Txt "${data_MacAddr}" || {
-		Err "无法取得 MAC 位址。找不到网路介面"
+		Err "无法获取 MAC 地址。找不到网络接口"
 		return 1
 	}
 }
 function MemUsage() {
 	usd_MemUsage=$(free -b | awk '/^Mem:/ {print $3}') || usd_MemUsage=$(vmstat -s | grep 'used memory' | awk '{print $1*1024}') || {
-		Err "取得记忆体使用统计资料失败"
+		Err "获取内存使用统计数据失败"
 		return 1
 	}
 	tot_MemUsage=$(free -b | awk '/^Mem:/ {print $2}') || tot_MemUsage=$(grep MemTotal /proc/meminfo | awk '{print $2*1024}')
 	pct_MemUsage=$(free | awk '/^Mem:/ {printf("%.2f"), $3/$2 * 100.0}') || pct_MemUsage=$(awk '/^MemTotal:/ {total=$2} /^MemAvailable:/ {available=$2} END {printf("%.2f", (total-available)/total * 100.0)}' /proc/meminfo)
 	case "$1" in
-	-u) Txt "${usd_MemUsage}" ;;
-	-t) Txt "${tot_MemUsage}" ;;
-	-p) Txt "${pct_MemUsage}" ;;
+	-u | --used) Txt "${usd_MemUsage}" ;;
+	-t | --total) Txt "${tot_MemUsage}" ;;
+	-p | --percentage) Txt "${pct_MemUsage}" ;;
 	*) Txt "$(ConvSz ${usd_MemUsage}) / $(ConvSz ${tot_MemUsage}) (${pct_MemUsage}%)" ;;
 	esac
 }
@@ -1060,7 +1068,7 @@ function NetProv() {
 		data_NetProv=$(timeout 1s curl -sL ipwhois.app/json | grep -oP '"org"\s*:\s*"\K[^"]+') ||
 		data_NetProv=$(timeout 1s curl -sL ip-api.com/json | grep -oP '"org"\s*:\s*"\K[^"]+') ||
 		[ -n "${data_NetProv}" ] && Txt "${data_NetProv}" || {
-		Err "无法侦测网路供应商。请检查网路连线"
+		Err "无法检测网络供应商。请检查网络连接"
 		return 1
 	}
 }
@@ -1073,7 +1081,7 @@ function PkgCnt() {
 	yum | dnf) cnt_cmd_PkgCnt="rpm -qa" ;;
 	zypper) cnt_cmd_PkgCnt="zypper se --installed-only" ;;
 	*) {
-		Err "无法计算已安装的套件。软体包管理器不支援"
+		Err "无法计算已安装的套件。软件包管理器不支持"
 		return 1
 	} ;;
 	esac
@@ -1088,7 +1096,7 @@ function PkgCnt() {
 function Prog() {
 	num_cmds_Prog=${#cmds[@]}
 	term_wid_Prog=$(tput cols) || {
-		Err "取得终端机宽度失败"
+		Err "获取终端宽度失败"
 		return 1
 	}
 	bar_wid_Prog=$((term_wid_Prog - 23))
@@ -1099,7 +1107,7 @@ function Prog() {
 		fild_wid_Prog=$((prog_Prog * bar_wid_Prog / 100))
 		printf "\r\033[30;42mProgress: [%3d%%]\033[0m [%s%s]" "${prog_Prog}" "$(printf "%${fild_wid_Prog}s" | tr ' ' '#')" "$(printf "%$((bar_wid_Prog - fild_wid_Prog))s" | tr ' ' '.')"
 		if ! cmd_oup_Prog=$(eval "${cmds[$i]}" 2>&1); then
-			Txt "\\n${cmd_oup_Prog}"
+			Txt "\n${cmd_oup_Prog}"
 			stty echo
 			trap - SIGINT SIGQUIT SIGTSTP
 			{
@@ -1116,7 +1124,7 @@ function Prog() {
 function PubIp() {
 	data_PubIp=$(curl -s "https://developers.cloudflare.com/cdn-cgi/trace" | grep "^ip=" | cut -d= -f2)
 	[ -n "${data_PubIp}" ] && Txt "${data_PubIp}" || {
-		Err "无法侦测公开 IP 位址。请检查网路连线"
+		Err "无法检测公开 IP 地址。请检查网络连接"
 		return 1
 	}
 }
@@ -1143,7 +1151,7 @@ function Run() {
 			shift
 			while [[ $# -gt 0 && $1 == -* ]]; do
 				case "$1" in
-				-d)
+				-d | --delete-after)
 					rm_aftr_Run=true
 					shift
 					;;
@@ -1153,7 +1161,7 @@ function Run() {
 			Txt "${CLR3}正在从 URL 下载并执行脚本 [${script_nm_Run}]${CLR0}"
 			Task "* 下载脚本" "
 				curl -sSLf "${url_Run}" -o "${script_nm_Run}" || { Err "下载脚本 ${script_nm_Run} 失败"; return 1; }
-				chmod +x "${script_nm_Run}" || { Err "设定脚本 ${script_nm_Run} 执行权限失败"; return 1; }
+				chmod +x "${script_nm_Run}" || { Err "设置脚本 ${script_nm_Run} 执行权限失败"; return 1; }
 			"
 			Txt "${CLR8}$(Linet = 24)${CLR0}"
 			if [[ $1 == "--" ]]; then
@@ -1169,7 +1177,7 @@ function Run() {
 				}
 			fi
 			Txt "${CLR8}$(Linet = 24)${CLR0}"
-			Txt "${CLR2}完成${CLR0}\\n"
+			Txt "${CLR2}完成${CLR0}\n"
 			[[ ${rm_aftr_Run} == true ]] && rm -rf "${script_nm_Run}"
 		elif [[ $1 =~ ^[^/]+/[^/]+/.+ ]]; then
 			repo_owner_Run=$(Txt "$1" | cut -d'/' -f1)
@@ -1202,7 +1210,7 @@ function Run() {
 				esac
 			done
 			if [[ $dnload_repo_Run == true ]]; then
-				Txt "${CLR3}正在克隆储存库 ${repo_owner_Run}/${repo_name_Run}${CLR0}"
+				Txt "${CLR3}正在克隆仓库 ${repo_owner_Run}/${repo_name_Run}${CLR0}"
 				[[ -d ${repo_name_Run} ]] && {
 					Err "目录 ${repo_name_Run} 已存在"
 					return 1
@@ -1213,7 +1221,7 @@ function Run() {
 					if [ $? -ne 0 ]; then
 						rm -rf "${tmp_dir_Run}"
 						{
-							Err "从分支 ${branch_Run} 克隆储存库失败"
+							Err "从分支 ${branch_Run} 克隆仓库失败"
 							return 1
 						}
 					fi
@@ -1224,17 +1232,17 @@ function Run() {
 						if [ $? -ne 0 ]; then
 							rm -rf "${tmp_dir_Run}"
 							{
-								Err "从 main 或 master 分支克隆储存库失败"
+								Err "从 main 或 master 分支克隆仓库失败"
 								return 1
 							}
 						fi
 					fi
 				fi
-				Task "* 建立目标目录" "Add -d "${repo_name_Run}" && cp -r "${tmp_dir_Run}"/* "${repo_name_Run}"/"
-				Task "* 清理暂存档案" "rm -rf "${tmp_dir_Run}""
-				Txt "储存库已克隆到目录：${CLR2}${repo_name_Run}"
+				Task "* 创建目标目录" "Add -d "${repo_name_Run}" && cp -r "${tmp_dir_Run}"/* "${repo_name_Run}"/"
+				Task "* 清理临时文件" "rm -rf "${tmp_dir_Run}""
+				Txt "仓库已克隆到目录：${CLR2}${repo_name_Run}"
 				if [[ -f "${repo_name_Run}/${script_path_Run}" ]]; then
-					Task "* 设定执行权限" "chmod +x "${repo_name_Run}/${script_path_Run}""
+					Task "* 设置执行权限" "chmod +x "${repo_name_Run}/${script_path_Run}""
 					Txt "${CLR8}$(Linet = 24)${CLR0}"
 					if [[ $1 == "--" ]]; then
 						shift
@@ -1249,7 +1257,7 @@ function Run() {
 						}
 					fi
 					Txt "${CLR8}$(Linet = 24)${CLR0}"
-					Txt "${CLR2}完成${CLR0}\\n"
+					Txt "${CLR2}完成${CLR0}\n"
 					[[ ${rm_aftr_Run} == true ]] && rm -rf "${repo_name_Run}"
 				fi
 			else
@@ -1282,21 +1290,21 @@ function Run() {
 						return 1
 					}
 					if [[ ! -f "${script_nm_Run}" ]]; then
-						Err "下载失败：未建立档案"
+						Err "下载失败：未创建文件"
 						return 1
 					fi
 					if [[ ! -s "${script_nm_Run}" ]]; then
-						Err "下载的档案为空"
-						cat "${script_nm_Run}" 2>/dev/null || Txt "（无法显示档案内容）"
+						Err "下载的文件为空"
+						cat "${script_nm_Run}" 2>/dev/null || Txt "无法显示文件内容"
 						return 1
 					fi
 					if ! grep -q '[^[:space:]]' "${script_nm_Run}"; then
-						Err "下载的档案仅包含空白字元"
+						Err "下载的文件仅包含空白字符"
 						return 1
 					fi
 					chmod +x "${script_nm_Run}" || {
-						Err "设定脚本 ${script_nm_Run} 执行权限失败"
-						Err "无法设定 ${script_nm_Run} 的执行权限"
+						Err "设置脚本 ${script_nm_Run} 执行权限失败"
+						Err "无法设置 ${script_nm_Run} 的执行权限"
 						ls -la "${script_nm_Run}"
 						return 1
 					}
@@ -1316,11 +1324,11 @@ function Run() {
 						}
 					fi
 				else
-					Err "脚本档案 '${script_nm_Run}' 未成功下载"
+					Err "脚本文件 '${script_nm_Run}' 未成功下载"
 					return 1
 				fi
 				Txt "${CLR8}$(Linet = 24)${CLR0}"
-				Txt "${CLR2}完成${CLR0}\\n"
+				Txt "${CLR2}完成${CLR0}\n"
 				[[ ${rm_aftr_Run} == true ]] && rm -rf "${script_nm_Run}"
 			fi
 		else
@@ -1353,7 +1361,7 @@ function ShellVer() {
 		Txt "Zsh ${ZSH_VERSION}"
 	else
 		{
-			Err "不支援的 shell"
+			Err "不支持的 shell"
 			return 1
 		}
 	fi
@@ -1363,9 +1371,9 @@ function SwapUsage() {
 	tot_SwapUsage=$(free -b | awk '/^Swap:/ {printf "%.0f", $2}')
 	pct_SwapUsage=$(free | awk '/^Swap:/ {if($2>0) printf("%.2f"), $3/$2 * 100.0; else print "0.00"}')
 	case "$1" in
-	-u) Txt "${usd_SwapUsage}" ;;
-	-t) Txt "${tot_SwapUsage}" ;;
-	-p) Txt "${pct_SwapUsage}" ;;
+	-u | --used) Txt "${usd_SwapUsage}" ;;
+	-t | --total) Txt "${tot_SwapUsage}" ;;
+	-p | --percentage) Txt "${pct_SwapUsage}" ;;
 	*) Txt "$(ConvSz ${usd_SwapUsage}) / $(ConvSz ${tot_SwapUsage}) (${pct_SwapUsage}%)" ;;
 	esac
 }
@@ -1375,14 +1383,14 @@ function SysClean() {
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 	case $(command -v apk apt opkg pacman yum zypper dnf | head -n1) in
 	*apk)
-		Txt "* 清理 APK 快取"
+		Txt "* 清理 APK 缓存"
 		apk cache clean || {
-			Err "清理 APK 快取失败"
+			Err "清理 APK 缓存失败"
 			return 1
 		}
-		Txt "* 移除暂存档案"
+		Txt "* 移除临时文件"
 		rm -rf /tmp/* /var/cache/apk/* || {
-			Err "移除暂存档案失败"
+			Err "移除临时文件失败"
 			return 1
 		}
 		Txt "* 修复 APK 套件"
@@ -1401,9 +1409,9 @@ function SysClean() {
 				return 1
 			}
 		done
-		Txt "* 设定待处理的套件"
+		Txt "* 设置待处理的套件"
 		DEBIAN_FRONTEND=noninteractive dpkg --configure -a || {
-			Err "设定待处理套件失败"
+			Err "设置待处理套件失败"
 			return 1
 		}
 		Txt "* 自动移除套件"
@@ -1411,21 +1419,21 @@ function SysClean() {
 			Err "自动移除套件失败"
 			return 1
 		}
-		Txt "* 清理 APT 快取"
+		Txt "* 清理 APT 缓存"
 		apt clean -y || {
-			Err "清理 APT 快取失败"
+			Err "清理 APT 缓存失败"
 			return 1
 		}
-		Txt "* 自动清理 APT 快取"
+		Txt "* 自动清理 APT 缓存"
 		apt autoclean -y || {
-			Err "自动清理 APT 快取失败"
+			Err "自动清理 APT 缓存失败"
 			return 1
 		}
 		;;
 	*opkg)
-		Txt "* 移除暂存档案"
+		Txt "* 移除临时文件"
 		rm -rf /tmp/* || {
-			Err "移除暂存档案失败"
+			Err "移除临时文件失败"
 			return 1
 		}
 		Txt "* 更新 OPKG"
@@ -1433,9 +1441,9 @@ function SysClean() {
 			Err "更新 OPKG 失败"
 			return 1
 		}
-		Txt "* 清理 OPKG 快取"
+		Txt "* 清理 OPKG 缓存"
 		opkg clean || {
-			Err "清理 OPKG 快取失败"
+			Err "清理 OPKG 缓存失败"
 			return 1
 		}
 		;;
@@ -1445,14 +1453,14 @@ function SysClean() {
 			Err "使用 pacman 更新和升级套件失败"
 			return 1
 		}
-		Txt "* 清理 pacman 快取"
+		Txt "* 清理 pacman 缓存"
 		pacman -Sc --noconfirm || {
-			Err "清理 pacman 快取失败"
+			Err "清理 pacman 缓存失败"
 			return 1
 		}
-		Txt "* 清理所有 pacman 快取"
+		Txt "* 清理所有 pacman 缓存"
 		pacman -Scc --noconfirm || {
-			Err "清理所有 pacman 快取失败"
+			Err "清理所有 pacman 缓存失败"
 			return 1
 		}
 		;;
@@ -1462,26 +1470,26 @@ function SysClean() {
 			Err "自动移除套件失败"
 			return 1
 		}
-		Txt "* 清理 YUM 快取"
+		Txt "* 清理 YUM 缓存"
 		yum clean all || {
-			Err "清理 YUM 快取失败"
+			Err "清理 YUM 缓存失败"
 			return 1
 		}
-		Txt "* 建立 YUM 快取"
+		Txt "* 创建 YUM 缓存"
 		yum makecache || {
-			Err "建立 YUM 快取失败"
+			Err "创建 YUM 缓存失败"
 			return 1
 		}
 		;;
 	*zypper)
-		Txt "* 清理 Zypper 快取"
+		Txt "* 清理 Zypper 缓存"
 		zypper clean --all || {
-			Err "清理 Zypper 快取失败"
+			Err "清理 Zypper 缓存失败"
 			return 1
 		}
-		Txt "* 重新整理 Zypper 套件库"
+		Txt "* 刷新 Zypper 套件库"
 		zypper refresh || {
-			Err "重新整理 Zypper 套件库失败"
+			Err "刷新 Zypper 套件库失败"
 			return 1
 		}
 		;;
@@ -1491,19 +1499,19 @@ function SysClean() {
 			Err "自动移除套件失败"
 			return 1
 		}
-		Txt "* 清理 DNF 快取"
+		Txt "* 清理 DNF 缓存"
 		dnf clean all || {
-			Err "清理 DNF 快取失败"
+			Err "清理 DNF 缓存失败"
 			return 1
 		}
-		Txt "* 建立 DNF 快取"
+		Txt "* 创建 DNF 缓存"
 		dnf makecache || {
-			Err "建立 DNF 快取失败"
+			Err "创建 DNF 缓存失败"
 			return 1
 		}
 		;;
 	*) {
-		Err "不支援的套件管理器。跳过系统特定清理"
+		Err "不支持的套件管理器。跳过系统特定清理"
 		return 1
 	} ;;
 	esac
@@ -1513,8 +1521,8 @@ function SysClean() {
 			return 1
 		}
 	fi
-	Task "* 移除暂存档案" "rm -rf /tmp/*" || {
-		Err "移除暂存档案失败"
+	Task "* 移除临时文件" "rm -rf /tmp/*" || {
+		Err "移除临时文件失败"
 		return 1
 	}
 	for cmd_SysClean in docker npm pip; do
@@ -1524,87 +1532,87 @@ function SysClean() {
 				Err "清理 Docker 系统失败"
 				return 1
 			} ;;
-			npm) Task "* 清理 NPM 快取" "npm cache clean --force" || {
-				Err "清理 NPM 快取失败"
+			npm) Task "* 清理 NPM 缓存" "npm cache clean --force" || {
+				Err "清理 NPM 缓存失败"
 				return 1
 			} ;;
-			pip) Task "* 清除 PIP 快取" "pip cache purge" || {
-				Err "清除 PIP 快取失败"
+			pip) Task "* 清除 PIP 缓存" "pip cache purge" || {
+				Err "清除 PIP 缓存失败"
 				return 1
 			} ;;
 			esac
 		fi
 	done
-	Task "* 移除使用者快取档案" "rm -rf ~/.cache/*" || {
-		Err "移除使用者快取档案失败"
+	Task "* 移除用户缓存文件" "rm -rf ~/.cache/*" || {
+		Err "移除用户缓存文件失败"
 		return 1
 	}
-	Task "* 移除缩图档案" "rm -rf ~/.thumbnails/*" || {
-		Err "移除缩图档案失败"
+	Task "* 移除缩略图文件" "rm -rf ~/.thumbnails/*" || {
+		Err "移除缩略图文件失败"
 		return 1
 	}
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
-	Txt "${CLR2}完成${CLR0}\\n"
+	Txt "${CLR2}完成${CLR0}\n"
 }
 function SysInfo() {
-	Txt "${CLR3}系统资讯${CLR0}"
+	Txt "${CLR3}系统信息${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
-	Txt "- 主机名称：		${CLR2}$(uname -n || hostname)${CLR0}"
-	Txt "- 作业系统：		${CLR2}$(ChkOs)${CLR0}"
-	Txt "- 核心版本：		${CLR2}$(uname -r)${CLR0}"
-	Txt "- 系统语言：		${CLR2}$LANG${CLR0}"
-	Txt "- Shell 版本：		${CLR2}$(ShellVer)${CLR0}"
-	Txt "- 最后系统更新：	${CLR2}$(LastUpd)${CLR0}"
+	Txt "- 主机名称：\t\t${CLR2}$(uname -n || hostname)${CLR0}"
+	Txt "- 操作系统：\t\t${CLR2}$(ChkOs)${CLR0}"
+	Txt "- 内核版本：\t\t${CLR2}$(uname -r)${CLR0}"
+	Txt "- 系统语言：\t\t${CLR2}$LANG${CLR0}"
+	Txt "- Shell 版本：\t\t${CLR2}$(ShellVer)${CLR0}"
+	Txt "- 最后系统更新：\t${CLR2}$(LastUpd)${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
-	Txt "- 架构：		${CLR2}$(uname -m)${CLR0}"
-	Txt "- CPU 型号：		${CLR2}$(CpuModel)${CLR0}"
-	Txt "- CPU 核心数：		${CLR2}$(nproc)${CLR0}"
-	Txt "- CPU 频率：		${CLR2}$(CpuFreq)${CLR0}"
-	Txt "- CPU 使用率：		${CLR2}$(CpuUsage)%${CLR0}"
-	Txt "- CPU 快取：		${CLR2}$(CpuCache)${CLR0}"
+	Txt "- 架构：\t\t${CLR2}$(uname -m)${CLR0}"
+	Txt "- CPU 型号：\t\t${CLR2}$(CpuModel)${CLR0}"
+	Txt "- CPU 核心数：\t\t${CLR2}$(nproc)${CLR0}"
+	Txt "- CPU 频率：\t\t${CLR2}$(CpuFreq)${CLR0}"
+	Txt "- CPU 使用率：\t\t${CLR2}$(CpuUsage)%${CLR0}"
+	Txt "- CPU 缓存：\t\t${CLR2}$(CpuCache)${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
-	Txt "- 记忆体使用率：	${CLR2}$(MemUsage)${CLR0}"
-	Txt "- SWAP 使用率：		${CLR2}$(SwapUsage)${CLR0}"
-	Txt "- 磁碟使用率：		${CLR2}$(DiskUsage)${CLR0}"
-	Txt "- 档案系统类型：	${CLR2}$(df -T / | awk 'NR==2 {print $2}')${CLR0}"
+	Txt "- 内存使用率：\t${CLR2}$(MemUsage)${CLR0}"
+	Txt "- SWAP 使用率：\t\t${CLR2}$(SwapUsage)${CLR0}"
+	Txt "- 磁盘使用率：\t\t${CLR2}$(DiskUsage)${CLR0}"
+	Txt "- 文件系统类型：\t${CLR2}$(df -T / | awk 'NR==2 {print $2}')${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
-	Txt "- IPv4 地址：		${CLR2}$(IpAddr --ipv4)${CLR0}"
-	Txt "- IPv6 地址：		${CLR2}$(IpAddr --ipv6)${CLR0}"
-	Txt "- MAC 位址：		${CLR2}$(MacAddr)${CLR0}"
-	Txt "- 网路供应商：		${CLR2}$(NetProv)${CLR0}"
-	Txt "- DNS 伺服器：		${CLR2}$(DnsAddr)${CLR0}"
-	Txt "- 公开 IP：		${CLR2}$(PubIp)${CLR0}"
-	Txt "- 网路介面：		${CLR2}$(Iface -i)${CLR0}"
-	Txt "- 内部时区：		${CLR2}$(TimeZn --internal)${CLR0}"
-	Txt "- 外部时区：		${CLR2}$(TimeZn --external)${CLR0}"
+	Txt "- IPv4 地址：\t\t${CLR2}$(IpAddr --ipv4)${CLR0}"
+	Txt "- IPv6 地址：\t\t${CLR2}$(IpAddr --ipv6)${CLR0}"
+	Txt "- MAC 地址：\t\t${CLR2}$(MacAddr)${CLR0}"
+	Txt "- 网络供应商：\t\t${CLR2}$(NetProv)${CLR0}"
+	Txt "- DNS 服务器：\t\t${CLR2}$(DnsAddr)${CLR0}"
+	Txt "- 公开 IP：\t\t${CLR2}$(PubIp)${CLR0}"
+	Txt "- 网络接口：\t\t${CLR2}$(Iface -i)${CLR0}"
+	Txt "- 内部时区：\t\t${CLR2}$(TimeZn --internal)${CLR0}"
+	Txt "- 外部时区：\t\t${CLR2}$(TimeZn --external)${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
-	Txt "- 负载平均：		${CLR2}$(LoadAvg)${CLR0}"
-	Txt "- 程序数量：		${CLR2}$(ps aux | wc -l)${CLR0}"
-	Txt "- 已安装套件：		${CLR2}$(PkgCnt)${CLR0}"
+	Txt "- 负载平均：\t\t${CLR2}$(LoadAvg)${CLR0}"
+	Txt "- 进程数量：\t\t${CLR2}$(ps aux | wc -l)${CLR0}"
+	Txt "- 已安装套件：\t\t${CLR2}$(PkgCnt)${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
-	Txt "- 运行时间：		${CLR2}$(uptime -p | sed 's/up //')${CLR0}"
-	Txt "- 启动时间：		${CLR2}$(who -b | awk '{print $3, $4}')${CLR0}"
+	Txt "- 运行时间：\t\t${CLR2}$(uptime -p | sed 's/up //')${CLR0}"
+	Txt "- 启动时间：\t\t${CLR2}$(who -b | awk '{print $3, $4}')${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
-	Txt "- 虚拟化：		${CLR2}$(ChkVirt)${CLR0}"
+	Txt "- 虚拟化：\t\t${CLR2}$(ChkVirt)${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 }
 function SysOptz() {
 	ChkRoot
-	Txt "${CLR3}正在优化长期运行伺服器的系统设定...${CLR0}"
+	Txt "${CLR3}正在优化长期运行服务器的系统设置...${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 	sysctl_conf_SysOptimize="/etc/sysctl.d/99-server-optimizations.conf"
-	Txt "# 长期运行系统的伺服器优化" >"${sysctl_conf_SysOptimize}"
-	Task "* 正在优化记忆体管理" "
+	Txt "# 长期运行系统的服务器优化" >"${sysctl_conf_SysOptimize}"
+	Task "* 正在优化内存管理" "
 		Txt 'vm.swappiness = 1' >> ${sysctl_conf_SysOptimize}
 		Txt 'vm.vfs_cache_pressure = 50' >> ${sysctl_conf_SysOptimize}
 		Txt 'vm.dirty_ratio = 15' >> ${sysctl_conf_SysOptimize}
 		Txt 'vm.dirty_background_ratio = 5' >> ${sysctl_conf_SysOptimize}
 		Txt 'vm.min_free_kbytes = 65536' >> ${sysctl_conf_SysOptimize}
 	" || {
-		Err "优化记忆体管理失败"
+		Err "优化内存管理失败"
 		return 1
 	}
-	Task "* 正在优化网路设定" "
+	Task "* 正在优化网络设置" "
 		Txt 'net.core.somaxconn = 65535' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.core.netdev_max_backlog = 65535' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.ipv4.tcp_max_syn_backlog = 65535' >> ${sysctl_conf_SysOptimize}
@@ -1615,7 +1623,7 @@ function SysOptz() {
 		Txt 'net.ipv4.tcp_tw_reuse = 1' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.ipv4.ip_local_port_range = 1024 65535' >> ${sysctl_conf_SysOptimize}
 	" || {
-		Err "优化网路设定失败"
+		Err "优化网络设置失败"
 		return 1
 	}
 	Task "* 正在优化 TCP 缓冲区" "
@@ -1628,12 +1636,12 @@ function SysOptz() {
 		Err "优化 TCP 缓冲区失败"
 		return 1
 	}
-	Task "* 正在优化档案系统设定" "
+	Task "* 正在优化文件系统设置" "
 		Txt 'fs.file-max = 2097152' >> ${sysctl_conf_SysOptimize}
 		Txt 'fs.nr_open = 2097152' >> ${sysctl_conf_SysOptimize}
 		Txt 'fs.inotify.max_user_watches = 524288' >> ${sysctl_conf_SysOptimize}
 	" || {
-		Err "优化档案系统设定失败"
+		Err "优化文件系统设置失败"
 		return 1
 	}
 	Task "* 正在优化系统限制" "
@@ -1645,89 +1653,89 @@ function SysOptz() {
 		Err "优化系统限制失败"
 		return 1
 	}
-	Task "* 正在优化 I/O 排程器" "
+	Task "* 正在优化 I/O 调度器" "
 		for disk in /sys/block/[sv]d*; do
 			Txt 'none' > \$disk/queue/scheduler 2>/dev/null || true
 			Txt '256' > \$disk/queue/nr_requests 2>/dev/null || true
 		done
 	" || {
-		Err "优化 I/O 排程器失败"
+		Err "优化 I/O 调度器失败"
 		return 1
 	}
-	Task "* 停用非必要服务" "
+	Task "* 禁用非必要服务" "
 		for service_SysOptz in bluetooth cups avahi-daemon postfix nfs-server rpcbind autofs; do
 			systemctl disable --now $service_SysOptz 2>/dev/null || true
 		done
 	" || {
-		Err "停用服务失败"
+		Err "禁用服务失败"
 		return 1
 	}
 	Task "* 套用系统参数" "sysctl -p ${sysctl_conf_SysOptimize}" || {
 		Err "套用系统参数失败"
 		return 1
 	}
-	Task "* 清除系统快取" "
+	Task "* 清除系统缓存" "
 		sync
 		Txt 3 > /proc/sys/vm/drop_caches
 		ip -s -s neigh flush all
 	" || {
-		Err "清除系统快取失败"
+		Err "清除系统缓存失败"
 		return 1
 	}
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
-	Txt "${CLR2}完成${CLR0}\\n"
+	Txt "${CLR2}完成${CLR0}\n"
 }
 function SysRboot() {
 	ChkRoot
-	Txt "${CLR3}正在准备重新启动系统...${CLR0}"
+	Txt "${CLR3}正在准备重启系统...${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 	active_usrs_SysRboot=$(who | wc -l) || {
-		Err "取得活动使用者数量失败"
+		Err "获取活动用户数量失败"
 		return 1
 	}
 	if [ "${active_usrs_SysRboot}" -gt 1 ]; then
-		Txt "${CLR1}警告：目前系统有 ${active_usrs_SysRboot} 个活动使用者${CLR0}\\n"
-		Txt "活动使用者："
+		Txt "${CLR1}警告：目前系统有 ${active_usrs_SysRboot} 个活动用户${CLR0}\n"
+		Txt "活动用户："
 		who | awk '{print $1 " since " $3 " " $4}'
 		Txt
 	fi
 	important_procs_SysRboot=$(ps aux --no-headers | awk '$3 > 1.0 || $4 > 1.0' | wc -l) || {
-		Err "检查执行中的程序失败"
+		Err "检查运行中的进程失败"
 		return 1
 	}
 	if [ "${important_procs_SysRboot}" -gt 0 ]; then
-		Txt "${CLR1}警告：有 ${important_procs_SysRboot} 个重要程序正在执行${CLR0}\\n"
-		Txt "${CLR8}CPU 使用率最高的 5 个程序：${CLR0}"
+		Txt "${CLR1}警告：有 ${important_procs_SysRboot} 个重要进程正在运行${CLR0}\n"
+		Txt "${CLR8}CPU 使用率最高的 5 个进程：${CLR0}"
 		ps aux --sort=-%cpu | head -n 6
 		Txt
 	fi
-	Ask "您确定要立即重新启动系统吗？ (y/N)" -n 1 cont_SysRboot
+	Ask "您确定要立即重启系统吗？ (y/N) " -n 1 cont_SysRboot
 	Txt
 	[[ ! ${cont_SysRboot} =~ ^[Yy]$ ]] && {
-		Txt "${CLR2}已取消重新启动${CLR0}\\n"
+		Txt "${CLR2}已取消重启${CLR0}\n"
 		return 0
 	}
 	Task "* 执行最终检查" "sync" || {
-		Err "同步档案系统失败"
+		Err "同步文件系统失败"
 		return 1
 	}
-	Task "* 开始重新启动" "reboot || sudo reboot" || {
-		Err "启动重新启动失败"
+	Task "* 开始重启" "reboot || sudo reboot" || {
+		Err "启动重启失败"
 		return 1
 	}
-	Txt "${CLR2}已成功发出重新启动命令。系统将立即重新启动${CLR0}"
+	Txt "${CLR2}已成功发出重启命令。系统将立即重启${CLR0}"
 }
 function SysUpd() {
 	ChkRoot
-	Txt "${CLR3}正在更新系统软体...${CLR0}"
+	Txt "${CLR3}正在更新系统软件...${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 	UpdPkg() {
 		cmd_SysUpd_UpdPkg="$1"
 		upd_cmd_SysUpd_UpdPkg="$2"
 		upg_cmd_SysUpd_UpdPkg="$3"
-		Txt "* 正在更新套件清单"
+		Txt "* 正在更新套件列表"
 		${upd_cmd_SysUpd_UpdPkg} || {
-			Err "使用 ${cmd_SysUpd_UpdPkg} 更新套件清单失败"
+			Err "使用 ${cmd_SysUpd_UpdPkg} 更新套件列表失败"
 			return 1
 		}
 		Txt "* 正在升级套件"
@@ -1747,8 +1755,8 @@ function SysUpd() {
 				return 1
 			}
 		done
-		Task "* 设定待处理的套件" "DEBIAN_FRONTEND=noninteractive dpkg --configure -a" || {
-			Err "设定待处理的套件失败"
+		Task "* 设置待处理的套件" "DEBIAN_FRONTEND=noninteractive dpkg --configure -a" || {
+			Err "设置待处理的套件失败"
 			return 1
 		}
 		UpdPkg "apt" "apt update -y" "apt full-upgrade -y"
@@ -1762,7 +1770,7 @@ function SysUpd() {
 	*zypper) UpdPkg "zypper" "zypper refresh" "zypper update -y" ;;
 	*dnf) UpdPkg "dnf" "dnf check-update" "dnf -y update" ;;
 	*) {
-		Err "不支援的套件管理器"
+		Err "不支持的套件管理器"
 		return 1
 	} ;;
 	esac
@@ -1772,7 +1780,7 @@ function SysUpd() {
 		return 1
 	}
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
-	Txt "${CLR2}完成${CLR0}\\n"
+	Txt "${CLR2}完成${CLR0}\n"
 }
 function SysUpg() {
 	ChkRoot
@@ -1781,15 +1789,15 @@ function SysUpg() {
 	os_nm_SysUpg=$(ChkOs --name)
 	case "${os_nm_SysUpg}" in
 	Debian)
-		Txt "* 侦测到 'Debian' 系统"
-		Txt "* 正在更新套件清单"
+		Txt "* 检测到 'Debian' 系统"
+		Txt "* 正在更新套件列表"
 		apt update -y || {
-			Err "使用 apt 更新套件清单失败"
+			Err "使用 apt 更新套件列表失败"
 			return 1
 		}
-		Txt "* 正在升级目前的套件"
+		Txt "* 正在升级当前的套件"
 		apt full-upgrade -y || {
-			Err "升级目前的套件失败"
+			Err "升级当前的套件失败"
 			return 1
 		}
 		Txt "* 开始 'Debian' 发行版升级..."
@@ -1808,8 +1816,8 @@ function SysUpg() {
 			Err "更新 sources.list 失败"
 			return 1
 		}
-		Task "* 更新新版本的套件清单" "apt update -y" || {
-			Err "更新新版本的套件清单失败"
+		Task "* 更新新版本的套件列表" "apt update -y" || {
+			Err "更新新版本的套件列表失败"
 			return 1
 		}
 		Task "* 升级到新的 Debian 版本" "apt full-upgrade -y" || {
@@ -1818,13 +1826,13 @@ function SysUpg() {
 		}
 		;;
 	Ubuntu)
-		Txt "* 侦测到 'Ubuntu' 系统"
-		Task "* 正在更新套件清单" "apt update -y" || {
-			Err "使用 apt 更新套件清单失败"
+		Txt "* 检测到 'Ubuntu' 系统"
+		Task "* 正在更新套件列表" "apt update -y" || {
+			Err "使用 apt 更新套件列表失败"
 			return 1
 		}
-		Task "* 正在升级目前的套件" "apt full-upgrade -y" || {
-			Err "升级目前的套件失败"
+		Task "* 正在升级当前的套件" "apt full-upgrade -y" || {
+			Err "升级当前的套件失败"
 			return 1
 		}
 		Task "* 安装 update-manager-core" "apt install -y update-manager-core" || {
@@ -1843,7 +1851,7 @@ function SysUpg() {
 	} ;;
 	esac
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
-	Txt "${CLR2}系统升级完成${CLR0}\\n"
+	Txt "${CLR2}系统升级完成${CLR0}\n"
 }
 function Task() {
 	msg_Task="$1"
@@ -1870,7 +1878,7 @@ function TimeZn() {
 			data_TimeZn=$(timeout 1s curl -sL worldtimeapi.org/api/ip | grep -oP '"timezone":"\K[^"]+') ||
 			data_TimeZn=$(timeout 1s curl -sL ip-api.com/json | grep -oP '"timezone":"\K[^"]+') ||
 			[ -n "${data_TimeZn}" ] && Txt "${data_TimeZn}" || {
-			Err "从外部服务侦测时区失败"
+			Err "从外部服务检测时区失败"
 			return 1
 		}
 		;;
@@ -1879,7 +1887,7 @@ function TimeZn() {
 			data_TimeZn=$(command -v timedatectl &>/dev/null && timedatectl status | awk '/Time zone:/ {print $3}') ||
 			data_TimeZn=$(cat /etc/timezone 2>/dev/null | uniq) ||
 			[ -n "${data_TimeZn}" ] && Txt "${data_TimeZn}" || {
-			Err "侦测系统时区失败"
+			Err "检测系统时区失败"
 			return 1
 		}
 		;;
@@ -1887,7 +1895,7 @@ function TimeZn() {
 }
 function Press() {
 	read -p "$1" -n 1 -r || {
-		Err "读取使用者输入失败"
+		Err "读取用户输入失败"
 		return 1
 	}
 }

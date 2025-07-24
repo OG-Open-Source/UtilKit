@@ -14,6 +14,10 @@ canshu="default"
 permission_granted="false"
 ENABLE_STATS="true"
 
+[ -f ~/utilkit.sh ] && source ~/utilkit.sh || bash <(curl -sL ${gh_proxy}https://raw.githubusercontent.com/OG-Open-Source/UtilKit/main/sh/get_utilkit.sh) && source ~/utilkit.sh
+
+UNIT_PREF="B"
+
 quanju_canshu() {
 	if [ "$canshu" = "CN" ]; then
 		zhushi=0
@@ -56,26 +60,18 @@ send_stats() {
 	if [ "$ENABLE_STATS" == "false" ]; then
 		return
 	fi
-
-	local country=$(curl -s ipinfo.io/country)
-	local os_info=$(grep PRETTY_NAME /etc/os-release | cut -d '=' -f2 | tr -d '"')
-	local cpu_arch=$(uname -m)
-
 	(
 		curl -s -X POST "https://api.kejilion.pro/api/log" \
 			-H "Content-Type: application/json" \
-			-d "{\"action\":\"$1\",\"timestamp\":\"$(date -u '+%Y-%m-%d %H:%M:%S')\",\"country\":\"$country\",\"os_info\":\"$os_info\",\"cpu_arch\":\"$cpu_arch\",\"version\":\"$sh_v\"}" \
+			-d "{\"action\":\"$1\",\"timestamp\":\"$(date -u '+%Y-%m-%d %H:%M:%S')\",\"country\":\"$(Loc --country)\",\"os_info\":\"$(ChkOs)\",\"cpu_arch\":\"$(uname -m)\",\"version\":\"$sh_v\"}" \
 			&>/dev/null
 	) &
-
 }
 
 yinsiyuanquan2() {
-
 	if grep -q '^ENABLE_STATS="false"' /usr/local/bin/k >/dev/null 2>&1; then
 		sed -i 's/^ENABLE_STATS="true"/ENABLE_STATS="false"/' ~/kejilion.sh
 	fi
-
 }
 
 canshu_v6
@@ -97,11 +93,11 @@ CheckFirstRun_false() {
 # 提示用户同意条款
 UserLicenseAgreement() {
 	clear
-	echo -e "*#fKZhY4#*"
-	echo "*#TDphJE#*"
-	echo "*#JOzao3#*"
-	echo -e "*#ez1xN3#*"
-	read -r -p "*#2SE6Wi#*" user_input
+	echo -e "*#jErLSK#*"
+	echo "*#EDSVzy#*"
+	echo "*#Lxh7zJ#*"
+	echo -e "*#vNVkBx#*"
+	Ask "*#sp9qXL#*" user_input
 
 	if [ "$user_input" = "y" ] || [ "$user_input" = "Y" ]; then
 		send_stats "许可同意"
@@ -131,7 +127,7 @@ ip_address() {
 	public_ip=$(get_public_ip)
 	isp_info=$(curl -s --max-time 3 http://ipinfo.io/org)
 
-	if [[ $isp_info =~ [Cc]hina ]]; then
+	if echo "$isp_info" | grep -Eiq 'china|mobile|unicom|telecom'; then
 		ipv4_address=$(get_local_ip)
 	else
 		ipv4_address="$public_ip"
@@ -144,13 +140,13 @@ ip_address() {
 
 install() {
 	if [ $# -eq 0 ]; then
-		echo "*#5EvViG#*"
+		echo "*#EbEKP9#*"
 		return 1
 	fi
 
 	for package in "$@"; do
 		if ! command -v "$package" &>/dev/null; then
-			echo -e "*#8lJvh3#*"
+			echo -e "*#5OHt3i#*"
 			if command -v dnf &>/dev/null; then
 				dnf -y update
 				dnf install -y epel-release
@@ -178,7 +174,7 @@ install() {
 				pkg update
 				pkg install -y "$package"
 			else
-				echo "*#vKALGd#*"
+				echo "*#uXAvIN#*"
 				return 1
 			fi
 		fi
@@ -192,10 +188,10 @@ check_disk_space() {
 	available_space_mb=$(df -m / | awk 'NR==2 {print $4}')
 
 	if [ $available_space_mb -lt $required_space_mb ]; then
-		echo -e "*#fSJ7VN#*"
-		echo "*#mTdGvd#*"
-		echo "*#ERWVxj#*"
-		echo "*#dprQTQ#*"
+		echo -e "*#elAJP2#*"
+		echo "*#ChMoqQ#*"
+		echo "*#QeVzks#*"
+		echo "*#Dnzpay#*"
 		send_stats "磁盘空间不足"
 		break_end
 		kejilion
@@ -208,12 +204,12 @@ install_dependency() {
 
 remove() {
 	if [ $# -eq 0 ]; then
-		echo "*#5EvViG#*"
+		echo "*#EbEKP9#*"
 		return 1
 	fi
 
 	for package in "$@"; do
-		echo -e "*#yvnnU5#*"
+		echo -e "*#JAYzYA#*"
 		if command -v dnf &>/dev/null; then
 			dnf remove -y "$package"
 		elif command -v yum &>/dev/null; then
@@ -231,7 +227,7 @@ remove() {
 		elif command -v pkg &>/dev/null; then
 			pkg delete -y "$package"
 		else
-			echo "*#vKALGd#*"
+			echo "*#uXAvIN#*"
 			return 1
 		fi
 	done
@@ -253,9 +249,9 @@ systemctl() {
 restart() {
 	systemctl restart "$1"
 	if [ $? -eq 0 ]; then
-		echo "*#zxGUpu#*"
+		echo "*#SIwHRV#*"
 	else
-		echo "*#OrB0NW#*"
+		echo "*#YP2xPV#*"
 	fi
 }
 
@@ -263,9 +259,9 @@ restart() {
 start() {
 	systemctl start "$1"
 	if [ $? -eq 0 ]; then
-		echo "*#NoOVhF#*"
+		echo "*#jGoezx#*"
 	else
-		echo "*#VsekXJ#*"
+		echo "*#QdKPqw#*"
 	fi
 }
 
@@ -273,9 +269,9 @@ start() {
 stop() {
 	systemctl stop "$1"
 	if [ $? -eq 0 ]; then
-		echo "*#oSNk3p#*"
+		echo "*#Y2NCw2#*"
 	else
-		echo "*#NFyOWX#*"
+		echo "*#wMCIuE#*"
 	fi
 }
 
@@ -283,9 +279,9 @@ stop() {
 status() {
 	systemctl status "$1"
 	if [ $? -eq 0 ]; then
-		echo "*#sEGvh9#*"
+		echo "*#NmJySR#*"
 	else
-		echo "*#GRAvUh#*"
+		echo "*#sCzbfg#*"
 	fi
 }
 
@@ -297,14 +293,13 @@ enable() {
 		/bin/systemctl enable "$SERVICE_NAME"
 	fi
 
-	echo "*#JFEkpO#*"
+	echo "*#7ht5XO#*"
 }
 
 break_end() {
-	echo -e "*#7Zga0y#*"
-	echo "*#iPlEvQ#*"
-	read -n 1 -s -r -p ""
-	echo "*#KUeEyM#*"
+	echo -e "*#BDE0jb#*"
+	Press "*#VuMXX3#*"
+	echo
 	clear
 }
 
@@ -337,29 +332,8 @@ install_add_docker_cn() {
 
 	local country=$(curl -s ipinfo.io/country)
 	if [ "$country" = "CN" ]; then
-		cat >/etc/docker/daemon.json <<EOF
-{
-  "registry-mirrors": [
-	"https://docker-0.unsee.tech",
-	"https://docker.1panel.live",
-	"https://registry.dockermirror.com",
-	"https://docker.imgdb.de",
-	"https://docker.m.daocloud.io",
-	"https://hub.firefly.store",
-	"https://hub.littlediary.cn",
-	"https://hub.rat.dev",
-	"https://dhub.kubesre.xyz",
-	"https://cjie.eu.org",
-	"https://docker.1panelproxy.com",
-	"https://docker.hlmirror.com",
-	"https://hub.fast360.xyz",
-	"https://dockerpull.cn",
-	"https://cr.laoyou.ip-ddns.com",
-	"https://docker.melikeme.cn",
-	"https://docker.kejilion.pro"
-  ]
-}
-EOF
+		NO_TRAN=$'{\n  "registry-mirrors": [\n    "https://docker-0.unsee.tech",\n    "https://docker.1panel.live",\n    "https://registry.dockermirror.com",\n    "https://docker.imgdb.de",\n    "https://docker.m.daocloud.io",\n    "https://hub.firefly.store",\n    "https://hub.littlediary.cn",\n    "https://hub.rat.dev",\n    "https://dhub.kubesre.xyz",\n    "https://cjie.eu.org",\n    "https://docker.1panelproxy.com",\n    "https://docker.hlmirror.com",\n    "https://hub.fast360.xyz",\n    "https://dockerpull.cn",\n    "https://cr.laoyou.ip-ddns.com",\n    "https://docker.melikeme.cn",\n    "https://docker.kejilion.pro"\n  ]\n}'
+		echo -e "$NO_TRAN" | sudo tee /etc/docker/daemon.json >/dev/null
 	fi
 
 	enable docker
@@ -383,7 +357,7 @@ install_add_docker_guanfang() {
 }
 
 install_add_docker() {
-	echo -e "*#jUVuF9#*"
+	echo -e "*#IHLZC3#*"
 	if [ -f /etc/os-release ] && grep -q "Fedora" /etc/os-release; then
 		install_add_docker_guanfang
 	elif command -v dnf &>/dev/null; then
@@ -412,24 +386,24 @@ install_add_docker() {
 				sed -i '/^deb \[arch=amd64 signed-by=\/etc\/apt\/keyrings\/docker-archive-keyring.gpg\] https:\/\/mirrors.aliyun.com\/docker-ce\/linux\/debian bullseye stable/d' /etc/apt/sources.list.d/docker.list >/dev/null
 				mkdir -p /etc/apt/keyrings
 				curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker-archive-keyring.gpg >/dev/null
-				echo "*#540P3H#*" | tee /etc/apt/sources.list.d/docker.list >/dev/null
+				echo "*#8xb7yb#*" | tee /etc/apt/sources.list.d/docker.list >/dev/null
 			elif [ "$arch" = "aarch64" ]; then
 				sed -i '/^deb \[arch=arm64 signed-by=\/etc\/apt\/keyrings\/docker-archive-keyring.gpg\] https:\/\/mirrors.aliyun.com\/docker-ce\/linux\/debian bullseye stable/d' /etc/apt/sources.list.d/docker.list >/dev/null
 				mkdir -p /etc/apt/keyrings
 				curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker-archive-keyring.gpg >/dev/null
-				echo "*#5EC8cy#*" | tee /etc/apt/sources.list.d/docker.list >/dev/null
+				echo "*#PHUmlL#*" | tee /etc/apt/sources.list.d/docker.list >/dev/null
 			fi
 		else
 			if [ "$arch" = "x86_64" ]; then
 				sed -i '/^deb \[arch=amd64 signed-by=\/usr\/share\/keyrings\/docker-archive-keyring.gpg\] https:\/\/download.docker.com\/linux\/debian bullseye stable/d' /etc/apt/sources.list.d/docker.list >/dev/null
 				mkdir -p /etc/apt/keyrings
 				curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker-archive-keyring.gpg >/dev/null
-				echo "*#Xt8Qy4#*" | tee /etc/apt/sources.list.d/docker.list >/dev/null
+				echo "*#jGYYm4#*" | tee /etc/apt/sources.list.d/docker.list >/dev/null
 			elif [ "$arch" = "aarch64" ]; then
 				sed -i '/^deb \[arch=arm64 signed-by=\/usr\/share\/keyrings\/docker-archive-keyring.gpg\] https:\/\/download.docker.com\/linux\/debian bullseye stable/d' /etc/apt/sources.list.d/docker.list >/dev/null
 				mkdir -p /etc/apt/keyrings
 				curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker-archive-keyring.gpg >/dev/null
-				echo "*#dBwXNm#*" | tee /etc/apt/sources.list.d/docker.list >/dev/null
+				echo "*#VAJavh#*" | tee /etc/apt/sources.list.d/docker.list >/dev/null
 			fi
 		fi
 		apt update
@@ -456,48 +430,48 @@ docker_ps() {
 	while true; do
 		clear
 		send_stats "Docker容器管理"
-		echo "*#Fh8DmT#*"
+		echo "*#7jGqb6#*"
 		docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"
-		echo "*#KUeEyM#*"
-		echo "*#hz5La9#*"
-		echo "*#d49Pki#*"
-		echo "*#aWcAGK#*"
-		echo "*#d49Pki#*"
-		echo "*#JiAFhF#*"
-		echo "*#ueTcRe#*"
-		echo "*#rC57B2#*"
-		echo "*#BafhZk#*"
-		echo "*#d49Pki#*"
-		echo "*#axPNGB#*"
-		echo "*#sHSEL4#*"
-		echo "*#d49Pki#*"
-		echo "*#5ZHMg1#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#YDzc33#*" sub_choice
+		echo
+		echo "*#BETW6r#*"
+		echo "*#u0O4YF#*"
+		echo "*#u8GQ0T#*"
+		echo "*#u0O4YF#*"
+		echo "*#92lwIT#*"
+		echo "*#6yBH6W#*"
+		echo "*#X6zSKS#*"
+		echo "*#fIAAvl#*"
+		echo "*#u0O4YF#*"
+		echo "*#x87mYG#*"
+		echo "*#Svdnez#*"
+		echo "*#u0O4YF#*"
+		echo "*#7DqCpu#*"
+		echo "*#u0O4YF#*"
+		Ask "*#9bDAbE#*" sub_choice
 		case $sub_choice in
 		1)
 			send_stats "新建容器"
-			read -e -p "*#LRnra0#*" dockername
+			Ask "*#mQa0X7#*" dockername
 			$dockername
 			;;
 		2)
 			send_stats "启动指定容器"
-			read -e -p "*#cYpi6T#*" dockername
+			Ask "*#jHFRQx#*" dockername
 			docker start $dockername
 			;;
 		3)
 			send_stats "停止指定容器"
-			read -e -p "*#cYpi6T#*" dockername
+			Ask "*#jHFRQx#*" dockername
 			docker stop $dockername
 			;;
 		4)
 			send_stats "删除指定容器"
-			read -e -p "*#cYpi6T#*" dockername
+			Ask "*#jHFRQx#*" dockername
 			docker rm -f $dockername
 			;;
 		5)
 			send_stats "重启指定容器"
-			read -e -p "*#cYpi6T#*" dockername
+			Ask "*#jHFRQx#*" dockername
 			docker restart $dockername
 			;;
 		6)
@@ -510,14 +484,14 @@ docker_ps() {
 			;;
 		8)
 			send_stats "删除所有容器"
-			read -e -p "*#CXTMCd#*"${gl_hong}注意: ${gl_bai}确定删除所有容器吗？(Y/N): ")" choice
+			Ask "*#lgfhMn#*" choice
 			case "$choice" in
 			[Yy])
 				docker rm -f $(docker ps -a -q)
 				;;
 			[Nn]) ;;
 			*)
-				echo "*#hTC3dG#*"
+				echo "*#gQOs0K#*"
 				;;
 			esac
 			;;
@@ -527,29 +501,29 @@ docker_ps() {
 			;;
 		11)
 			send_stats "进入容器"
-			read -e -p "*#4MP5Ur#*" dockername
+			Ask "*#2hIiCu#*" dockername
 			docker exec -it $dockername /bin/sh
 			break_end
 			;;
 		12)
 			send_stats "查看容器日志"
-			read -e -p "*#4MP5Ur#*" dockername
+			Ask "*#2hIiCu#*" dockername
 			docker logs $dockername
 			break_end
 			;;
 		13)
 			send_stats "查看容器网络"
-			echo "*#KUeEyM#*"
+			echo
 			container_ids=$(docker ps -q)
-			echo "*#77H8Z1#*"
-			echo "*#06rXuv#*"
+			echo "*#c0Nm6p#*"
+			echo "*#mnqRvs#*"
 			for container_id in $container_ids; do
 				local container_info=$(docker inspect --format '{{ .Name }}{{ range $network, $config := .NetworkSettings.Networks }} {{ $network }} {{ $config.IPAddress }}{{ end }}' "$container_id")
-				local container_name=$(echo "*#0Ii5kF#*" | awk '{print $1}')
-				local network_info=$(echo "*#0Ii5kF#*" | cut -d' ' -f2-)
+				local container_name=$(echo "$container_info" | awk '{print $1}')
+				local network_info=$(echo "$container_info" | cut -d' ' -f2-)
 				while IFS= read -r line; do
-					local network_name=$(echo "*#PvavEW#*" | awk '{print $1}')
-					local ip_address=$(echo "*#PvavEW#*" | awk '{print $2}')
+					local network_name=$(echo "$line" | awk '{print $1}')
+					local ip_address=$(echo "$line" | awk '{print $2}')
 					printf "%-20s %-20s %-15s\n" "$container_name" "$network_name" "$ip_address"
 				done <<<"$network_info"
 			done
@@ -561,7 +535,7 @@ docker_ps() {
 			break_end
 			;;
 		*)
-			break # 跳出循环，退出菜单
+			break
 			;;
 		esac
 	done
@@ -571,56 +545,56 @@ docker_image() {
 	while true; do
 		clear
 		send_stats "Docker镜像管理"
-		echo "*#j3ArQH#*"
+		echo "*#KjbXyl#*"
 		docker image ls
-		echo "*#KUeEyM#*"
-		echo "*#Xi7Q62#*"
-		echo "*#d49Pki#*"
-		echo "*#DGnfgo#*"
-		echo "*#F92C3q#*"
-		echo "*#d49Pki#*"
-		echo "*#5ZHMg1#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#YDzc33#*" sub_choice
+		echo
+		echo "*#4snRmX#*"
+		echo "*#u0O4YF#*"
+		echo "*#8pevXH#*"
+		echo "*#twnDtX#*"
+		echo "*#u0O4YF#*"
+		echo "*#7DqCpu#*"
+		echo "*#u0O4YF#*"
+		Ask "*#9bDAbE#*" sub_choice
 		case $sub_choice in
 		1)
 			send_stats "拉取镜像"
-			read -e -p "*#rgBDiA#*" imagenames
+			Ask "*#P073YB#*" imagenames
 			for name in $imagenames; do
-				echo -e "*#yuDNTm#*"
+				echo -e "*#veUOBo#*"
 				docker pull $name
 			done
 			;;
 		2)
 			send_stats "更新镜像"
-			read -e -p "*#rgBDiA#*" imagenames
+			Ask "*#P073YB#*" imagenames
 			for name in $imagenames; do
-				echo -e "*#GVj5hc#*"
+				echo -e "*#2epr0X#*"
 				docker pull $name
 			done
 			;;
 		3)
 			send_stats "删除镜像"
-			read -e -p "*#rgBDiA#*" imagenames
+			Ask "*#P073YB#*" imagenames
 			for name in $imagenames; do
 				docker rmi -f $name
 			done
 			;;
 		4)
 			send_stats "删除所有镜像"
-			read -e -p "*#CXTMCd#*"${gl_hong}注意: ${gl_bai}确定删除所有镜像吗？(Y/N): ")" choice
+			Ask "*#XNrXwY#*" choice
 			case "$choice" in
 			[Yy])
 				docker rmi -f $(docker images -q)
 				;;
 			[Nn]) ;;
 			*)
-				echo "*#hTC3dG#*"
+				echo "*#gQOs0K#*"
 				;;
 			esac
 			;;
 		*)
-			break # 跳出循环，退出菜单
+			break
 			;;
 		esac
 	done
@@ -676,16 +650,16 @@ install_crontab() {
 			service cron start
 			;;
 		*)
-			echo "*#CFnpvf#*"
+			echo "*#VqPDko#*"
 			return
 			;;
 		esac
 	else
-		echo "*#Y08dSj#*"
+		echo "*#0nz6rU#*"
 		return
 	fi
 
-	echo -e "*#xMuCDt#*"
+	echo -e "*#O9vsXG#*"
 }
 
 docker_ipv6_on() {
@@ -697,27 +671,27 @@ docker_ipv6_on() {
 
 	# 检查配置文件是否存在，如果不存在则创建文件并写入默认设置
 	if [ ! -f "$CONFIG_FILE" ]; then
-		echo "*#k8KDOt#*" | jq . >"$CONFIG_FILE"
+		echo "$REQUIRED_IPV6_CONFIG" | jq . >"$CONFIG_FILE"
 		restart docker
 	else
 		# 使用jq处理配置文件的更新
 		local ORIGINAL_CONFIG=$(<"$CONFIG_FILE")
 
 		# 检查当前配置是否已经有 ipv6 设置
-		local CURRENT_IPV6=$(echo "*#BvUBfj#*" | jq '.ipv6 // false')
+		local CURRENT_IPV6=$(echo "$ORIGINAL_CONFIG" | jq '.ipv6 // false')
 
 		# 更新配置，开启 IPv6
 		if [[ $CURRENT_IPV6 == "false" ]]; then
-			UPDATED_CONFIG=$(echo "*#BvUBfj#*" | jq '. + {ipv6: true, "fixed-cidr-v6": "2001:db8:1::/64"}')
+			UPDATED_CONFIG=$(echo "$ORIGINAL_CONFIG" | jq '. + {ipv6: true, "fixed-cidr-v6": "2001:db8:1::/64"}')
 		else
-			UPDATED_CONFIG=$(echo "*#BvUBfj#*" | jq '. + {"fixed-cidr-v6": "2001:db8:1::/64"}')
+			UPDATED_CONFIG=$(echo "$ORIGINAL_CONFIG" | jq '. + {"fixed-cidr-v6": "2001:db8:1::/64"}')
 		fi
 
 		# 对比原始配置与新配置
 		if [[ $ORIGINAL_CONFIG == "$UPDATED_CONFIG" ]]; then
-			echo -e "*#u1CkZl#*"
+			echo -e "*#wSwr5a#*"
 		else
-			echo "*#9r5T2H#*" | jq . >"$CONFIG_FILE"
+			echo "$UPDATED_CONFIG" | jq . >"$CONFIG_FILE"
 			restart docker
 		fi
 	fi
@@ -731,7 +705,7 @@ docker_ipv6_off() {
 
 	# 检查配置文件是否存在
 	if [ ! -f "$CONFIG_FILE" ]; then
-		echo -e "*#r83VtH#*"
+		echo -e "*#SGwGjM#*"
 		return
 	fi
 
@@ -739,18 +713,18 @@ docker_ipv6_off() {
 	local ORIGINAL_CONFIG=$(<"$CONFIG_FILE")
 
 	# 使用jq处理配置文件的更新
-	local UPDATED_CONFIG=$(echo "*#BvUBfj#*" | jq 'del(.["fixed-cidr-v6"]) | .ipv6 = false')
+	local UPDATED_CONFIG=$(echo "$ORIGINAL_CONFIG" | jq 'del(.["fixed-cidr-v6"]) | .ipv6 = false')
 
 	# 检查当前的 ipv6 状态
-	local CURRENT_IPV6=$(echo "*#BvUBfj#*" | jq -r '.ipv6 // false')
+	local CURRENT_IPV6=$(echo "$ORIGINAL_CONFIG" | jq -r '.ipv6 // false')
 
 	# 对比原始配置与新配置
 	if [[ $CURRENT_IPV6 == "false" ]]; then
-		echo -e "*#yxZBPM#*"
+		echo -e "*#7ykZkg#*"
 	else
-		echo "*#9r5T2H#*" | jq . >"$CONFIG_FILE"
+		echo "$UPDATED_CONFIG" | jq . >"$CONFIG_FILE"
 		restart docker
-		echo -e "*#NuEOQE#*"
+		echo -e "*#xLDgVF#*"
 	fi
 }
 
@@ -783,9 +757,10 @@ iptables_open() {
 }
 
 open_port() {
-	local ports=($@) # 将传入的参数转换为数组
+	local ports=($@)
+	# 将传入的参数转换为数组
 	if [ ${#ports[@]} -eq 0 ]; then
-		echo "*#lJQ26j#*"
+		echo "*#H86IyQ#*"
 		return 1
 	fi
 
@@ -803,7 +778,7 @@ open_port() {
 
 		if ! iptables -C INPUT -p udp --dport $port -j ACCEPT 2>/dev/null; then
 			iptables -I INPUT 1 -p udp --dport $port -j ACCEPT
-			echo "*#KiYQpl#*"
+			echo "*#6h4RTN#*"
 		fi
 	done
 
@@ -812,9 +787,10 @@ open_port() {
 }
 
 close_port() {
-	local ports=($@) # 将传入的参数转换为数组
+	local ports=($@)
+	# 将传入的参数转换为数组
 	if [ ${#ports[@]} -eq 0 ]; then
-		echo "*#lJQ26j#*"
+		echo "*#H86IyQ#*"
 		return 1
 	fi
 
@@ -832,7 +808,7 @@ close_port() {
 
 		if ! iptables -C INPUT -p udp --dport $port -j DROP 2>/dev/null; then
 			iptables -I INPUT 1 -p udp --dport $port -j DROP
-			echo "*#xZs9I5#*"
+			echo "*#n3FBZi#*"
 		fi
 	done
 
@@ -849,9 +825,10 @@ close_port() {
 }
 
 allow_ip() {
-	local ips=($@) # 将传入的参数转换为数组
+	local ips=($@)
+	# 将传入的参数转换为数组
 	if [ ${#ips[@]} -eq 0 ]; then
-		echo "*#ZeTsY1#*"
+		echo "*#OL73AP#*"
 		return 1
 	fi
 
@@ -864,7 +841,7 @@ allow_ip() {
 		# 添加允许规则
 		if ! iptables -C INPUT -s $ip -j ACCEPT 2>/dev/null; then
 			iptables -I INPUT 1 -s $ip -j ACCEPT
-			echo "*#0at71e#*"
+			echo "*#ZikEyY#*"
 		fi
 	done
 
@@ -873,9 +850,10 @@ allow_ip() {
 }
 
 block_ip() {
-	local ips=($@) # 将传入的参数转换为数组
+	local ips=($@)
+	# 将传入的参数转换为数组
 	if [ ${#ips[@]} -eq 0 ]; then
-		echo "*#ZeTsY1#*"
+		echo "*#OL73AP#*"
 		return 1
 	fi
 
@@ -888,7 +866,7 @@ block_ip() {
 		# 添加阻止规则
 		if ! iptables -C INPUT -s $ip -j DROP 2>/dev/null; then
 			iptables -I INPUT 1 -s $ip -j DROP
-			echo "*#evttzp#*"
+			echo "*#TRBF79#*"
 		fi
 	done
 
@@ -943,7 +921,7 @@ manage_country_rules() {
 
 		# 下载 IP 区域文件
 		if ! wget -q "$download_url" -O "${country_code,,}.zone"; then
-			echo "*#uaTHGl#*"
+			echo "*#aBZFor#*"
 			exit 1
 		fi
 
@@ -956,7 +934,7 @@ manage_country_rules() {
 		iptables -I INPUT -m set --match-set "$ipset_name" src -j DROP
 		iptables -I OUTPUT -m set --match-set "$ipset_name" dst -j DROP
 
-		echo "*#sC7mOo#*"
+		echo "*#9dTeUd#*"
 		rm "${country_code,,}.zone"
 		;;
 
@@ -968,7 +946,7 @@ manage_country_rules() {
 
 		# 下载 IP 区域文件
 		if ! wget -q "$download_url" -O "${country_code,,}.zone"; then
-			echo "*#uaTHGl#*"
+			echo "*#aBZFor#*"
 			exit 1
 		fi
 
@@ -988,7 +966,7 @@ manage_country_rules() {
 		iptables -A INPUT -m set --match-set "$ipset_name" src -j ACCEPT
 		iptables -A OUTPUT -m set --match-set "$ipset_name" dst -j ACCEPT
 
-		echo "*#TtirF7#*"
+		echo "*#oZ12Ls#*"
 		rm "${country_code,,}.zone"
 		;;
 
@@ -1002,7 +980,7 @@ manage_country_rules() {
 			ipset destroy "$ipset_name"
 		fi
 
-		echo "*#i9mrE6#*"
+		echo "*#M2RuHx#*"
 		;;
 
 	*) ;;
@@ -1015,37 +993,37 @@ iptables_panel() {
 	save_iptables_rules
 	while true; do
 		clear
-		echo "*#tanFI6#*"
+		echo "*#odR7KU#*"
 		send_stats "高级防火墙管理"
-		echo "*#d49Pki#*"
+		echo "*#u0O4YF#*"
 		iptables -L INPUT
-		echo "*#KUeEyM#*"
-		echo "*#hRk41R#*"
-		echo "*#d49Pki#*"
-		echo "*#9a5h2l#*"
-		echo "*#GNU3dS#*"
-		echo "*#d49Pki#*"
-		echo "*#QKIb3a#*"
-		echo "*#RaD8YO#*"
-		echo "*#d49Pki#*"
-		echo "*#kkimb2#*"
-		echo "*#d49Pki#*"
-		echo "*#TcuPT1#*"
-		echo "*#d49Pki#*"
-		echo "*#1wZ7FY#*"
-		echo "*#ZnEg6i#*"
-		echo "*#d49Pki#*"
-		echo "*#5ZHMg1#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#YDzc33#*" sub_choice
+		echo
+		echo "*#7jLzjH#*"
+		echo "*#u0O4YF#*"
+		echo "*#UkRrgh#*"
+		echo "*#L3Utrk#*"
+		echo "*#u0O4YF#*"
+		echo "*#9Gh1dz#*"
+		echo "*#5tR2II#*"
+		echo "*#u0O4YF#*"
+		echo "*#Xs2G7g#*"
+		echo "*#u0O4YF#*"
+		echo "*#y3iAZ7#*"
+		echo "*#u0O4YF#*"
+		echo "*#2QbBi5#*"
+		echo "*#CYStVq#*"
+		echo "*#u0O4YF#*"
+		echo "*#7DqCpu#*"
+		echo "*#u0O4YF#*"
+		Ask "*#9bDAbE#*" sub_choice
 		case $sub_choice in
 		1)
-			read -e -p "*#C8WnVA#*" o_port
+			Ask "*#dw58zJ#*" o_port
 			open_port $o_port
 			send_stats "开放指定端口"
 			;;
 		2)
-			read -e -p "*#cMIoJh#*" c_port
+			Ask "*#iARMOl#*" c_port
 			close_port $c_port
 			send_stats "关闭指定端口"
 			;;
@@ -1084,17 +1062,17 @@ iptables_panel() {
 
 		5)
 			# IP 白名单
-			read -e -p "*#Vi2BRu#*" o_ip
+			Ask "*#JAzHSk#*" o_ip
 			allow_ip $o_ip
 			;;
 		6)
 			# IP 黑名单
-			read -e -p "*#BmrJ4w#*" c_ip
+			Ask "*#qWfl94#*" c_ip
 			block_ip $c_ip
 			;;
 		7)
 			# 清除指定 IP
-			read -e -p "*#ccFjfs#*" d_ip
+			Ask "*#2BVKnh#*" d_ip
 			iptables -D INPUT -s $d_ip -j ACCEPT 2>/dev/null
 			iptables -D INPUT -s $d_ip -j DROP 2>/dev/null
 			iptables-save >/etc/iptables/rules.v4
@@ -1122,24 +1100,24 @@ iptables_panel() {
 			;;
 
 		15)
-			read -e -p "*#jF0fHM#*" country_code
+			Ask "*#w3iBck#*" country_code
 			manage_country_rules block $country_code
 			send_stats "允许国家 $country_code 的IP"
 			;;
 		16)
-			read -e -p "*#p8JE7z#*" country_code
+			Ask "*#NNI86d#*" country_code
 			manage_country_rules allow $country_code
 			send_stats "阻止国家 $country_code 的IP"
 			;;
 
 		17)
-			read -e -p "*#ciSWWn#*" country_code
+			Ask "*#aOSC5n#*" country_code
 			manage_country_rules unblock $country_code
 			send_stats "清除国家 $country_code 的IP"
 			;;
 
 		*)
-			break # 跳出循环，退出菜单
+			break
 			;;
 		esac
 	done
@@ -1172,15 +1150,15 @@ add_swap() {
 	swapon /swapfile
 
 	sed -i '/\/swapfile/d' /etc/fstab
-	echo "*#jEvvME#*" >>/etc/fstab
+	echo "*#Z0aClU#*" >>/etc/fstab
 
 	if [ -f /etc/alpine-release ]; then
-		echo "*#Po2zDw#*" >/etc/local.d/swap.start
+		echo "*#Is48Po#*" >/etc/local.d/swap.start
 		chmod +x /etc/local.d/swap.start
 		rc-update add local
 	fi
 
-	echo -e "*#aVe7G6#*"
+	echo -e "*#ubXSCP#*"
 }
 
 check_swap() {
@@ -1196,7 +1174,7 @@ ldnmp_v() {
 
 	# 获取nginx版本
 	local nginx_version=$(docker exec nginx nginx -v 2>&1)
-	local nginx_version=$(echo "*#KYulew#*" | grep -oP "nginx/\K[0-9]+\.[0-9]+\.[0-9]+")
+	local nginx_version=$(echo "$nginx_version" | grep -oP "nginx/\K[0-9]+\.[0-9]+\.[0-9]+")
 	echo -n -e "nginx : ${gl_huang}v$nginx_version${gl_bai}"
 
 	# 获取mysql版本
@@ -1210,10 +1188,10 @@ ldnmp_v() {
 
 	# 获取redis版本
 	local redis_version=$(docker exec redis redis-server -v 2>&1 | grep -oP "v=+\K[0-9]+\.[0-9]+")
-	echo -e "*#0vdpE3#*"
+	echo -e "*#s6yAfe#*"
 
-	echo "*#d49Pki#*"
-	echo "*#KUeEyM#*"
+	echo "*#u0O4YF#*"
+	echo
 
 }
 
@@ -1276,8 +1254,8 @@ install_ldnmp() {
 	restart_ldnmp
 
 	clear
-	echo "*#x0L1hn#*"
-	echo "*#d49Pki#*"
+	echo "*#GvRjNT#*"
+	echo "*#u0O4YF#*"
 	ldnmp_v
 
 }
@@ -1293,9 +1271,9 @@ install_certbot() {
 	crontab -l 2>/dev/null | grep -vF "$cron_job" | crontab -
 	(
 		crontab -l 2>/dev/null
-		echo "*#6FilVI#*"
+		echo "$cron_job"
 	) | crontab -
-	echo "*#yVEgs6#*"
+	echo "*#sSAm2J#*"
 }
 
 install_ssltls() {
@@ -1327,20 +1305,20 @@ install_ssltls() {
 }
 
 install_ssltls_text() {
-	echo -e "*#iHdWEN#*"
+	echo -e "*#rCI8hO#*"
 	cat /etc/letsencrypt/live/$yuming/fullchain.pem
-	echo "*#KUeEyM#*"
-	echo -e "*#Cpr8Vv#*"
+	echo
+	echo -e "*#Yd5bgP#*"
 	cat /etc/letsencrypt/live/$yuming/privkey.pem
-	echo "*#KUeEyM#*"
-	echo -e "*#nGdB1L#*"
-	echo "*#F0o7s3#*"
-	echo "*#zTXhaR#*"
-	echo "*#KUeEyM#*"
+	echo
+	echo -e "*#xhgoCd#*"
+	echo "*#ukaLA1#*"
+	echo "*#A9otwI#*"
+	echo
 }
 
 add_ssl() {
-	echo -e "*#idH9gh#*"
+	echo -e "*#n0kYdo#*"
 	yuming="${1:-}"
 	if [ -z "$yuming" ]; then
 		add_yuming
@@ -1355,9 +1333,9 @@ add_ssl() {
 }
 
 ssl_ps() {
-	echo -e "*#5E4Inf#*"
-	echo "*#txnZT5#*"
-	echo "*#d49Pki#*"
+	echo -e "*#Z7iQ6V#*"
+	echo "*#jSVgHy#*"
+	echo "*#u0O4YF#*"
 	for cert_dir in /etc/letsencrypt/live/*; do
 		local cert_file="$cert_dir/fullchain.pem"
 		if [ -f "$cert_file" ]; then
@@ -1367,7 +1345,7 @@ ssl_ps() {
 			printf "%-30s%s\n" "$domain" "$formatted_date"
 		fi
 	done
-	echo "*#KUeEyM#*"
+	echo
 }
 
 default_server_ssl() {
@@ -1394,16 +1372,16 @@ certs_status() {
 		send_stats "域名证书申请成功"
 	else
 		send_stats "域名证书申请失败"
-		echo -e "*#3S0tru#*"
-		echo -e "*#E4GiNo#*"
-		echo -e "*#nCnJeD#*"
-		echo -e "*#NdHVpf#*"
-		echo -e "*#vabIkb#*"
-		echo -e "*#bsBo2y#*"
-		echo -e "*#iO9jDP#*"
+		echo -e "*#ZDfBCs#*"
+		echo -e "*#1dsMYF#*"
+		echo -e "*#pIYCbD#*"
+		echo -e "*#mCQsvs#*"
+		echo -e "*#5UNLEW#*"
+		echo -e "*#AmcefL#*"
+		echo -e "*#lNUrCs#*"
 		break_end
 		clear
-		echo "*#61XgkE#*"
+		echo "*#7rI475#*"
 		add_yuming
 		install_ssltls
 		certs_status
@@ -1421,12 +1399,12 @@ repeat_add_yuming() {
 
 add_yuming() {
 	ip_address
-	echo -e "*#LwiRXv#*"
-	read -e -p "*#2WGoQE#*" yuming
+	echo -e "*#T5MIt6#*"
+	Ask "*#BDrmjv#*" yuming
 }
 
 add_db() {
-	dbname=$(echo "*#GpGbnk#*" | sed -e 's/[^A-Za-z0-9]/_/g')
+	dbname=$(echo "$yuming" | sed -e 's/[^A-Za-z0-9]/_/g')
 	dbname="${dbname}"
 
 	dbrootpasswd=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /home/web/docker-compose.yml | tr -d '[:space:]')
@@ -1486,7 +1464,7 @@ nginx_upgrade() {
 	docker restart $ldnmp_pods >/dev/null 2>&1
 
 	send_stats "更新$ldnmp_pods"
-	echo "*#nnIThX#*"
+	echo "*#sUeRzl#*"
 
 }
 
@@ -1505,9 +1483,9 @@ phpmyadmin_upgrade() {
 	ip_address
 
 	check_docker_app_ip
-	echo "*#BDjD7G#*"
-	echo "*#AHa4ix#*"
-	echo "*#gLXuSj#*"
+	echo "*#ci93wH#*"
+	echo "*#L6l4FJ#*"
+	echo "*#OjX4JF#*"
 	echo
 	send_stats "启动$ldnmp_pods"
 }
@@ -1526,21 +1504,21 @@ cf_purge_cache() {
 		ZONE_IDS=($ZONE_IDS)
 	else
 		# 提示用户是否清理缓存
-		read -e -p "*#bTZhon#*" answer
+		Ask "*#BPxEbE#*" answer
 		if [[ $answer == "y" ]]; then
-			echo "*#rtc4aK#*"
-			read -e -p "*#EOKNnL#*" API_TOKEN
-			read -e -p "*#K5vTkd#*" EMAIL
-			read -e -p "*#Y7TAt5#*" -a ZONE_IDS
+			echo "*#a6Ybop#*"
+			Ask "*#s5uNAB#*" API_TOKEN
+			Ask "*#ItwEX3#*" EMAIL
+			Ask "*#WmKISi#*" -a ZONE_IDS
 
 			mkdir -p /home/web/config/
-			echo "*#FIYyAD#*" >"$CONFIG_FILE"
+			echo "*#w9XVK3#*" >"$CONFIG_FILE"
 		fi
 	fi
 
 	# 循环遍历每个 zone_id 并执行清除缓存命令
 	for ZONE_ID in "${ZONE_IDS[@]}"; do
-		echo "*#YSp79c#*"
+		echo "*#DXYjrf#*"
 		curl -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/purge_cache" \
 			-H "X-Auth-Email: $EMAIL" \
 			-H "X-Auth-Key: $API_TOKEN" \
@@ -1548,7 +1526,7 @@ cf_purge_cache() {
 			--data '{"purge_everything":true}'
 	done
 
-	echo "*#050f3N#*"
+	echo "*#GwxLeF#*"
 }
 
 web_cache() {
@@ -1563,25 +1541,25 @@ web_del() {
 	send_stats "删除站点数据"
 	yuming_list="${1:-}"
 	if [ -z "$yuming_list" ]; then
-		read -e -p "*#OsiiTx#*" yuming_list
+		Ask "*#qeJQqa#*" yuming_list
 		if [[ -z $yuming_list ]]; then
 			return
 		fi
 	fi
 
 	for yuming in $yuming_list; do
-		echo "*#KodYgW#*"
+		echo "*#tPDgNC#*"
 		rm -r /home/web/html/$yuming >/dev/null 2>&1
 		rm /home/web/conf.d/$yuming.conf >/dev/null 2>&1
 		rm /home/web/certs/${yuming}_key.pem >/dev/null 2>&1
 		rm /home/web/certs/${yuming}_cert.pem >/dev/null 2>&1
 
 		# 将域名转换为数据库名
-		dbname=$(echo "*#GpGbnk#*" | sed -e 's/[^A-Za-z0-9]/_/g')
+		dbname=$(echo "$yuming" | sed -e 's/[^A-Za-z0-9]/_/g')
 		dbrootpasswd=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /home/web/docker-compose.yml | tr -d '[:space:]')
 
 		# 删除数据库前检查是否存在，避免报错
-		echo "*#PoZvKb#*"
+		echo "*#P0U9FR#*"
 		docker exec mysql mysql -u root -p"$dbrootpasswd" -e "DROP DATABASE ${dbname};" >/dev/null 2>&1
 	done
 
@@ -1608,7 +1586,7 @@ nginx_waf() {
 		sed -i 's|^\(\s*\)modsecurity on;|\1# modsecurity on;|' /home/web/nginx.conf >/dev/null 2>&1
 		sed -i 's|^\(\s*\)modsecurity_rules_file /etc/nginx/modsec/modsecurity.conf;|\1# modsecurity_rules_file /etc/nginx/modsec/modsecurity.conf;|' /home/web/nginx.conf >/dev/null 2>&1
 	else
-		echo "*#uCqDUT#*"
+		echo "*#VeJTxV#*"
 		return 1
 	fi
 
@@ -1626,7 +1604,7 @@ check_waf_status() {
 	if grep -q "^\s*#\s*modsecurity on;" /home/web/nginx.conf; then
 		waf_status=""
 	elif grep -q "modsecurity on;" /home/web/nginx.conf; then
-		waf_status=" WAF已开启"
+		waf_status="*#K8E2SF#*"
 	else
 		waf_status=""
 	fi
@@ -1634,7 +1612,7 @@ check_waf_status() {
 
 check_cf_mode() {
 	if [ -f "/path/to/fail2ban/config/fail2ban/action.d/cloudflare-docker.conf" ]; then
-		CFmessage=" cf模式已开启"
+		CFmessage="*#g11cdR#*"
 	else
 		CFmessage=""
 	fi
@@ -1669,7 +1647,7 @@ patch_wp_memory_limit() {
 	  { print }
 	' "$FILE" >"$FILE.tmp" && mv -f "$FILE.tmp" "$FILE"
 
-		echo "*#zZrOGR#*"
+		echo "*#s5gtsj#*"
 	done
 }
 
@@ -1694,7 +1672,7 @@ patch_wp_debug() {
 	  { print }
 	' "$FILE" >"$FILE.tmp" && mv -f "$FILE.tmp" "$FILE"
 
-		echo "*#bThBrx#*"
+		echo "*#Gst3IZ#*"
 	done
 }
 
@@ -1737,7 +1715,7 @@ nginx_br() {
 		}' /home/web/nginx.conf
 
 	else
-		echo "*#uCqDUT#*"
+		echo "*#VeJTxV#*"
 		return 1
 	fi
 
@@ -1788,7 +1766,7 @@ nginx_zstd() {
 		}' /home/web/nginx.conf
 
 	else
-		echo "*#uCqDUT#*"
+		echo "*#VeJTxV#*"
 		return 1
 	fi
 
@@ -1810,7 +1788,7 @@ nginx_gzip() {
 	elif [ "$mode" == "off" ]; then
 		sed -i 's|^\(\s*\)gzip on;|\1# gzip on;|' /home/web/nginx.conf >/dev/null 2>&1
 	else
-		echo "*#uCqDUT#*"
+		echo "*#VeJTxV#*"
 		return 1
 	fi
 
@@ -1831,25 +1809,25 @@ web_security() {
 			clear
 			docker_name="fail2ban"
 			check_docker_app
-			echo -e "*#W5hde6#*"
-			echo "*#d49Pki#*"
-			echo "*#WGdMqe#*"
-			echo "*#d49Pki#*"
-			echo "*#l6Rgp0#*"
-			echo "*#z65Gpn#*"
-			echo "*#d49Pki#*"
-			echo "*#SZYQe2#*"
-			echo "*#d49Pki#*"
-			echo "*#VEhUQq#*"
-			echo "*#d49Pki#*"
-			echo "*#h3Ehdq#*"
-			echo "*#ZedaJE#*"
-			echo "*#d49Pki#*"
-			echo "*#Ajz8jY#*"
-			echo "*#d49Pki#*"
-			echo "*#5ZHMg1#*"
-			echo "*#d49Pki#*"
-			read -e -p "*#YDzc33#*" sub_choice
+			echo -e "*#MzdAsV#*"
+			echo "*#u0O4YF#*"
+			echo "*#yt839v#*"
+			echo "*#u0O4YF#*"
+			echo "*#JC5Cj1#*"
+			echo "*#olRD0F#*"
+			echo "*#u0O4YF#*"
+			echo "*#cC1kjq#*"
+			echo "*#u0O4YF#*"
+			echo "*#rMhEck#*"
+			echo "*#u0O4YF#*"
+			echo "*#8wmm6M#*"
+			echo "*#MPqUZV#*"
+			echo "*#u0O4YF#*"
+			echo "*#xPPn5x#*"
+			echo "*#u0O4YF#*"
+			echo "*#7DqCpu#*"
+			echo "*#u0O4YF#*"
+			Ask "*#9bDAbE#*" sub_choice
 			case $sub_choice in
 			1)
 				f2b_install_sshd
@@ -1861,40 +1839,40 @@ web_security() {
 				f2b_status
 				;;
 			5)
-				echo "*#d49Pki#*"
+				echo "*#u0O4YF#*"
 				f2b_sshd
-				echo "*#d49Pki#*"
+				echo "*#u0O4YF#*"
 				;;
 			6)
 
-				echo "*#d49Pki#*"
+				echo "*#u0O4YF#*"
 				local xxx="fail2ban-nginx-cc"
 				f2b_status_xxx
-				echo "*#d49Pki#*"
+				echo "*#u0O4YF#*"
 				local xxx="docker-nginx-418"
 				f2b_status_xxx
-				echo "*#d49Pki#*"
+				echo "*#u0O4YF#*"
 				local xxx="docker-nginx-bad-request"
 				f2b_status_xxx
-				echo "*#d49Pki#*"
+				echo "*#u0O4YF#*"
 				local xxx="docker-nginx-badbots"
 				f2b_status_xxx
-				echo "*#d49Pki#*"
+				echo "*#u0O4YF#*"
 				local xxx="docker-nginx-botsearch"
 				f2b_status_xxx
-				echo "*#d49Pki#*"
+				echo "*#u0O4YF#*"
 				local xxx="docker-nginx-deny"
 				f2b_status_xxx
-				echo "*#d49Pki#*"
+				echo "*#u0O4YF#*"
 				local xxx="docker-nginx-http-auth"
 				f2b_status_xxx
-				echo "*#d49Pki#*"
+				echo "*#u0O4YF#*"
 				local xxx="docker-nginx-unauthorized"
 				f2b_status_xxx
-				echo "*#d49Pki#*"
+				echo "*#u0O4YF#*"
 				local xxx="docker-php-url-fopen"
 				f2b_status_xxx
-				echo "*#d49Pki#*"
+				echo "*#u0O4YF#*"
 
 				;;
 
@@ -1909,7 +1887,7 @@ web_security() {
 				docker rm -f fail2ban
 				rm -rf /path/to/fail2ban
 				crontab -l | grep -v "CF-Under-Attack.sh" | crontab - 2>/dev/null
-				echo "*#e72Unp#*"
+				echo "*#SwZE4P#*"
 				;;
 
 			11)
@@ -1925,10 +1903,11 @@ web_security() {
 
 			21)
 				send_stats "cloudflare模式"
-				echo "*#iVHZvt#*"
-				echo "*#25fMWX#*"
-				read -e -p "*#EWc4qJ#*" cfuser
-				read -e -p "*#uzPZTj#*" cftoken
+				echo "*#EAhmLG#*"
+				NO_TRAN="https://dash.cloudflare.com/login"
+				echo "$NO_TRAN"
+				Ask "*#54RDsR#*" cfuser
+				Ask "*#CXYAcf#*" cftoken
 
 				wget -O /home/web/conf.d/default.conf ${gh_proxy}raw.githubusercontent.com/kejilion/nginx/main/default11.conf
 				docker exec nginx nginx -s reload
@@ -1943,21 +1922,22 @@ web_security() {
 				sed -i "s/APIKEY00000/$cftoken/g" /path/to/fail2ban/config/fail2ban/action.d/cloudflare-docker.conf
 				f2b_status
 
-				echo "*#9Z8cKX#*"
+				echo "*#ceGgWq#*"
 				;;
 
 			22)
 				send_stats "高负载开启5秒盾"
-				echo -e "*#ZPlMp4#*"
-				echo "*#4xG4jR#*"
-				echo "*#z6OChC#*"
-				echo -e "*#wdZTkI#*"
-				echo -e "*#CILfwJ#*"
-				echo "*#25fMWX#*"
-				echo "*#4xG4jR#*"
-				read -e -p "*#EWc4qJ#*" cfuser
-				read -e -p "*#uzPZTj#*" cftoken
-				read -e -p "*#79zbzB#*" cfzonID
+				echo -e "*#l0xA1x#*"
+				echo "*#Hdb192#*"
+				echo "*#xRCi2N#*"
+				echo -e "*#M1Z52M#*"
+				echo -e "*#uaNSbe#*"
+				NO_TRAN="https://dash.cloudflare.com/login"
+				echo "$NO_TRAN"
+				echo "*#Hdb192#*"
+				Ask "*#54RDsR#*" cfuser
+				Ask "*#CXYAcf#*" cftoken
+				Ask "*#wuoV05#*" cfzonID
 
 				cd ~
 				install jq bc
@@ -1975,24 +1955,24 @@ web_security() {
 				if [ -z "$existing_cron" ]; then
 					(
 						crontab -l 2>/dev/null
-						echo "*#6FilVI#*"
+						echo "$cron_job"
 					) | crontab -
-					echo "*#w5hcpO#*"
+					echo "*#dVVjbN#*"
 				else
-					echo "*#dYMCoT#*"
+					echo "*#6S8RGF#*"
 				fi
 
 				;;
 
 			31)
 				nginx_waf on
-				echo "*#KWcLUl#*"
+				echo "*#Ofw9oQ#*"
 				send_stats "站点WAF已开启"
 				;;
 
 			32)
 				nginx_waf off
-				echo "*#C1WaoX#*"
+				echo "*#KRffMS#*"
 				send_stats "站点WAF已关闭"
 				;;
 
@@ -2022,9 +2002,9 @@ check_nginx_mode() {
 
 	# 根据值设置模式信息
 	if [ "$current_value" = "8" ]; then
-		mode_info=" 高性能模式"
+		mode_info="*#K1VXRt#*"
 	else
-		mode_info=" 标准模式"
+		mode_info="*#RHlbEK#*"
 	fi
 
 }
@@ -2035,21 +2015,21 @@ check_nginx_compression() {
 
 	# 检查 zstd 是否开启且未被注释（整行以 zstd on; 开头）
 	if grep -qE '^\s*zstd\s+on;' "$CONFIG_FILE"; then
-		zstd_status=" zstd压缩已开启"
+		zstd_status="*#dstYVA#*"
 	else
 		zstd_status=""
 	fi
 
 	# 检查 brotli 是否开启且未被注释
 	if grep -qE '^\s*brotli\s+on;' "$CONFIG_FILE"; then
-		br_status=" br压缩已开启"
+		br_status="*#kuCuIN#*"
 	else
 		br_status=""
 	fi
 
 	# 检查 gzip 是否开启且未被注释
 	if grep -qE '^\s*gzip\s+on;' "$CONFIG_FILE"; then
-		gzip_status=" gzip压缩已开启"
+		gzip_status="*#ihDlbv#*"
 	else
 		gzip_status=""
 	fi
@@ -2061,17 +2041,17 @@ web_optimization() {
 		check_nginx_compression
 		clear
 		send_stats "优化LDNMP环境"
-		echo -e "*#q4G9rN#*"
-		echo "*#d49Pki#*"
-		echo "*#bQRT4i#*"
-		echo "*#d49Pki#*"
-		echo "*#s2AmiB#*"
-		echo "*#Kgviqi#*"
-		echo "*#Pfv4uQ#*"
-		echo "*#d49Pki#*"
-		echo "*#5ZHMg1#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#YDzc33#*" sub_choice
+		echo -e "*#ZhYAIu#*"
+		echo "*#u0O4YF#*"
+		echo "*#c7q7iR#*"
+		echo "*#u0O4YF#*"
+		echo "*#09B6Lm#*"
+		echo "*#ik3mTQ#*"
+		echo "*#c6pOKY#*"
+		echo "*#u0O4YF#*"
+		echo "*#7DqCpu#*"
+		echo "*#u0O4YF#*"
+		Ask "*#9bDAbE#*" sub_choice
 		case $sub_choice in
 		1)
 			send_stats "站点标准模式"
@@ -2108,7 +2088,7 @@ web_optimization() {
 			restart_redis
 			optimize_balanced
 
-			echo "*#48MjZM#*"
+			echo "*#U3DiAs#*"
 
 			;;
 		2)
@@ -2146,7 +2126,7 @@ web_optimization() {
 			restart_redis
 			optimize_web_server
 
-			echo "*#ZQT60P#*"
+			echo "*#LEFLIK#*"
 
 			;;
 		3)
@@ -2186,24 +2166,24 @@ web_optimization() {
 check_docker_app() {
 
 	if docker inspect "$docker_name" &>/dev/null; then
-		check_docker="${gl_lv}已安装${gl_bai}"
+		check_docker="*#66K8tl#*"
 	else
-		check_docker="${gl_hui}未安装${gl_bai}"
+		check_docker="*#nOjiFD#*"
 	fi
 
 }
 
 check_docker_app_ip() {
-	echo "*#d49Pki#*"
-	echo "*#Ax9EpP#*"
+	echo "*#u0O4YF#*"
+	echo "*#TUtEyc#*"
 	ip_address
 
 	if [ -n "$ipv4_address" ]; then
-		echo "*#k43HP6#*"
+		echo "*#Ui9gWA#*"
 	fi
 
 	if [ -n "$ipv6_address" ]; then
-		echo "*#A8EOZb#*"
+		echo "*#qWb7b9#*"
 	fi
 
 	local search_pattern1="$ipv4_address:${docker_port}"
@@ -2212,7 +2192,7 @@ check_docker_app_ip() {
 	for file in /home/web/conf.d/*; do
 		if [ -f "$file" ]; then
 			if grep -q "$search_pattern1" "$file" 2>/dev/null || grep -q "$search_pattern2" "$file" 2>/dev/null; then
-				echo "*#o8xB13#*"$file" | sed 's/\.conf$//')"
+				echo "*#0zP41L#*"$file" | sed 's/\.conf$//')"
 			fi
 		fi
 	done
@@ -2231,8 +2211,8 @@ check_docker_image_update() {
 
 	# 获取容器的创建时间和镜像名称
 	local container_info=$(docker inspect --format='{{.Created}},{{.Config.Image}}' "$container_name" 2>/dev/null)
-	local container_created=$(echo "*#0Ii5kF#*" | cut -d',' -f1)
-	local image_name=$(echo "*#0Ii5kF#*" | cut -d',' -f2)
+	local container_created=$(echo "$container_info" | cut -d',' -f1)
+	local image_name=$(echo "$container_info" | cut -d',' -f2)
 
 	# 提取镜像仓库和标签
 	local image_repo=${image_name%%:*}
@@ -2246,7 +2226,7 @@ check_docker_image_update() {
 
 	# 从 Docker Hub API 获取镜像发布时间
 	local hub_info=$(curl -s "https://hub.docker.com/v2/repositories/$image_repo/tags/$image_tag")
-	local last_updated=$(echo "*#hne3fm#*" | jq -r '.last_updated' 2>/dev/null)
+	local last_updated=$(echo "$hub_info" | jq -r '.last_updated' 2>/dev/null)
 
 	# 验证获取的时间
 	if [[ -n $last_updated && $last_updated != "null" ]]; then
@@ -2255,7 +2235,7 @@ check_docker_image_update() {
 
 		# 比较时间戳
 		if [[ $container_created_ts -lt $last_updated_ts ]]; then
-			update_status="${gl_huang}发现新版本!${gl_bai}"
+			update_status="*#AkmMQH#*"
 		else
 			update_status=""
 		fi
@@ -2273,7 +2253,7 @@ block_container_port() {
 	local container_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$container_name_or_id")
 
 	if [ -z "$container_ip" ]; then
-		echo "*#DGMEHn#*"
+		echo "*#V9iyQp#*"
 		return 1
 	fi
 
@@ -2313,7 +2293,7 @@ block_container_port() {
 		iptables -I DOCKER-USER -m state --state ESTABLISHED,RELATED -d "$container_ip" -j ACCEPT
 	fi
 
-	echo "*#e1J5SH#*"
+	echo "*#ClwqhC#*"
 	save_iptables_rules
 }
 
@@ -2325,7 +2305,7 @@ clear_container_rules() {
 	local container_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$container_name_or_id")
 
 	if [ -z "$container_ip" ]; then
-		echo "*#DGMEHn#*"
+		echo "*#V9iyQp#*"
 		return 1
 	fi
 
@@ -2365,7 +2345,7 @@ clear_container_rules() {
 		iptables -D DOCKER-USER -m state --state ESTABLISHED,RELATED -d "$container_ip" -j ACCEPT
 	fi
 
-	echo "*#dg4Mzb#*"
+	echo "*#yzkuOK#*"
 	save_iptables_rules
 }
 
@@ -2374,8 +2354,8 @@ block_host_port() {
 	local allowed_ip=$2
 
 	if [[ -z $port || -z $allowed_ip ]]; then
-		echo "*#PRxsrx#*"
-		echo "*#YlJDCR#*"
+		echo "*#hyPV8H#*"
+		echo "*#XMWAju#*"
 		return 1
 	fi
 
@@ -2416,7 +2396,7 @@ block_host_port() {
 		iptables -I INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 	fi
 
-	echo "*#e1J5SH#*"
+	echo "*#ClwqhC#*"
 	save_iptables_rules
 }
 
@@ -2425,8 +2405,8 @@ clear_host_port_rules() {
 	local allowed_ip=$2
 
 	if [[ -z $port || -z $allowed_ip ]]; then
-		echo "*#PRxsrx#*"
-		echo "*#dHiNJG#*"
+		echo "*#hyPV8H#*"
+		echo "*#W6rhze#*"
 		return 1
 	fi
 
@@ -2462,7 +2442,7 @@ clear_host_port_rules() {
 		iptables -D INPUT -p udp --dport "$port" -s "$allowed_ip" -j ACCEPT
 	fi
 
-	echo "*#dg4Mzb#*"
+	echo "*#yzkuOK#*"
 	save_iptables_rules
 
 }
@@ -2485,32 +2465,32 @@ docker_app() {
 		clear
 		check_docker_app
 		check_docker_image_update $docker_name
-		echo -e "*#Sp2vk5#*"
-		echo "*#y9ORYL#*"
-		echo "*#ky1Uiz#*"
+		echo -e "*#ZIFkDe#*"
+		echo "$docker_describe"
+		echo "$docker_url"
 		if docker inspect "$docker_name" &>/dev/null; then
 			if [ ! -f "/home/docker/${docker_name}_port.conf" ]; then
 				local docker_port=$(docker port "$docker_name" | head -n1 | awk -F'[:]' '/->/ {print $NF; exit}')
 				docker_port=${docker_port:-0000}
-				echo "*#vsoKIZ#*" >"/home/docker/${docker_name}_port.conf"
+				echo "$docker_port" >"/home/docker/${docker_name}_port.conf"
 			fi
 			local docker_port=$(cat "/home/docker/${docker_name}_port.conf")
 			check_docker_app_ip
 		fi
-		echo "*#KUeEyM#*"
-		echo "*#d49Pki#*"
-		echo "*#tt87sC#*"
-		echo "*#d49Pki#*"
-		echo "*#U17dB4#*"
-		echo "*#5rSSQu#*"
-		echo "*#d49Pki#*"
-		echo "*#5ZHMg1#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#YDzc33#*" choice
+		echo
+		echo "*#u0O4YF#*"
+		echo "*#ky3U1R#*"
+		echo "*#u0O4YF#*"
+		echo "*#d6CEFb#*"
+		echo "*#1XWXqw#*"
+		echo "*#u0O4YF#*"
+		echo "*#7DqCpu#*"
+		echo "*#u0O4YF#*"
+		Ask "*#9bDAbE#*" choice
 		case $choice in
 		1)
 			check_disk_space $app_size
-			read -e -p "*#xjnd0o#*" app_port
+			Ask "*#njPi4a#*" app_port
 			local app_port=${app_port:-${docker_port}}
 			local docker_port=$app_port
 
@@ -2518,12 +2498,12 @@ docker_app() {
 			install_docker
 			docker_rum
 			setup_docker_dir
-			echo "*#vsoKIZ#*" >"/home/docker/${docker_name}_port.conf"
+			echo "$docker_port" >"/home/docker/${docker_name}_port.conf"
 
 			clear
-			echo "*#u0qWkm#*"
+			echo "*#rB8eG2#*"
 			check_docker_app_ip
-			echo "*#KUeEyM#*"
+			echo
 			$docker_use
 			$docker_passwd
 			send_stats "安装$docker_name"
@@ -2533,9 +2513,9 @@ docker_app() {
 			docker rmi -f "$docker_img"
 			docker_rum
 			clear
-			echo "*#u0qWkm#*"
+			echo "*#rB8eG2#*"
 			check_docker_app_ip
-			echo "*#KUeEyM#*"
+			echo
 			$docker_use
 			$docker_passwd
 			send_stats "更新$docker_name"
@@ -2545,12 +2525,12 @@ docker_app() {
 			docker rmi -f "$docker_img"
 			rm -rf "/home/docker/$docker_name"
 			rm -f /home/docker/${docker_name}_port.conf
-			echo "*#U2LgZv#*"
+			echo "*#qLDjkK#*"
 			send_stats "卸载$docker_name"
 			;;
 
 		5)
-			echo "*#qGTGLN#*"
+			echo "*#K7ZDxu#*"
 			send_stats "${docker_name}域名访问设置"
 			add_yuming
 			ldnmp_Proxy ${yuming} 127.0.0.1 ${docker_port}
@@ -2558,7 +2538,7 @@ docker_app() {
 			;;
 
 		6)
-			echo "*#aPbtjZ#*"
+			echo "*#Qb2QlW#*"
 			web_del
 			;;
 
@@ -2587,39 +2567,40 @@ docker_app_plus() {
 		clear
 		check_docker_app
 		check_docker_image_update $docker_name
-		echo -e "*#hljls4#*"
-		echo "*#fjAy7z#*"
-		echo "*#TFpE6C#*"
+		NO_TRAN="$app_name $check_docker $update_status"
+		echo -e "$NO_TRAN"
+		echo "$app_text"
+		echo "$app_url"
 		if docker inspect "$docker_name" &>/dev/null; then
 			if [ ! -f "/home/docker/${docker_name}_port.conf" ]; then
 				local docker_port=$(docker port "$docker_name" | head -n1 | awk -F'[:]' '/->/ {print $NF; exit}')
 				docker_port=${docker_port:-0000}
-				echo "*#vsoKIZ#*" >"/home/docker/${docker_name}_port.conf"
+				echo "$docker_port" >"/home/docker/${docker_name}_port.conf"
 			fi
 			local docker_port=$(cat "/home/docker/${docker_name}_port.conf")
 			check_docker_app_ip
 		fi
-		echo "*#KUeEyM#*"
-		echo "*#d49Pki#*"
-		echo "*#CWdp3J#*"
-		echo "*#d49Pki#*"
-		echo "*#M0Fbch#*"
-		echo "*#vHtXfb#*"
-		echo "*#d49Pki#*"
-		echo "*#5ZHMg1#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#MbQfAN#*" choice
+		echo
+		echo "*#u0O4YF#*"
+		echo "*#lbuGhv#*"
+		echo "*#u0O4YF#*"
+		echo "*#cUSQiy#*"
+		echo "*#Ikhnwz#*"
+		echo "*#u0O4YF#*"
+		echo "*#7DqCpu#*"
+		echo "*#u0O4YF#*"
+		Ask "*#5xF3Mn#*" choice
 		case $choice in
 		1)
 			check_disk_space $app_size
-			read -e -p "*#xjnd0o#*" app_port
+			Ask "*#njPi4a#*" app_port
 			local app_port=${app_port:-${docker_port}}
 			local docker_port=$app_port
 			install jq
 			install_docker
 			docker_app_install
 			setup_docker_dir
-			echo "*#vsoKIZ#*" >"/home/docker/${docker_name}_port.conf"
+			echo "$docker_port" >"/home/docker/${docker_name}_port.conf"
 			;;
 		2)
 			docker_app_update
@@ -2629,14 +2610,14 @@ docker_app_plus() {
 			rm -f /home/docker/${docker_name}_port.conf
 			;;
 		5)
-			echo "*#qGTGLN#*"
+			echo "*#K7ZDxu#*"
 			send_stats "${docker_name}域名访问设置"
 			add_yuming
 			ldnmp_Proxy ${yuming} 127.0.0.1 ${docker_port}
 			block_container_port "$docker_name" "$ipv4_address"
 			;;
 		6)
-			echo "*#aPbtjZ#*"
+			echo "*#Qb2QlW#*"
 			web_del
 			;;
 		7)
@@ -2797,41 +2778,16 @@ f2b_sshd() {
 
 server_reboot() {
 
-	read -e -p "*#CXTMCd#*"${gl_huang}提示: ${gl_bai}现在重启服务器吗？(Y/N): ")" rboot
+	Ask "*#cC4O0R#*" rboot
 	case "$rboot" in
 	[Yy])
-		echo "*#C2EJoA#*"
+		echo "*#UYOtT7#*"
 		reboot
 		;;
 	*)
-		echo "*#03i9Gh#*"
+		echo "*#yS8n2l#*"
 		;;
 	esac
-
-}
-
-output_status() {
-	output=$(awk 'BEGIN { rx_total = 0; tx_total = 0 }
-		$1 ~ /^(eth|ens|enp|eno)[0-9]+/ {
-			rx_total += $2
-			tx_total += $10
-		}
-		END {
-			rx_units = "Bytes";
-			tx_units = "Bytes";
-			if (rx_total > 1024) { rx_total /= 1024; rx_units = "K"; }
-			if (rx_total > 1024) { rx_total /= 1024; rx_units = "M"; }
-			if (rx_total > 1024) { rx_total /= 1024; rx_units = "G"; }
-
-			if (tx_total > 1024) { tx_total /= 1024; tx_units = "K"; }
-			if (tx_total > 1024) { tx_total /= 1024; tx_units = "M"; }
-			if (tx_total > 1024) { tx_total /= 1024; tx_units = "G"; }
-
-			printf("%.2f%s %.2f%s\n", rx_total, rx_units, tx_total, tx_units);
-		}' /proc/net/dev)
-
-	rx=$(echo "*#MUnYoW#*" | awk '{print $1}')
-	tx=$(echo "*#MUnYoW#*" | awk '{print $2}')
 
 }
 
@@ -2840,7 +2796,7 @@ ldnmp_install_status_one() {
 	if docker inspect "php" &>/dev/null; then
 		clear
 		send_stats "无法再次安装LDNMP环境"
-		echo -e "*#mzzogQ#*"
+		echo -e "*#7yWeel#*"
 		break_end
 		linux_ldnmp
 	fi
@@ -2852,7 +2808,7 @@ ldnmp_install_all() {
 	send_stats "安装LDNMP环境"
 	root_use
 	clear
-	echo -e "*#qgLwC8#*"
+	echo -e "*#YtbWj4#*"
 	check_disk_space 3
 	check_port
 	install_dependency
@@ -2868,7 +2824,7 @@ nginx_install_all() {
 	send_stats "安装nginx环境"
 	root_use
 	clear
-	echo -e "*#TMsv5L#*"
+	echo -e "*#WJ0kZv#*"
 	check_disk_space 1
 	check_port
 	install_dependency
@@ -2878,10 +2834,10 @@ nginx_install_all() {
 	nginx_upgrade
 	clear
 	local nginx_version=$(docker exec nginx nginx -v 2>&1)
-	local nginx_version=$(echo "*#KYulew#*" | grep -oP "nginx/\K[0-9]+\.[0-9]+\.[0-9]+")
-	echo "*#qpnSCz#*"
-	echo -e "*#WomSkB#*"
-	echo "*#KUeEyM#*"
+	local nginx_version=$(echo "$nginx_version" | grep -oP "nginx/\K[0-9]+\.[0-9]+\.[0-9]+")
+	echo "*#K8kJ8R#*"
+	echo -e "*#a6PfIj#*"
+	echo
 
 }
 
@@ -2905,27 +2861,27 @@ nginx_install_status() {
 
 ldnmp_web_on() {
 	clear
-	echo "*#X4JWpw#*"
-	echo "*#KLHbMF#*"
-	echo "*#d49Pki#*"
-	echo "*#U2kxhh#*"
+	echo "*#QGFL9g#*"
+	echo "*#w6wiLo#*"
+	echo "*#u0O4YF#*"
+	echo "*#byVFv5#*"
 
 }
 
 nginx_web_on() {
 	clear
-	echo "*#X4JWpw#*"
-	echo "*#KLHbMF#*"
+	echo "*#QGFL9g#*"
+	echo "*#w6wiLo#*"
 
 }
 
 ldnmp_wp() {
 	clear
 	# wordpress
-	webname="WordPress"
+	webname="*#uDEWp3#*"
 	yuming="${1:-}"
 	send_stats "安装$webname"
-	echo "*#7bEZO8#*"
+	echo "*#0uRNte#*"
 	if [ -z "$yuming" ]; then
 		add_yuming
 	fi
@@ -2947,7 +2903,7 @@ ldnmp_wp() {
 	# wget -O latest.zip https://wordpress.org/latest.zip
 	unzip latest.zip
 	rm latest.zip
-	echo "*#wpWr87#*" >>/home/web/html/$yuming/wordpress/wp-config-sample.php
+	echo "*#BwU2c3#*" >>/home/web/html/$yuming/wordpress/wp-config-sample.php
 	sed -i "s|database_name_here|$dbname|g" /home/web/html/$yuming/wordpress/wp-config-sample.php
 	sed -i "s|username_here|$dbuse|g" /home/web/html/$yuming/wordpress/wp-config-sample.php
 	sed -i "s|password_here|$dbusepasswd|g" /home/web/html/$yuming/wordpress/wp-config-sample.php
@@ -2956,32 +2912,32 @@ ldnmp_wp() {
 
 	restart_ldnmp
 	nginx_web_on
-	#   echo "*#uoLPAq#*"
-	#   echo "*#AHa4ix#*"
-	#   echo "*#gLXuSj#*"
-	#   echo "*#OeZNbg#*"
-	#   echo "*#r9TBbp#*"
+	#   echo "*#GD0y3c#*"
+	#   echo "*#L6l4FJ#*"
+	#   echo "*#OjX4JF#*"
+	#   echo "*#mbpKS2#*"
+	#   echo "*#Aa7n0H#*"
 
 }
 
 ldnmp_Proxy() {
 	clear
-	webname="反向代理-IP+端口"
+	webname="*#4rGw1X#*"
 	yuming="${1:-}"
 	reverseproxy="${2:-}"
 	port="${3:-}"
 
 	send_stats "安装$webname"
-	echo "*#7bEZO8#*"
+	echo "*#0uRNte#*"
 	if [ -z "$yuming" ]; then
 		add_yuming
 	fi
 	if [ -z "$reverseproxy" ]; then
-		read -e -p "*#Lqm71p#*" reverseproxy
+		Ask "*#IW87Zf#*" reverseproxy
 	fi
 
 	if [ -z "$port" ]; then
-		read -e -p "*#da0hTq#*" port
+		Ask "*#ysda2p#*" port
 	fi
 	nginx_install_status
 	install_ssltls
@@ -2998,19 +2954,19 @@ ldnmp_Proxy() {
 
 ldnmp_Proxy_backend() {
 	clear
-	webname="反向代理-负载均衡"
+	webname="*#Dwa9yD#*"
 	yuming="${1:-}"
 	reverseproxy_port="${2:-}"
 
 	send_stats "安装$webname"
-	echo "*#7bEZO8#*"
+	echo "*#0uRNte#*"
 	if [ -z "$yuming" ]; then
 		add_yuming
 	fi
 
 	# 获取用户输入的多个IP:端口（用空格分隔）
 	if [ -z "$reverseproxy_port" ]; then
-		read -e -p "*#SKjhuk#*" reverseproxy_port
+		Ask "*#3g7PhN#*" reverseproxy_port
 	fi
 
 	nginx_install_status
@@ -3042,21 +2998,21 @@ ldnmp_web_status() {
 	root_use
 	while true; do
 		local cert_count=$(ls /home/web/certs/*_cert.pem 2>/dev/null | wc -l)
-		local output="站点: ${gl_lv}${cert_count}${gl_bai}"
+		local output="*#ZdWLFs#*"
 
 		local dbrootpasswd=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /home/web/docker-compose.yml | tr -d '[:space:]')
 		local db_count=$(docker exec mysql mysql -u root -p"$dbrootpasswd" -e "SHOW DATABASES;" 2>/dev/null | grep -Ev "Database|information_schema|mysql|performance_schema|sys" | wc -l)
-		local db_output="数据库: ${gl_lv}${db_count}${gl_bai}"
+		local db_output="*#5CUPYs#*"
 
 		clear
 		send_stats "LDNMP站点管理"
-		echo "*#QQKW1L#*"
-		echo "*#d49Pki#*"
+		echo "*#pZAD1N#*"
+		echo "*#u0O4YF#*"
 		ldnmp_v
 
 		# ls -t /home/web/conf.d | sed 's/\.[^.]*$//'
-		echo -e "*#u2GBD7#*"
-		echo -e "*#d49Pki#*"
+		echo -e "*#wpuQIE#*"
+		echo -e "*#u0O4YF#*"
 		for cert_file in /home/web/certs/*_cert.pem; do
 			local domain=$(basename "$cert_file" | sed 's/_cert.pem//')
 			if [ -n "$domain" ]; then
@@ -3066,37 +3022,37 @@ ldnmp_web_status() {
 			fi
 		done
 
-		echo "*#d49Pki#*"
-		echo "*#KUeEyM#*"
-		echo -e "*#NsrLM4#*"
-		echo -e "*#d49Pki#*"
+		echo "*#u0O4YF#*"
+		echo
+		echo -e "${db_output}"
+		echo -e "*#u0O4YF#*"
 		local dbrootpasswd=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /home/web/docker-compose.yml | tr -d '[:space:]')
 		docker exec mysql mysql -u root -p"$dbrootpasswd" -e "SHOW DATABASES;" 2>/dev/null | grep -Ev "Database|information_schema|mysql|performance_schema|sys"
 
-		echo "*#d49Pki#*"
-		echo "*#KUeEyM#*"
-		echo "*#c9B4iu#*"
-		echo "*#d49Pki#*"
-		echo -e "*#MLkLSU#*"
-		echo "*#d49Pki#*"
-		echo "*#KUeEyM#*"
-		echo "*#EesXCG#*"
-		echo "*#d49Pki#*"
-		echo "*#bKNHNE#*"
-		echo "*#E8xhEf#*"
-		echo "*#f4iXlE#*"
-		echo "*#i84xAa#*"
-		echo "*#2IOK4X#*"
-		echo "*#d49Pki#*"
-		echo "*#2jBej4#*"
-		echo "*#d49Pki#*"
-		echo "*#5ZHMg1#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#YDzc33#*" sub_choice
+		echo "*#u0O4YF#*"
+		echo
+		echo "*#eZPt7l#*"
+		echo "*#u0O4YF#*"
+		echo -e "*#gTvWw7#*"
+		echo "*#u0O4YF#*"
+		echo
+		echo "*#G0tItU#*"
+		echo "*#u0O4YF#*"
+		echo "*#NAaU8J#*"
+		echo "*#Bip6jg#*"
+		echo "*#0nunRk#*"
+		echo "*#knZtEZ#*"
+		echo "*#hAlyG0#*"
+		echo "*#u0O4YF#*"
+		echo "*#neDzQ8#*"
+		echo "*#u0O4YF#*"
+		echo "*#7DqCpu#*"
+		echo "*#u0O4YF#*"
+		Ask "*#9bDAbE#*" sub_choice
 		case $sub_choice in
 		1)
 			send_stats "申请域名证书"
-			read -e -p "*#3VqVue#*" yuming
+			Ask "*#gzR0pr#*" yuming
 			install_certbot
 			docker run -it --rm -v /etc/letsencrypt/:/etc/letsencrypt certbot/certbot delete --cert-name "$yuming" -n 2>/dev/null
 			install_ssltls
@@ -3106,9 +3062,9 @@ ldnmp_web_status() {
 
 		2)
 			send_stats "更换站点域名"
-			echo -e "*#Q1t6B0#*"
-			read -e -p "*#sfCjPf#*" oddyuming
-			read -e -p "*#GmlikM#*" yuming
+			echo -e "*#wwYPd9#*"
+			Ask "*#cgthet#*" oddyuming
+			Ask "*#ohHWs9#*" yuming
 			install_certbot
 			install_ssltls
 			certs_status
@@ -3116,7 +3072,7 @@ ldnmp_web_status() {
 			# mysql替换
 			add_db
 
-			local odd_dbname=$(echo "*#BkbUEF#*" | sed -e 's/[^A-Za-z0-9]/_/g')
+			local odd_dbname=$(echo "$oddyuming" | sed -e 's/[^A-Za-z0-9]/_/g')
 			local odd_dbname="${odd_dbname}"
 
 			docker exec mysql mysqldump -u root -p"$dbrootpasswd" $odd_dbname | docker exec -i mysql mysql -u root -p"$dbrootpasswd" $dbname
@@ -3151,9 +3107,9 @@ ldnmp_web_status() {
 			;;
 		4)
 			send_stats "创建关联站点"
-			echo -e "*#BrvFhn#*"
-			read -e -p "*#p1gLvt#*" oddyuming
-			read -e -p "*#GmlikM#*" yuming
+			echo -e "*#xukPD7#*"
+			Ask "*#hdVp6H#*" oddyuming
+			Ask "*#ohHWs9#*" yuming
 			install_certbot
 			install_ssltls
 			certs_status
@@ -3185,7 +3141,7 @@ ldnmp_web_status() {
 
 		8)
 			send_stats "编辑站点配置"
-			read -e -p "*#5mqTjy#*" yuming
+			Ask "*#WAk2tu#*" yuming
 			install nano
 			nano /home/web/conf.d/$yuming.conf
 			docker exec nginx nginx -s reload
@@ -3206,7 +3162,7 @@ ldnmp_web_status() {
 
 			;;
 		*)
-			break # 跳出循环，退出菜单
+			break
 			;;
 		esac
 	done
@@ -3215,7 +3171,7 @@ ldnmp_web_status() {
 
 check_panel_app() {
 	if $lujing >/dev/null 2>&1; then
-		check_panel="${gl_lv}已安装${gl_bai}"
+		check_panel="*#66K8tl#*"
 	else
 		check_panel=""
 	fi
@@ -3226,17 +3182,17 @@ install_panel() {
 	while true; do
 		clear
 		check_panel_app
-		echo -e "*#kl1m8Z#*"
-		echo "*#9cnQA1#*"
-		echo "*#4Fov3C#*"
+		echo -e "*#DyHWgB#*"
+		echo "*#zyvcdn#*"
+		echo "*#ch3EGW#*"
 
-		echo "*#KUeEyM#*"
-		echo "*#d49Pki#*"
-		echo "*#uAsg7j#*"
-		echo "*#d49Pki#*"
-		echo "*#5ZHMg1#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#YDzc33#*" choice
+		echo
+		echo "*#u0O4YF#*"
+		echo "*#ocQvn5#*"
+		echo "*#u0O4YF#*"
+		echo "*#7DqCpu#*"
+		echo "*#u0O4YF#*"
+		Ask "*#9bDAbE#*" choice
 		case $choice in
 		1)
 			check_disk_space 1
@@ -3266,9 +3222,9 @@ install_panel() {
 check_frp_app() {
 
 	if [ -d "/home/frp/" ]; then
-		check_frp="${gl_lv}已安装${gl_bai}"
+		check_frp="*#66K8tl#*"
 	else
-		check_frp="${gl_hui}未安装${gl_bai}"
+		check_frp="*#nOjiFD#*"
 	fi
 
 }
@@ -3299,29 +3255,22 @@ generate_frps_config() {
 
 	mkdir -p /home/frp
 	touch /home/frp/frps.toml
-	cat <<EOF >/home/frp/frps.toml
-[common]
-bind_port = $bind_port
-authentication_method = token
-token = $token
-dashboard_port = $dashboard_port
-dashboard_user = $dashboard_user
-dashboard_pwd = $dashboard_pwd
-EOF
+	NO_TRAN=$'[common]\nbind_port = $bind_port\nauthentication_method = token\ntoken = $token\ndashboard_port = $dashboard_port\ndashboard_user = $dashboard_user\ndashboard_pwd = $dashboard_pwd\n'
+	echo -e "$NO_TRAN" >/home/frp/frps.toml
 
 	donlond_frp frps
 
 	# 输出生成的信息
 	ip_address
-	echo "*#d49Pki#*"
-	echo "*#oyUniq#*"
-	echo "*#yK1i1u#*"
-	echo "*#A8IXIW#*"
+	echo "*#u0O4YF#*"
+	echo "*#AXJAZ5#*"
+	echo "*#RIVib8#*"
+	echo "*#VESr7w#*"
 	echo
-	echo "*#6Sh9kV#*"
-	echo "*#v34bkv#*"
-	echo "*#zS2ono#*"
-	echo "*#Qc7QTU#*"
+	echo "*#xIXozl#*"
+	echo "*#AjaMpp#*"
+	echo "*#Jz8Yhd#*"
+	echo "*#dODlGb#*"
 	echo
 
 	open_port 8055 8056
@@ -3330,19 +3279,14 @@ EOF
 
 configure_frpc() {
 	send_stats "安装frp客户端"
-	read -e -p "*#Y8upTS#*" server_addr
-	read -e -p "*#8PMtXD#*" token
+	Ask "*#loS6Ye#*" server_addr
+	Ask "*#2sXwOI#*" token
 	echo
 
 	mkdir -p /home/frp
 	touch /home/frp/frpc.toml
-	cat <<EOF >/home/frp/frpc.toml
-[common]
-server_addr = ${server_addr}
-server_port = 8055
-token = ${token}
-
-EOF
+	NO_TRAN=$'[common]\nserver_addr = ${server_addr}\nserver_port = 8055\ntoken = ${token}\n'
+	echo -e "$NO_TRAN" >/home/frp/frpc.toml
 
 	donlond_frp frpc
 
@@ -3353,26 +3297,20 @@ EOF
 add_forwarding_service() {
 	send_stats "添加frp内网服务"
 	# 提示用户输入服务名称和转发信息
-	read -e -p "*#YETTN4#*" service_name
-	read -e -p "*#xRboWZ#*" service_type
+	Ask "*#r7fujW#*" service_name
+	Ask "*#CdhVI4#*" service_type
 	local service_type=${service_type:-tcp}
-	read -e -p "*#IT0qUX#*" local_ip
+	Ask "*#9Aykar#*" local_ip
 	local local_ip=${local_ip:-127.0.0.1}
-	read -e -p "*#2Uc1jT#*" local_port
-	read -e -p "*#R5pcOD#*" remote_port
+	Ask "*#y778Sm#*" local_port
+	Ask "*#AKpzpR#*" remote_port
 
 	# 将用户输入写入配置文件
-	cat <<EOF >>/home/frp/frpc.toml
-[$service_name]
-type = ${service_type}
-local_ip = ${local_ip}
-local_port = ${local_port}
-remote_port = ${remote_port}
-
-EOF
+	NO_TRAN=$'\n[$service_name]\ntype = ${service_type}\nlocal_ip = ${local_ip}\nlocal_port = ${local_port}\nremote_port = ${remote_port}\n'
+	echo -e "$NO_TRAN" >>/home/frp/frpc.toml
 
 	# 输出生成的信息
-	echo "*#QhNYzA#*"
+	echo "*#03sorn#*"
 
 	docker restart frpc
 
@@ -3383,10 +3321,10 @@ EOF
 delete_forwarding_service() {
 	send_stats "删除frp内网服务"
 	# 提示用户输入需要删除的服务名称
-	read -e -p "*#5LdMy2#*" service_name
+	Ask "*#dS2b3C#*" service_name
 	# 使用 sed 删除该服务及其相关配置
 	sed -i "/\[$service_name\]/,/^$/d" /home/frp/frpc.toml
-	echo "*#83c1a3#*"
+	echo "*#6xI3MT#*"
 
 	docker restart frpc
 
@@ -3396,7 +3334,7 @@ list_forwarding_services() {
 	local config_file="$1"
 
 	# 打印表头
-	echo "*#ZLqT1C#*"
+	echo "*#Rr8qzq#*"
 
 	awk '
 	BEGIN {
@@ -3490,12 +3428,12 @@ generate_access_urls() {
 
 	# 只在有有效端口时显示标题和内容
 	if [ "$has_valid_ports" = true ]; then
-		echo "*#FOW88T#*"
+		echo "*#cRbkQ7#*"
 
 		# 处理 IPv4 地址
 		for port in "${ports[@]}"; do
 			if [[ $port != "8055" && $port != "8056" ]]; then
-				echo "*#6ZRh43#*"
+				echo "*#dnwUnT#*"
 			fi
 		done
 
@@ -3503,7 +3441,7 @@ generate_access_urls() {
 		if [ -n "$ipv6_address" ]; then
 			for port in "${ports[@]}"; do
 				if [[ $port != "8055" && $port != "8056" ]]; then
-					echo "*#fqm62z#*"
+					echo "*#JlVzOL#*"
 				fi
 			done
 		fi
@@ -3516,7 +3454,7 @@ generate_access_urls() {
 				for file in /home/web/conf.d/*.conf; do
 					if [ -f "$file" ]; then
 						if grep -q "$frps_search_pattern" "$file" 2>/dev/null || grep -q "$frps_search_pattern2" "$file" 2>/dev/null; then
-							echo "*#o8xB13#*"$file" .conf)"
+							echo "*#0zP41L#*"$file" .conf)"
 						fi
 					fi
 				done
@@ -3538,31 +3476,31 @@ frps_panel() {
 		clear
 		check_frp_app
 		check_docker_image_update $docker_name
-		echo -e "*#YTdHkB#*"
-		echo "*#LTFyjr#*"
-		echo "*#cXkmMU#*"
-		echo "*#aoEcQF#*"
+		echo -e "*#sqMVzm#*"
+		echo "*#FbImPq#*"
+		echo "*#UYc2VD#*"
+		echo "*#02z1sW#*"
 		if [ -d "/home/frp/" ]; then
 			check_docker_app_ip
 			frps_main_ports
 		fi
-		echo "*#KUeEyM#*"
-		echo "*#d49Pki#*"
-		echo "*#fAUvTR#*"
-		echo "*#d49Pki#*"
-		echo "*#Ae7TT5#*"
-		echo "*#d49Pki#*"
-		echo "*#8avW8A#*"
-		echo "*#d49Pki#*"
-		echo "*#XJew5F#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#MbQfAN#*" choice
+		echo
+		echo "*#u0O4YF#*"
+		echo "*#w2MK6F#*"
+		echo "*#u0O4YF#*"
+		echo "*#34bv0m#*"
+		echo "*#u0O4YF#*"
+		echo "*#ei22bM#*"
+		echo "*#u0O4YF#*"
+		echo "*#ONDYwT#*"
+		echo "*#u0O4YF#*"
+		Ask "*#5xF3Mn#*" choice
 		case $choice in
 		1)
 			install jq grep ss
 			install_docker
 			generate_frps_config
-			echo "*#oosF67#*"
+			echo "*#6XvA1G#*"
 			;;
 		2)
 			crontab -l | grep -v 'frps' | crontab - >/dev/null 2>&1
@@ -3570,7 +3508,7 @@ frps_panel() {
 			docker rm -f frps && docker rmi kjlion/frp:alpine >/dev/null 2>&1
 			[ -f /home/frp/frps.toml ] || cp /home/frp/frp_0.61.0_linux_amd64/frps.toml /home/frp/frps.toml
 			donlond_frp frps
-			echo "*#dDjdwB#*"
+			echo "*#XjyiZG#*"
 			;;
 		3)
 			crontab -l | grep -v 'frps' | crontab - >/dev/null 2>&1
@@ -3580,37 +3518,37 @@ frps_panel() {
 
 			close_port 8055 8056
 
-			echo "*#U2LgZv#*"
+			echo "*#qLDjkK#*"
 			;;
 		5)
-			echo "*#fXi3Fk#*"
+			echo "*#BvKkCq#*"
 			send_stats "FRP对外域名访问"
 			add_yuming
-			read -e -p "*#buZity#*" frps_port
+			Ask "*#aeDM3C#*" frps_port
 			ldnmp_Proxy ${yuming} 127.0.0.1 ${frps_port}
 			block_host_port "$frps_port" "$ipv4_address"
 			;;
 		6)
-			echo "*#aPbtjZ#*"
+			echo "*#Qb2QlW#*"
 			web_del
 			;;
 
 		7)
 			send_stats "允许IP访问"
-			read -e -p "*#FGMn0y#*" frps_port
+			Ask "*#BeG4Ql#*" frps_port
 			clear_host_port_rules "$frps_port" "$ipv4_address"
 			;;
 
 		8)
 			send_stats "阻止IP访问"
-			echo "*#oMgnTH#*"
-			read -e -p "*#AJoGvm#*" frps_port
+			echo "*#t5onE8#*"
+			Ask "*#y00erC#*" frps_port
 			block_host_port "$frps_port" "$ipv4_address"
 			;;
 
 		00)
 			send_stats "刷新FRP服务状态"
-			echo "*#RWf5JK#*"
+			echo "*#e9yL9h#*"
 			;;
 
 		*)
@@ -3629,30 +3567,30 @@ frpc_panel() {
 		clear
 		check_frp_app
 		check_docker_image_update $docker_name
-		echo -e "*#Y64VvG#*"
-		echo "*#ByTYUr#*"
-		echo "*#cXkmMU#*"
-		echo "*#UUmp5T#*"
-		echo "*#d49Pki#*"
+		echo -e "*#8yhXW5#*"
+		echo "*#pmdu2Q#*"
+		echo "*#UYc2VD#*"
+		echo "*#k5oR3x#*"
+		echo "*#u0O4YF#*"
 		if [ -d "/home/frp/" ]; then
 			[ -f /home/frp/frpc.toml ] || cp /home/frp/frp_0.61.0_linux_amd64/frpc.toml /home/frp/frpc.toml
 			list_forwarding_services "/home/frp/frpc.toml"
 		fi
-		echo "*#KUeEyM#*"
-		echo "*#d49Pki#*"
-		echo "*#sYjp0Y#*"
-		echo "*#d49Pki#*"
-		echo "*#IR4BUs#*"
-		echo "*#d49Pki#*"
-		echo "*#5ZHMg1#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#MbQfAN#*" choice
+		echo
+		echo "*#u0O4YF#*"
+		echo "*#BmhjOE#*"
+		echo "*#u0O4YF#*"
+		echo "*#ngz8bp#*"
+		echo "*#u0O4YF#*"
+		echo "*#7DqCpu#*"
+		echo "*#u0O4YF#*"
+		Ask "*#5xF3Mn#*" choice
 		case $choice in
 		1)
 			install jq grep ss
 			install_docker
 			configure_frpc
-			echo "*#KxfMf9#*"
+			echo "*#gTdSbs#*"
 			;;
 		2)
 			crontab -l | grep -v 'frpc' | crontab - >/dev/null 2>&1
@@ -3660,7 +3598,7 @@ frpc_panel() {
 			docker rm -f frpc && docker rmi kjlion/frp:alpine >/dev/null 2>&1
 			[ -f /home/frp/frpc.toml ] || cp /home/frp/frp_0.61.0_linux_amd64/frpc.toml /home/frp/frpc.toml
 			donlond_frp frpc
-			echo "*#AndDRo#*"
+			echo "*#5w9r9s#*"
 			;;
 
 		3)
@@ -3669,7 +3607,7 @@ frpc_panel() {
 			docker rm -f frpc && docker rmi kjlion/frp:alpine
 			rm -rf /home/frp
 			close_port 8055
-			echo "*#U2LgZv#*"
+			echo "*#qLDjkK#*"
 			;;
 
 		4)
@@ -3705,72 +3643,69 @@ yt_menu_pro() {
 	while true; do
 
 		if [ -x "/usr/local/bin/yt-dlp" ]; then
-			local YTDLP_STATUS="${gl_lv}已安装${gl_bai}"
+			local YTDLP_STATUS="*#66K8tl#*"
 		else
-			local YTDLP_STATUS="${gl_hui}未安装${gl_bai}"
+			local YTDLP_STATUS="*#nOjiFD#*"
 		fi
 
 		clear
 		send_stats "yt-dlp 下载工具"
-		echo -e "*#Yf5FnE#*"
-		echo -e "*#o5vOVz#*"
-		echo -e "*#SKt69k#*"
-		echo "*#rnbROD#*"
-		echo "*#oTjpG7#*"
-		ls -td "$VIDEO_DIR"/*/ 2>/dev/null || echo "*#OWzb2h#*"
-		echo "*#rnbROD#*"
-		echo "*#e4RJzy#*"
-		echo "*#rnbROD#*"
-		echo "*#JsR6q2#*"
-		echo "*#EjabCC#*"
-		echo "*#rnbROD#*"
-		echo "*#5ZHMg1#*"
-		echo "*#rnbROD#*"
-		read -e -p "*#vaVCFY#*" choice
+		echo -e "*#mbDXiU#*"
+		echo -e "*#rPVqWX#*"
+		echo -e "*#OhhMzD#*"
+		echo "*#W8gIsv#*"
+		echo "*#0PntE2#*"
+		ls -td "$VIDEO_DIR"/*/ 2>/dev/null || echo "*#pF7KRH#*"
+		echo "*#W8gIsv#*"
+		echo "*#4oftTx#*"
+		echo "*#W8gIsv#*"
+		echo "*#jxfpaZ#*"
+		echo "*#3I9vDT#*"
+		echo "*#W8gIsv#*"
+		echo "*#7DqCpu#*"
+		echo "*#W8gIsv#*"
+		Ask "*#EWErg6#*" choice
 
 		case $choice in
 		1)
 			send_stats "正在安装 yt-dlp..."
-			echo "*#x9TMic#*"
+			echo "*#uiLxOV#*"
 			install ffmpeg
 			sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
 			sudo chmod a+rx /usr/local/bin/yt-dlp
-			echo "*#ZeJQUd#*"
-			read
+			Press "*#XvzYmi#*"
 			;;
 		2)
 			send_stats "正在更新 yt-dlp..."
-			echo "*#YR3D8t#*"
+			echo "*#y5puLz#*"
 			sudo yt-dlp -U
-			echo "*#Z6OWi8#*"
-			read
+			Press "*#3kUtll#*"
 			;;
 		3)
 			send_stats "正在卸载 yt-dlp..."
-			echo "*#zm6SpT#*"
+			echo "*#pAzkMt#*"
 			sudo rm -f /usr/local/bin/yt-dlp
-			echo "*#XR44Z7#*"
-			read
+			Press "*#u8LgC7#*"
 			;;
 		5)
 			send_stats "单个视频下载"
-			read -e -p "*#N6N4BG#*" url
+			Ask "*#51zaSp#*" url
 			yt-dlp -P "$VIDEO_DIR" -f "bv*+ba/b" --merge-output-format mp4 \
 				--write-subs --sub-langs all \
 				--write-thumbnail --embed-thumbnail \
 				--write-info-json \
 				-o "$VIDEO_DIR/%(title)s/%(title)s.%(ext)s" \
 				--no-overwrites --no-post-overwrites "$url"
-			read -e -p "*#VwGDuH#*"
+			Press "*#pbQzkP#*"
 			;;
 		6)
 			send_stats "批量视频下载"
 			install nano
 			if [ ! -f "$URL_FILE" ]; then
-				echo -e "*#KeIjdp#*" >"$URL_FILE"
+				echo -e "*#gJbzkP#*" >"$URL_FILE"
 			fi
 			nano $URL_FILE
-			echo "*#7oLrXn#*"
+			echo "*#Ba08Lw#*"
 			yt-dlp -P "$VIDEO_DIR" -f "bv*+ba/b" --merge-output-format mp4 \
 				--write-subs --sub-langs all \
 				--write-thumbnail --embed-thumbnail \
@@ -3778,34 +3713,34 @@ yt_menu_pro() {
 				-a "$URL_FILE" \
 				-o "$VIDEO_DIR/%(title)s/%(title)s.%(ext)s" \
 				--no-overwrites --no-post-overwrites
-			read -e -p "*#ZL05ve#*"
+			Press "*#ZSHbL5#*"
 			;;
 		7)
 			send_stats "自定义视频下载"
-			read -e -p "*#RbhD47#*" custom
+			Ask "*#YBP0UD#*" custom
 			yt-dlp -P "$VIDEO_DIR" $custom \
 				--write-subs --sub-langs all \
 				--write-thumbnail --embed-thumbnail \
 				--write-info-json \
 				-o "$VIDEO_DIR/%(title)s/%(title)s.%(ext)s" \
 				--no-overwrites --no-post-overwrites
-			read -e -p "*#OqQHpk#*"
+			Press "*#qQZlAT#*"
 			;;
 		8)
 			send_stats "MP3下载"
-			read -e -p "*#N6N4BG#*" url
+			Ask "*#51zaSp#*" url
 			yt-dlp -P "$VIDEO_DIR" -x --audio-format mp3 \
 				--write-subs --sub-langs all \
 				--write-thumbnail --embed-thumbnail \
 				--write-info-json \
 				-o "$VIDEO_DIR/%(title)s/%(title)s.%(ext)s" \
 				--no-overwrites --no-post-overwrites "$url"
-			read -e -p "*#f5wr5E#*"
+			Press "*#K8g82k#*"
 			;;
 
 		9)
 			send_stats "删除视频"
-			read -e -p "*#EazOMx#*" rmdir
+			Ask "*#rL0c9N#*" rmdir
 			rm -rf "$VIDEO_DIR/$rmdir"
 			;;
 		*)
@@ -3813,15 +3748,6 @@ yt_menu_pro() {
 			;;
 		esac
 	done
-}
-
-current_timezone() {
-	if grep -q 'Alpine' /etc/issue; then
-		date +"%Z %z"
-	else
-		timedatectl | grep "Time zone" | awk '{print $3}'
-	fi
-
 }
 
 set_timedate() {
@@ -3843,7 +3769,7 @@ fix_dpkg() {
 }
 
 linux_update() {
-	echo -e "*#otYrnC#*"
+	echo -e "*#XHzbLo#*"
 	if command -v dnf &>/dev/null; then
 		dnf -y update
 	elif command -v yum &>/dev/null; then
@@ -3862,13 +3788,13 @@ linux_update() {
 	elif command -v opkg &>/dev/null; then
 		opkg update
 	else
-		echo "*#vKALGd#*"
+		echo "*#uXAvIN#*"
 		return
 	fi
 }
 
 linux_clean() {
-	echo -e "*#ndtskS#*"
+	echo -e "*#tbBUHm#*"
 	if command -v dnf &>/dev/null; then
 		rpm --rebuilddb
 		dnf autoremove -y
@@ -3897,13 +3823,13 @@ linux_clean() {
 		journalctl --vacuum-size=500M
 
 	elif command -v apk &>/dev/null; then
-		echo "*#Chykrp#*"
+		echo "*#oOmyK8#*"
 		apk cache clean
-		echo "*#dCQIvy#*"
+		echo "*#uIGILo#*"
 		rm -rf /var/log/*
-		echo "*#bILEUY#*"
+		echo "*#eMid4X#*"
 		rm -rf /var/cache/apk/*
-		echo "*#QrMJLb#*"
+		echo "*#dwA9RL#*"
 		rm -rf /tmp/*
 
 	elif command -v pacman &>/dev/null; then
@@ -3921,23 +3847,23 @@ linux_clean() {
 		journalctl --vacuum-size=500M
 
 	elif command -v opkg &>/dev/null; then
-		echo "*#dCQIvy#*"
+		echo "*#uIGILo#*"
 		rm -rf /var/log/*
-		echo "*#QrMJLb#*"
+		echo "*#dwA9RL#*"
 		rm -rf /tmp/*
 
 	elif command -v pkg &>/dev/null; then
-		echo "*#Ct6mWM#*"
+		echo "*#JbatKw#*"
 		pkg autoremove -y
-		echo "*#Chykrp#*"
+		echo "*#oOmyK8#*"
 		pkg clean -y
-		echo "*#dCQIvy#*"
+		echo "*#uIGILo#*"
 		rm -rf /var/log/*
-		echo "*#QrMJLb#*"
+		echo "*#dwA9RL#*"
 		rm -rf /tmp/*
 
 	else
-		echo "*#vKALGd#*"
+		echo "*#uXAvIN#*"
 		return
 	fi
 	return
@@ -3945,9 +3871,8 @@ linux_clean() {
 
 bbr_on() {
 
-	cat >/etc/sysctl.conf <<EOF
-net.ipv4.tcp_congestion_control=bbr
-EOF
+	NO_TRAN=$'net.ipv4.tcp_congestion_control=bbr\n'
+	echo -e "$NO_TRAN" | sudo tee /etc/sysctl.conf >/dev/null
 	sysctl -p
 
 }
@@ -3960,13 +3885,13 @@ set_dns() {
 	touch /etc/resolv.conf
 
 	if [ -n "$ipv4_address" ]; then
-		echo "*#3DnnGp#*" >>/etc/resolv.conf
-		echo "*#ehpulg#*" >>/etc/resolv.conf
+		echo "*#yA8yes#*" >>/etc/resolv.conf
+		echo "*#Wu5etA#*" >>/etc/resolv.conf
 	fi
 
 	if [ -n "$ipv6_address" ]; then
-		echo "*#M1gh9K#*" >>/etc/resolv.conf
-		echo "*#8TmZGO#*" >>/etc/resolv.conf
+		echo "*#mJB3CX#*" >>/etc/resolv.conf
+		echo "*#m4vHEY#*" >>/etc/resolv.conf
 	fi
 
 }
@@ -3976,23 +3901,23 @@ set_dns_ui() {
 	send_stats "优化DNS"
 	while true; do
 		clear
-		echo "*#ULG7HM#*"
-		echo "*#d49Pki#*"
-		echo "*#GTBLdy#*"
+		echo "*#nZa8nQ#*"
+		echo "*#u0O4YF#*"
+		echo "*#v2ut3g#*"
 		cat /etc/resolv.conf
-		echo "*#d49Pki#*"
-		echo "*#KUeEyM#*"
-		echo "*#QiRGd1#*"
-		echo "*#njsJjo#*"
-		echo "*#3TxGnx#*"
-		echo "*#PUPBFV#*"
-		echo "*#M1yytn#*"
-		echo "*#3Cm2MG#*"
-		echo "*#G5PKgV#*"
-		echo "*#d49Pki#*"
-		echo "*#5ZHMg1#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#YDzc33#*" Limiting
+		echo "*#u0O4YF#*"
+		echo
+		echo "*#yUtxdZ#*"
+		echo "*#nf1QMr#*"
+		echo "*#W8QTDN#*"
+		echo "*#zw8TkQ#*"
+		echo "*#ZyQum5#*"
+		echo "*#nRIISt#*"
+		echo "*#tlGXjJ#*"
+		echo "*#u0O4YF#*"
+		echo "*#7DqCpu#*"
+		echo "*#u0O4YF#*"
+		Ask "*#9bDAbE#*" Limiting
 		case "$Limiting" in
 		1)
 			local dns1_ipv4="1.1.1.1"
@@ -4069,7 +3994,7 @@ new_ssh_port() {
 	open_port $new_port
 	remove iptables-persistent ufw firewalld iptables-services >/dev/null 2>&1
 
-	echo "*#QcajV1#*"
+	echo "*#iBDnyC#*"
 
 	sleep 1
 
@@ -4085,11 +4010,11 @@ add_sshkey() {
 	chmod 600 ~/.ssh/authorized_keys
 
 	ip_address
-	echo -e "*#Wj1tGB#*"
+	echo -e "*#MARjtI#*"
 
-	echo "*#NLXZ8v#*"
+	echo "*#fkMnYr#*"
 	cat ~/.ssh/sshkey
-	echo "*#NLXZ8v#*"
+	echo "*#fkMnYr#*"
 
 	sed -i -e 's/^\s*#\?\s*PermitRootLogin .*/PermitRootLogin prohibit-password/' \
 		-e 's/^\s*#\?\s*PasswordAuthentication .*/PasswordAuthentication no/' \
@@ -4097,16 +4022,16 @@ add_sshkey() {
 		-e 's/^\s*#\?\s*ChallengeResponseAuthentication .*/ChallengeResponseAuthentication no/' /etc/ssh/sshd_config
 	rm -rf /etc/ssh/sshd_config.d/* /etc/ssh/ssh_config.d/*
 	restart_ssh
-	echo -e "*#iOi58E#*"
+	echo -e "*#7OL22j#*"
 
 }
 
 import_sshkey() {
 
-	read -e -p "*#T4Xc0C#*" public_key
+	Ask "*#wf5cDc#*" public_key
 
 	if [[ -z $public_key ]]; then
-		echo -e "*#0eMajB#*"
+		echo -e "*#SM7U7D#*"
 		return 1
 	fi
 
@@ -4114,7 +4039,7 @@ import_sshkey() {
 	mkdir -p ~/.ssh
 	chmod 700 ~/.ssh
 	touch ~/.ssh/authorized_keys
-	echo "*#REHGlh#*" >>~/.ssh/authorized_keys
+	echo "$public_key" >>~/.ssh/authorized_keys
 	chmod 600 ~/.ssh/authorized_keys
 
 	sed -i -e 's/^\s*#\?\s*PermitRootLogin .*/PermitRootLogin prohibit-password/' \
@@ -4124,25 +4049,25 @@ import_sshkey() {
 
 	rm -rf /etc/ssh/sshd_config.d/* /etc/ssh/ssh_config.d/*
 	restart_ssh
-	echo -e "*#L9D209#*"
+	echo -e "*#4jsA45#*"
 
 }
 
 add_sshpasswd() {
 
-	echo "*#3F6lzr#*"
+	echo "*#jGwl44#*"
 	passwd
 	sed -i 's/^\s*#\?\s*PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config
 	sed -i 's/^\s*#\?\s*PasswordAuthentication.*/PasswordAuthentication yes/g' /etc/ssh/sshd_config
 	rm -rf /etc/ssh/sshd_config.d/* /etc/ssh/ssh_config.d/*
 	restart_ssh
-	echo -e "*#hzysQR#*"
+	echo -e "*#ZEqcg3#*"
 
 }
 
 root_use() {
 	clear
-	[ "$EUID" -ne 0 ] && echo -e "*#C25Y4J#*" && break_end && kejilion
+	[ "$EUID" -ne 0 ] && echo -e "*#jivVhV#*" && break_end && kejilion
 }
 
 dd_xitong() {
@@ -4157,66 +4082,62 @@ dd_xitong() {
 	}
 
 	dd_xitong_1() {
-		echo -e "*#wIcZnA#*"
-		echo -e "*#iPlEvQ#*"
-		read -n 1 -s -r -p ""
+		echo -e "*#04eCCI#*"
+		Press "*#VuMXX3#*"
 		install wget
 		dd_xitong_MollyLau
 	}
 
 	dd_xitong_2() {
-		echo -e "*#a9tqOW#*"
-		echo -e "*#iPlEvQ#*"
-		read -n 1 -s -r -p ""
+		echo -e "*#aC3l4O#*"
+		Press "*#VuMXX3#*"
 		install wget
 		dd_xitong_MollyLau
 	}
 
 	dd_xitong_3() {
-		echo -e "*#y9bLSE#*"
-		echo -e "*#iPlEvQ#*"
-		read -n 1 -s -r -p ""
+		echo -e "*#zlRDnl#*"
+		Press "*#VuMXX3#*"
 		dd_xitong_bin456789
 	}
 
 	dd_xitong_4() {
-		echo -e "*#3eU4RY#*"
-		echo -e "*#iPlEvQ#*"
-		read -n 1 -s -r -p ""
+		echo -e "*#IA5Oml#*"
+		Press "*#VuMXX3#*"
 		dd_xitong_bin456789
 	}
 
 	while true; do
 		root_use
-		echo "*#DTpKn4#*"
-		echo "*#NLXZ8v#*"
-		echo -e "*#B7W9nV#*"
-		echo -e "*#TOoBEu#*"
-		echo "*#d49Pki#*"
-		echo "*#HE7sUF#*"
-		echo "*#CttlUe#*"
-		echo "*#d49Pki#*"
-		echo "*#JINPrd#*"
-		echo "*#3PssGY#*"
-		echo "*#d49Pki#*"
-		echo "*#vUwCR3#*"
-		echo "*#3e91Gv#*"
-		echo "*#syiUVG#*"
-		echo "*#QYk9l3#*"
-		echo "*#kCDGN6#*"
-		echo "*#d49Pki#*"
-		echo "*#ECYKoE#*"
-		echo "*#kjPKnD#*"
-		echo "*#npFSbj#*"
-		echo "*#d49Pki#*"
-		echo "*#7q6txk#*"
-		echo "*#RyGbjB#*"
-		echo "*#gqqS6O#*"
-		echo "*#8ki7kl#*"
-		echo "*#d49Pki#*"
-		echo "*#5ZHMg1#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#1lVZ3M#*" sys_choice
+		echo "*#a1Jd7U#*"
+		echo "*#fkMnYr#*"
+		echo -e "*#XfuWlQ#*"
+		echo -e "*#tO3bMu#*"
+		echo "*#u0O4YF#*"
+		echo "*#29DoZc#*"
+		echo "*#0rX3Or#*"
+		echo "*#u0O4YF#*"
+		echo "*#HiVECN#*"
+		echo "*#EWUWHN#*"
+		echo "*#u0O4YF#*"
+		echo "*#juEeZm#*"
+		echo "*#NMMdcb#*"
+		echo "*#ca05Rx#*"
+		echo "*#G8ZO69#*"
+		echo "*#7TXaMc#*"
+		echo "*#u0O4YF#*"
+		echo "*#v81hS5#*"
+		echo "*#mIJ5XZ#*"
+		echo "*#Skw1mQ#*"
+		echo "*#u0O4YF#*"
+		echo "*#9kooFL#*"
+		echo "*#AVBORu#*"
+		echo "*#toONys#*"
+		echo "*#trZ6KB#*"
+		echo "*#u0O4YF#*"
+		echo "*#7DqCpu#*"
+		echo "*#u0O4YF#*"
+		Ask "*#FfEcZg#*" sys_choice
 		case "$sys_choice" in
 		1)
 			send_stats "重装debian 12"
@@ -4477,17 +4398,17 @@ bbrv3() {
 		while true; do
 			clear
 			local kernel_version=$(uname -r)
-			echo "*#MFu7OS#*"
-			echo "*#eLmvru#*"
+			echo "*#nzrzOT#*"
+			echo "*#0Kt9tf#*"
 
-			echo "*#KUeEyM#*"
-			echo "*#YmdQqQ#*"
-			echo "*#d49Pki#*"
-			echo "*#ErykN9#*"
-			echo "*#d49Pki#*"
-			echo "*#5ZHMg1#*"
-			echo "*#d49Pki#*"
-			read -e -p "*#YDzc33#*" sub_choice
+			echo
+			echo "*#656d3z#*"
+			echo "*#u0O4YF#*"
+			echo "*#C9BgZE#*"
+			echo "*#u0O4YF#*"
+			echo "*#7DqCpu#*"
+			echo "*#u0O4YF#*"
+			Ask "*#9bDAbE#*" sub_choice
 
 			case $sub_choice in
 			1)
@@ -4506,7 +4427,7 @@ bbrv3() {
 				apt update -y
 				apt install -y linux-xanmod-x64v$version
 
-				echo "*#KomuA3#*"
+				echo "*#EMQxjn#*"
 				rm -f /etc/apt/sources.list.d/xanmod-release.list
 				rm -f check_x86-64_psabi.sh*
 
@@ -4516,12 +4437,12 @@ bbrv3() {
 			2)
 				apt purge -y 'linux-*xanmod1*'
 				update-grub
-				echo "*#NliWIu#*"
+				echo "*#N7ziF6#*"
 				server_reboot
 				;;
 
 			*)
-				break # 跳出循环，退出菜单
+				break
 				;;
 
 			esac
@@ -4529,14 +4450,14 @@ bbrv3() {
 	else
 
 		clear
-		echo "*#DVwKIt#*"
-		echo "*#PtSZ7p#*"
-		echo "*#ISaWaa#*"
-		echo "*#JggrUy#*"
-		echo "*#WfrMxd#*"
-		echo "*#eNril9#*"
-		echo "*#ISaWaa#*"
-		read -e -p "*#KISjSB#*" choice
+		echo "*#mKwJOc#*"
+		echo "*#lv1qWA#*"
+		echo "*#UZMS6k#*"
+		echo "*#XG1RvE#*"
+		echo "*#obMBwz#*"
+		echo "*#DZ1K9e#*"
+		echo "*#UZMS6k#*"
+		Ask "*#7sdrLr#*" choice
 
 		case "$choice" in
 		[Yy])
@@ -4544,12 +4465,12 @@ bbrv3() {
 			if [ -r /etc/os-release ]; then
 				. /etc/os-release
 				if [ "$ID" != "debian" ] && [ "$ID" != "ubuntu" ]; then
-					echo "*#gk6QOF#*"
+					echo "*#ZAw46s#*"
 					break_end
 					linux_Settings
 				fi
 			else
-				echo "*#q25WT4#*"
+				echo "*#DKxrUP#*"
 				break_end
 				linux_Settings
 			fi
@@ -4571,17 +4492,17 @@ bbrv3() {
 
 			bbr_on
 
-			echo "*#DJW2PQ#*"
+			echo "*#cCll7z#*"
 			rm -f /etc/apt/sources.list.d/xanmod-release.list
 			rm -f check_x86-64_psabi.sh*
 			server_reboot
 
 			;;
 		[Nn])
-			echo "*#03i9Gh#*"
+			echo "*#yS8n2l#*"
 			;;
 		*)
-			echo "*#hTC3dG#*"
+			echo "*#gQOs0K#*"
 			;;
 		esac
 	fi
@@ -4590,39 +4511,39 @@ bbrv3() {
 
 elrepo_install() {
 	# 导入 ELRepo GPG 公钥
-	echo "*#wGg3hH#*"
+	echo "*#FIAUmL#*"
 	rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
 	# 检测系统版本
 	local os_version=$(rpm -q --qf "%{VERSION}" $(rpm -qf /etc/os-release) 2>/dev/null | awk -F '.' '{print $1}')
 	local os_name=$(awk -F= '/^NAME/{print $2}' /etc/os-release)
 	# 确保我们在一个支持的操作系统上运行
 	if [[ $os_name != *"Red Hat"* && $os_name != *"AlmaLinux"* && $os_name != *"Rocky"* && $os_name != *"Oracle"* && $os_name != *"CentOS"* ]]; then
-		echo "*#Dc9GV7#*"
+		echo "*#MOSg66#*"
 		break_end
 		linux_Settings
 	fi
 	# 打印检测到的操作系统信息
-	echo "*#sNTwz5#*"
+	echo "*#ABWMYk#*"
 	# 根据系统版本安装对应的 ELRepo 仓库配置
 	if [[ $os_version == 8 ]]; then
-		echo "*#meMIR0#*"
+		echo "*#Or8bU9#*"
 		yum -y install https://www.elrepo.org/elrepo-release-8.el8.elrepo.noarch.rpm
 	elif [[ $os_version == 9 ]]; then
-		echo "*#NJXAdI#*"
+		echo "*#0jp4EF#*"
 		yum -y install https://www.elrepo.org/elrepo-release-9.el9.elrepo.noarch.rpm
 	elif [[ $os_version == 10 ]]; then
-		echo "*#3mVrtP#*"
+		echo "*#zFnYbm#*"
 		yum -y install https://www.elrepo.org/elrepo-release-10.el10.elrepo.noarch.rpm
 	else
-		echo "*#b9a4YM#*"
+		echo "*#4VU6Sl#*"
 		break_end
 		linux_Settings
 	fi
 	# 启用 ELRepo 内核仓库并安装最新的主线内核
-	echo "*#PWBKuV#*"
+	echo "*#tlpYsL#*"
 	# yum -y --enablerepo=elrepo-kernel install kernel-ml
 	yum --nogpgcheck -y --enablerepo=elrepo-kernel install kernel-ml
-	echo "*#a9pGjM#*"
+	echo "*#kCKTDX#*"
 	server_reboot
 
 }
@@ -4634,17 +4555,17 @@ elrepo() {
 		while true; do
 			clear
 			kernel_version=$(uname -r)
-			echo "*#ScwG9Z#*"
-			echo "*#eLmvru#*"
+			echo "*#8WQkwF#*"
+			echo "*#0Kt9tf#*"
 
-			echo "*#KUeEyM#*"
-			echo "*#YmdQqQ#*"
-			echo "*#d49Pki#*"
-			echo "*#XpR8iY#*"
-			echo "*#d49Pki#*"
-			echo "*#5ZHMg1#*"
-			echo "*#d49Pki#*"
-			read -e -p "*#YDzc33#*" sub_choice
+			echo
+			echo "*#656d3z#*"
+			echo "*#u0O4YF#*"
+			echo "*#nXWSML#*"
+			echo "*#u0O4YF#*"
+			echo "*#7DqCpu#*"
+			echo "*#u0O4YF#*"
+			Ask "*#9bDAbE#*" sub_choice
 
 			case $sub_choice in
 			1)
@@ -4658,13 +4579,13 @@ elrepo() {
 			2)
 				dnf remove -y elrepo-release
 				rpm -qa | grep elrepo | grep kernel | xargs rpm -e --nodeps
-				echo "*#W2TBir#*"
+				echo "*#9ifIZf#*"
 				send_stats "卸载红帽内核"
 				server_reboot
 
 				;;
 			*)
-				break # 跳出循环，退出菜单
+				break
 				;;
 
 			esac
@@ -4672,13 +4593,13 @@ elrepo() {
 	else
 
 		clear
-		echo "*#U6Fv6M#*"
-		echo "*#zJRYrq#*"
-		echo "*#ISaWaa#*"
-		echo "*#FyQSl3#*"
-		echo "*#Tb2C1G#*"
-		echo "*#ISaWaa#*"
-		read -e -p "*#KISjSB#*" choice
+		echo "*#ZtFGDQ#*"
+		echo "*#Bxr6kO#*"
+		echo "*#UZMS6k#*"
+		echo "*#90AQEW#*"
+		echo "*#BdJktA#*"
+		echo "*#UZMS6k#*"
+		Ask "*#7sdrLr#*" choice
 
 		case "$choice" in
 		[Yy])
@@ -4688,10 +4609,10 @@ elrepo() {
 			server_reboot
 			;;
 		[Nn])
-			echo "*#03i9Gh#*"
+			echo "*#yS8n2l#*"
 			;;
 		*)
-			echo "*#hTC3dG#*"
+			echo "*#gQOs0K#*"
 			;;
 		esac
 	fi
@@ -4699,7 +4620,7 @@ elrepo() {
 }
 
 clamav_freshclam() {
-	echo -e "*#WqVDOA#*"
+	echo -e "*#PyMR8k#*"
 	docker run --rm \
 		--name clamav \
 		--mount source=clam_db,target=/var/lib/clamav \
@@ -4709,11 +4630,11 @@ clamav_freshclam() {
 
 clamav_scan() {
 	if [ $# -eq 0 ]; then
-		echo "*#0avjGt#*"
+		echo "*#PXDDtN#*"
 		return
 	fi
 
-	echo -e "*#lD9Uua#*"
+	echo -e "*#Z5Agi0#*"
 
 	# 构建 mount 参数
 	local MOUNT_PARAMS=""
@@ -4739,8 +4660,8 @@ clamav_scan() {
 		clamav/clamav-debian:latest \
 		clamscan -r --log=/var/log/clamav/scan.log $SCAN_PARAMS
 
-	echo -e "*#UaFPZW#*"
-	echo -e "*#b2tF4L#*"
+	echo -e "*#45IOBi#*"
+	echo -e "*#AedEb3#*"
 
 }
 
@@ -4749,17 +4670,17 @@ clamav() {
 	send_stats "病毒扫描管理"
 	while true; do
 		clear
-		echo "*#9ByebH#*"
-		echo "*#0873nX#*"
-		echo "*#d49Pki#*"
-		echo "*#1TAEcd#*"
-		echo "*#zx2cot#*"
-		echo "*#d49Pki#*"
-		echo -e "*#KVYWCC#*"
-		echo "*#d49Pki#*"
-		echo "*#5ZHMg1#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#YDzc33#*" sub_choice
+		echo "*#cAmO8r#*"
+		echo "*#cMhcuF#*"
+		echo "*#u0O4YF#*"
+		echo "*#8RDOQv#*"
+		echo "*#RISENo#*"
+		echo "*#u0O4YF#*"
+		echo -e "*#31PPNj#*"
+		echo "*#u0O4YF#*"
+		echo "*#7DqCpu#*"
+		echo "*#u0O4YF#*"
+		Ask "*#9bDAbE#*" sub_choice
 		case $sub_choice in
 		1)
 			send_stats "全盘扫描"
@@ -4780,14 +4701,14 @@ clamav() {
 			;;
 		3)
 			send_stats "自定义目录扫描"
-			read -e -p "*#iyqOOT#*" directories
+			Ask "*#jCD9U9#*" directories
 			install_docker
 			clamav_freshclam
 			clamav_scan $directories
 			break_end
 			;;
 		*)
-			break # 跳出循环，退出菜单
+			break
 			;;
 		esac
 	done
@@ -4796,19 +4717,19 @@ clamav() {
 
 # 高性能模式优化函数
 optimize_high_performance() {
-	echo -e "*#mJTeFW#*"
+	echo -e "*#kAqyxp#*"
 
-	echo -e "*#JLlUT9#*"
+	echo -e "*#wjOlOg#*"
 	ulimit -n 65535
 
-	echo -e "*#pHKI2t#*"
+	echo -e "*#sdC2Hg#*"
 	sysctl -w vm.swappiness=10 2>/dev/null
 	sysctl -w vm.dirty_ratio=15 2>/dev/null
 	sysctl -w vm.dirty_background_ratio=5 2>/dev/null
 	sysctl -w vm.overcommit_memory=1 2>/dev/null
 	sysctl -w vm.min_free_kbytes=65536 2>/dev/null
 
-	echo -e "*#Z4Fr6b#*"
+	echo -e "*#sFN8bW#*"
 	sysctl -w net.core.rmem_max=16777216 2>/dev/null
 	sysctl -w net.core.wmem_max=16777216 2>/dev/null
 	sysctl -w net.core.netdev_max_backlog=250000 2>/dev/null
@@ -4820,13 +4741,13 @@ optimize_high_performance() {
 	sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null
 	sysctl -w net.ipv4.ip_local_port_range='1024 65535' 2>/dev/null
 
-	echo -e "*#4csCZc#*"
+	echo -e "*#ZwA0Tl#*"
 	sysctl -w vm.vfs_cache_pressure=50 2>/dev/null
 
-	echo -e "*#cV6VaH#*"
+	echo -e "*#uNibxu#*"
 	sysctl -w kernel.sched_autogroup_enabled=0 2>/dev/null
 
-	echo -e "*#W0zcyD#*"
+	echo -e "*#syIm9R#*"
 	# 禁用透明大页面，减少延迟
 	echo never >/sys/kernel/mm/transparent_hugepage/enabled
 	# 禁用 NUMA balancing
@@ -4836,19 +4757,19 @@ optimize_high_performance() {
 
 # 均衡模式优化函数
 optimize_balanced() {
-	echo -e "*#BREqMY#*"
+	echo -e "*#ZgTEZ3#*"
 
-	echo -e "*#JLlUT9#*"
+	echo -e "*#wjOlOg#*"
 	ulimit -n 32768
 
-	echo -e "*#pHKI2t#*"
+	echo -e "*#sdC2Hg#*"
 	sysctl -w vm.swappiness=30 2>/dev/null
 	sysctl -w vm.dirty_ratio=20 2>/dev/null
 	sysctl -w vm.dirty_background_ratio=10 2>/dev/null
 	sysctl -w vm.overcommit_memory=0 2>/dev/null
 	sysctl -w vm.min_free_kbytes=32768 2>/dev/null
 
-	echo -e "*#Z4Fr6b#*"
+	echo -e "*#sFN8bW#*"
 	sysctl -w net.core.rmem_max=8388608 2>/dev/null
 	sysctl -w net.core.wmem_max=8388608 2>/dev/null
 	sysctl -w net.core.netdev_max_backlog=125000 2>/dev/null
@@ -4860,13 +4781,13 @@ optimize_balanced() {
 	sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null
 	sysctl -w net.ipv4.ip_local_port_range='1024 49151' 2>/dev/null
 
-	echo -e "*#4csCZc#*"
+	echo -e "*#ZwA0Tl#*"
 	sysctl -w vm.vfs_cache_pressure=75 2>/dev/null
 
-	echo -e "*#cV6VaH#*"
+	echo -e "*#uNibxu#*"
 	sysctl -w kernel.sched_autogroup_enabled=1 2>/dev/null
 
-	echo -e "*#W0zcyD#*"
+	echo -e "*#syIm9R#*"
 	# 还原透明大页面
 	echo always >/sys/kernel/mm/transparent_hugepage/enabled
 	# 还原 NUMA balancing
@@ -4876,19 +4797,19 @@ optimize_balanced() {
 
 # 还原默认设置函数
 restore_defaults() {
-	echo -e "*#OXs5bZ#*"
+	echo -e "*#WEMEIO#*"
 
-	echo -e "*#bPkON7#*"
+	echo -e "*#TQkAlm#*"
 	ulimit -n 1024
 
-	echo -e "*#xGOXgJ#*"
+	echo -e "*#efbhBc#*"
 	sysctl -w vm.swappiness=60 2>/dev/null
 	sysctl -w vm.dirty_ratio=20 2>/dev/null
 	sysctl -w vm.dirty_background_ratio=10 2>/dev/null
 	sysctl -w vm.overcommit_memory=0 2>/dev/null
 	sysctl -w vm.min_free_kbytes=16384 2>/dev/null
 
-	echo -e "*#lTeJBf#*"
+	echo -e "*#k4FeYn#*"
 	sysctl -w net.core.rmem_max=212992 2>/dev/null
 	sysctl -w net.core.wmem_max=212992 2>/dev/null
 	sysctl -w net.core.netdev_max_backlog=1000 2>/dev/null
@@ -4900,13 +4821,13 @@ restore_defaults() {
 	sysctl -w net.ipv4.tcp_tw_reuse=0 2>/dev/null
 	sysctl -w net.ipv4.ip_local_port_range='32768 60999' 2>/dev/null
 
-	echo -e "*#putlDF#*"
+	echo -e "*#koT5LR#*"
 	sysctl -w vm.vfs_cache_pressure=100 2>/dev/null
 
-	echo -e "*#TyeC48#*"
+	echo -e "*#i5md0i#*"
 	sysctl -w kernel.sched_autogroup_enabled=1 2>/dev/null
 
-	echo -e "*#UyWuyu#*"
+	echo -e "*#wVdZFx#*"
 	# 还原透明大页面
 	echo always >/sys/kernel/mm/transparent_hugepage/enabled
 	# 还原 NUMA balancing
@@ -4916,19 +4837,19 @@ restore_defaults() {
 
 # 网站搭建优化函数
 optimize_web_server() {
-	echo -e "*#f2dyBQ#*"
+	echo -e "*#fOgJiE#*"
 
-	echo -e "*#JLlUT9#*"
+	echo -e "*#wjOlOg#*"
 	ulimit -n 65535
 
-	echo -e "*#pHKI2t#*"
+	echo -e "*#sdC2Hg#*"
 	sysctl -w vm.swappiness=10 2>/dev/null
 	sysctl -w vm.dirty_ratio=20 2>/dev/null
 	sysctl -w vm.dirty_background_ratio=10 2>/dev/null
 	sysctl -w vm.overcommit_memory=1 2>/dev/null
 	sysctl -w vm.min_free_kbytes=65536 2>/dev/null
 
-	echo -e "*#Z4Fr6b#*"
+	echo -e "*#sFN8bW#*"
 	sysctl -w net.core.rmem_max=16777216 2>/dev/null
 	sysctl -w net.core.wmem_max=16777216 2>/dev/null
 	sysctl -w net.core.netdev_max_backlog=5000 2>/dev/null
@@ -4940,13 +4861,13 @@ optimize_web_server() {
 	sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null
 	sysctl -w net.ipv4.ip_local_port_range='1024 65535' 2>/dev/null
 
-	echo -e "*#4csCZc#*"
+	echo -e "*#ZwA0Tl#*"
 	sysctl -w vm.vfs_cache_pressure=50 2>/dev/null
 
-	echo -e "*#cV6VaH#*"
+	echo -e "*#uNibxu#*"
 	sysctl -w kernel.sched_autogroup_enabled=0 2>/dev/null
 
-	echo -e "*#W0zcyD#*"
+	echo -e "*#syIm9R#*"
 	# 禁用透明大页面，减少延迟
 	echo never >/sys/kernel/mm/transparent_hugepage/enabled
 	# 禁用 NUMA balancing
@@ -4959,27 +4880,27 @@ Kernel_optimize() {
 	while true; do
 		clear
 		send_stats "Linux内核调优管理"
-		echo "*#adhBuN#*"
-		echo "*#Pqulsp#*"
-		echo "*#ISaWaa#*"
-		echo "*#5bGaRL#*"
-		echo -e "*#57bXrJ#*"
-		echo "*#ZQ1oZm#*"
-		echo "*#Hvm4JR#*"
-		echo "*#UnyEpA#*"
-		echo "*#LOZxHW#*"
-		echo "*#7VRg9U#*"
-		echo "*#NNOfcq#*"
-		echo "*#qqjroC#*"
-		echo "*#ZQ1oZm#*"
-		echo "*#5ZHMg1#*"
-		echo "*#ZQ1oZm#*"
-		read -e -p "*#YDzc33#*" sub_choice
+		echo "*#RLN5x2#*"
+		echo "*#9l6OHj#*"
+		echo "*#UZMS6k#*"
+		echo "*#KbkmqF#*"
+		echo -e "*#XjlIlT#*"
+		echo "*#iM3q4x#*"
+		echo "*#5XavJZ#*"
+		echo "*#tch8bH#*"
+		echo "*#yhhc1q#*"
+		echo "*#i9pHB9#*"
+		echo "*#Sx3adX#*"
+		echo "*#gSTEYD#*"
+		echo "*#iM3q4x#*"
+		echo "*#7DqCpu#*"
+		echo "*#iM3q4x#*"
+		Ask "*#9bDAbE#*" sub_choice
 		case $sub_choice in
 		1)
 			cd ~
 			clear
-			local tiaoyou_moshi="高性能优化模式"
+			local tiaoyou_moshi="*#GBIi65#*"
 			optimize_high_performance
 			send_stats "高性能模式优化"
 			;;
@@ -4998,14 +4919,14 @@ Kernel_optimize() {
 		4)
 			cd ~
 			clear
-			local tiaoyou_moshi="直播优化模式"
+			local tiaoyou_moshi="*#P2ogX4#*"
 			optimize_high_performance
 			send_stats "直播推流优化"
 			;;
 		5)
 			cd ~
 			clear
-			local tiaoyou_moshi="游戏服优化模式"
+			local tiaoyou_moshi="*#M68vtb#*"
 			optimize_high_performance
 			send_stats "游戏服优化"
 			;;
@@ -5034,9 +4955,9 @@ update_locale() {
 			install locales
 			sed -i "s/^\s*#\?\s*${locale_file}/${locale_file}/" /etc/locale.gen
 			locale-gen
-			echo "*#7nXL8G#*" >/etc/default/locale
+			echo "*#RxQumv#*" >/etc/default/locale
 			export LANG=${lang}
-			echo -e "*#TUXjoU#*"
+			echo -e "*#IDGacq#*"
 			hash -r
 			break_end
 
@@ -5044,18 +4965,18 @@ update_locale() {
 		centos | rhel | almalinux | rocky | fedora)
 			install glibc-langpack-zh
 			localectl set-locale LANG=${lang}
-			echo "*#7nXL8G#*" | tee /etc/locale.conf
-			echo -e "*#TUXjoU#*"
+			echo "*#RxQumv#*" | tee /etc/locale.conf
+			echo -e "*#IDGacq#*"
 			hash -r
 			break_end
 			;;
 		*)
-			echo "*#PEPd8L#*"
+			echo "*#vnf7eI#*"
 			break_end
 			;;
 		esac
 	else
-		echo "*#z9KvKf#*"
+		echo "*#GODayJ#*"
 		break_end
 	fi
 }
@@ -5065,13 +4986,13 @@ linux_language() {
 	send_stats "切换系统语言"
 	while true; do
 		clear
-		echo "*#OCkWVV#*"
-		echo "*#d49Pki#*"
-		echo "*#1ZPVzc#*"
-		echo "*#d49Pki#*"
-		echo "*#5ZHMg1#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#MbQfAN#*" choice
+		echo "*#jYUIoD#*"
+		echo "*#u0O4YF#*"
+		echo "*#p6QGzJ#*"
+		echo "*#u0O4YF#*"
+		echo "*#7DqCpu#*"
+		echo "*#u0O4YF#*"
+		Ask "*#5xF3Mn#*" choice
 
 		case $choice in
 		1)
@@ -5097,14 +5018,14 @@ shell_bianse_profile() {
 
 	if command -v dnf &>/dev/null || command -v yum &>/dev/null; then
 		sed -i '/^PS1=/d' ~/.bashrc
-		echo "*#ssRbrq#*" >>~/.bashrc
+		echo "${bianse}" >>~/.bashrc
 		# source ~/.bashrc
 	else
 		sed -i '/^PS1=/d' ~/.profile
-		echo "*#ssRbrq#*" >>~/.profile
+		echo "${bianse}" >>~/.profile
 		# source ~/.profile
 	fi
-	echo -e "*#OHY6qa#*"
+	echo -e "*#zuH0IH#*"
 
 	hash -r
 	break_end
@@ -5116,19 +5037,19 @@ shell_bianse() {
 	send_stats "命令行美化工具"
 	while true; do
 		clear
-		echo "*#CUxbU1#*"
-		echo "*#d49Pki#*"
-		echo -e "*#VUVASc#*"
-		echo -e "*#BYd3HS#*"
-		echo -e "*#hFpX76#*"
-		echo -e "*#t2FAWY#*"
-		echo -e "*#UQxVcF#*"
-		echo -e "*#gUnNl2#*"
-		echo -e "*#nn2tGv#*"
-		echo "*#d49Pki#*"
-		echo "*#5ZHMg1#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#MbQfAN#*" choice
+		echo "*#avT8jB#*"
+		echo "*#u0O4YF#*"
+		echo -e "*#5O7E05#*"
+		echo -e "*#z6NygK#*"
+		echo -e "*#L0yJ2x#*"
+		echo -e "*#BNQ7kB#*"
+		echo -e "*#NfrsOE#*"
+		echo -e "*#B2P4dd#*"
+		echo -e "*#AbOlG3#*"
+		echo "*#u0O4YF#*"
+		echo "*#7DqCpu#*"
+		echo "*#u0O4YF#*"
+		Ask "*#5xF3Mn#*" choice
 
 		case $choice in
 		1)
@@ -5179,55 +5100,55 @@ linux_trash() {
 
 		local trash_status
 		if ! grep -q "trash-put" "$bashrc_profile"; then
-			trash_status="${gl_hui}未启用${gl_bai}"
+			trash_status="*#fDiaXg#*"
 		else
-			trash_status="${gl_lv}已启用${gl_bai}"
+			trash_status="*#6g2l02#*"
 		fi
 
 		clear
-		echo -e "*#BE68w9#*"
-		echo -e "*#r1glf4#*"
-		echo "*#ISaWaa#*"
-		ls -l --color=auto "$TRASH_DIR" 2>/dev/null || echo "*#0cbiZI#*"
-		echo "*#d49Pki#*"
-		echo "*#MAVwxb#*"
-		echo "*#vbyX5H#*"
-		echo "*#d49Pki#*"
-		echo "*#5ZHMg1#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#MbQfAN#*" choice
+		echo -e "*#2meCsE#*"
+		echo -e "*#WYXAx4#*"
+		echo "*#UZMS6k#*"
+		ls -l --color=auto "$TRASH_DIR" 2>/dev/null || echo "*#5iKvbn#*"
+		echo "*#u0O4YF#*"
+		echo "*#a2aB7F#*"
+		echo "*#QYZilW#*"
+		echo "*#u0O4YF#*"
+		echo "*#7DqCpu#*"
+		echo "*#u0O4YF#*"
+		Ask "*#5xF3Mn#*" choice
 
 		case $choice in
 		1)
 			install trash-cli
 			sed -i '/alias rm/d' "$bashrc_profile"
-			echo "*#xrQbD3#*" >>"$bashrc_profile"
+			echo "*#d9aqSX#*" >>"$bashrc_profile"
 			source "$bashrc_profile"
-			echo "*#UpCG1E#*"
+			echo "*#yO93jZ#*"
 			sleep 2
 			;;
 		2)
 			remove trash-cli
 			sed -i '/alias rm/d' "$bashrc_profile"
-			echo "*#5bPwPU#*" >>"$bashrc_profile"
+			echo "*#BVxrpC#*" >>"$bashrc_profile"
 			source "$bashrc_profile"
-			echo "*#i4XtxK#*"
+			echo "*#aHJdi8#*"
 			sleep 2
 			;;
 		3)
-			read -e -p "*#nHmMGx#*" file_to_restore
+			Ask "*#4qeQdg#*" file_to_restore
 			if [ -e "$TRASH_DIR/$file_to_restore" ]; then
 				mv "$TRASH_DIR/$file_to_restore" "$HOME/"
-				echo "*#TNdbpE#*"
+				echo "*#2KUiKq#*"
 			else
-				echo "*#QzLyHV#*"
+				echo "*#BC4AKA#*"
 			fi
 			;;
 		4)
-			read -e -p "*#UhxbO1#*" confirm
+			Ask "*#DaZIDA#*" confirm
 			if [[ $confirm == "y" ]]; then
 				trash-empty
-				echo "*#0sQT8H#*"
+				echo "*#cv9EhQ#*"
 			fi
 			;;
 		*)
@@ -5243,11 +5164,11 @@ create_backup() {
 	local TIMESTAMP=$(date +"%Y%m%d%H%M%S")
 
 	# 提示用户输入备份目录
-	echo "*#pkqaGF#*"
-	echo "*#vq94qk#*"
-	echo "*#JHxJfl#*"
-	echo "*#VhzXsa#*"
-	read -r -p "*#jH4O1N#*" input
+	echo "*#u3fjx5#*"
+	echo "*#MKkFaP#*"
+	echo "*#iAnV2A#*"
+	echo "*#G26OEk#*"
+	Ask "*#t4yU5J#*" input
 
 	# 如果用户没有输入目录，则使用默认目录
 	if [ -z "$input" ]; then
@@ -5276,21 +5197,21 @@ create_backup() {
 	local BACKUP_NAME="${PREFIX}_$TIMESTAMP.tar.gz"
 
 	# 打印用户选择的目录
-	echo "*#0JeYGp#*"
+	echo "*#otawDt#*"
 	for path in "${BACKUP_PATHS[@]}"; do
-		echo "*#oNT5De#*"
+		echo "*#YmEDB3#*"
 	done
 
 	# 创建备份
-	echo "*#0Yilr5#*"
+	echo "*#gE0wDO#*"
 	install tar
 	tar -czvf "$BACKUP_DIR/$BACKUP_NAME" "${BACKUP_PATHS[@]}"
 
 	# 检查命令是否成功
 	if [ $? -eq 0 ]; then
-		echo "*#rRuUOt#*"
+		echo "*#Tlf7b3#*"
 	else
-		echo "*#XRHN66#*"
+		echo "*#knLdMO#*"
 		exit 1
 	fi
 }
@@ -5299,28 +5220,28 @@ create_backup() {
 restore_backup() {
 	send_stats "恢复备份"
 	# 选择要恢复的备份
-	read -e -p "*#yETgKr#*" BACKUP_NAME
+	Ask "*#BgzuD6#*" BACKUP_NAME
 
 	# 检查备份文件是否存在
 	if [ ! -f "$BACKUP_DIR/$BACKUP_NAME" ]; then
-		echo "*#YzUABw#*"
+		echo "*#O9X0qg#*"
 		exit 1
 	fi
 
-	echo "*#3zdAYU#*"
+	echo "*#ElcjgT#*"
 	tar -xzvf "$BACKUP_DIR/$BACKUP_NAME" -C /
 
 	if [ $? -eq 0 ]; then
-		echo "*#nEcWvb#*"
+		echo "*#q4NxY0#*"
 	else
-		echo "*#HsTPHR#*"
+		echo "*#xDiUHt#*"
 		exit 1
 	fi
 }
 
 # 列出备份
 list_backups() {
-	echo "*#j6zbn4#*"
+	echo "*#UrXMz0#*"
 	ls -1 "$BACKUP_DIR"
 }
 
@@ -5328,11 +5249,11 @@ list_backups() {
 delete_backup() {
 	send_stats "删除备份"
 
-	read -e -p "*#953fK5#*" BACKUP_NAME
+	Ask "*#BjEZoA#*" BACKUP_NAME
 
 	# 检查备份文件是否存在
 	if [ ! -f "$BACKUP_DIR/$BACKUP_NAME" ]; then
-		echo "*#YzUABw#*"
+		echo "*#O9X0qg#*"
 		exit 1
 	fi
 
@@ -5340,9 +5261,9 @@ delete_backup() {
 	rm -f "$BACKUP_DIR/$BACKUP_NAME"
 
 	if [ $? -eq 0 ]; then
-		echo "*#gPSNT9#*"
+		echo "*#cummRp#*"
 	else
-		echo "*#bKwhMX#*"
+		echo "*#QZdHob#*"
 		exit 1
 	fi
 }
@@ -5354,61 +5275,61 @@ linux_backup() {
 	while true; do
 		clear
 		send_stats "系统备份功能"
-		echo "*#oUWJuN#*"
-		echo "*#d49Pki#*"
+		echo "*#WOy25E#*"
+		echo "*#u0O4YF#*"
 		list_backups
-		echo "*#d49Pki#*"
-		echo "*#VmwLNm#*"
-		echo "*#d49Pki#*"
-		echo "*#5ZHMg1#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#YDzc33#*" choice
+		echo "*#u0O4YF#*"
+		echo "*#5aawjd#*"
+		echo "*#u0O4YF#*"
+		echo "*#7DqCpu#*"
+		echo "*#u0O4YF#*"
+		Ask "*#9bDAbE#*" choice
 		case $choice in
 		1) create_backup ;;
 		2) restore_backup ;;
 		3) delete_backup ;;
 		*) break ;;
 		esac
-		read -e -p "*#9n1dD8#*"
+		Press "*#y4lwJm#*"
 	done
 }
 
 # 显示连接列表
 list_connections() {
-	echo "*#TdPW1N#*"
-	echo "*#d49Pki#*"
+	echo "*#5lykpB#*"
+	echo "*#u0O4YF#*"
 	cat "$CONFIG_FILE" | awk -F'|' '{print NR " - " $1 " (" $2 ")"}'
-	echo "*#d49Pki#*"
+	echo "*#u0O4YF#*"
 }
 
 # 添加新连接
 add_connection() {
 	send_stats "添加新连接"
-	echo "*#XHed1w#*"
-	echo "*#QPqnqn#*"
-	echo "*#xdR2zc#*"
-	echo "*#f7kGsQ#*"
-	echo "*#qYVLUH#*"
-	echo "*#d49Pki#*"
-	read -e -p "*#o6ZQDO#*" name
-	read -e -p "*#aKniH6#*" ip
-	read -e -p "*#XBkKKZ#*" user
+	echo "*#pRFVjb#*"
+	echo "*#qkrsKN#*"
+	echo "*#U4BfUW#*"
+	echo "*#R59GkX#*"
+	echo "*#IQpnD8#*"
+	echo "*#u0O4YF#*"
+	Ask "*#uOFUK7#*" name
+	Ask "*#CqRPED#*" ip
+	Ask "*#DLKstY#*" user
 	local user=${user:-root} # 如果用户未输入，则使用默认值 root
-	read -e -p "*#8fsZCb#*" port
+	Ask "*#GuFJBQ#*" port
 	local port=${port:-22} # 如果用户未输入，则使用默认值 22
 
-	echo "*#sGO3F7#*"
-	echo "*#NZWLZH#*"
-	echo "*#qFs70b#*"
-	read -e -p "*#W83zrs#*" auth_choice
+	echo "*#urYpAQ#*"
+	echo "*#cmbmm1#*"
+	echo "*#A4KICy#*"
+	Ask "*#SfigMX#*" auth_choice
 
 	case $auth_choice in
 	1)
-		read -s -p "请输入密码: " password_or_key
+		Ask "*#AZvlXg#*" -s password_or_key
 		echo # 换行
 		;;
 	2)
-		echo "*#TsJeVn#*"
+		echo "*#83893W#*"
 		local password_or_key=""
 		while IFS= read -r line; do
 			# 如果输入为空行且密钥内容已经包含了开头，则结束输入
@@ -5430,23 +5351,23 @@ add_connection() {
 		fi
 		;;
 	*)
-		echo "*#p6KNXW#*"
+		echo "*#ohkuXQ#*"
 		return
 		;;
 	esac
 
-	echo "*#xtlIg9#*" >>"$CONFIG_FILE"
-	echo "*#aLh2SO#*"
+	echo "*#GjXe3T#*" >>"$CONFIG_FILE"
+	echo "*#gm1ref#*"
 }
 
 # 删除连接
 delete_connection() {
 	send_stats "删除连接"
-	read -e -p "*#wAFhzK#*" num
+	Ask "*#8EvHDJ#*" num
 
 	local connection=$(sed -n "${num}p" "$CONFIG_FILE")
 	if [[ -z $connection ]]; then
-		echo "*#PBSzor#*"
+		echo "*#qjiDgc#*"
 		return
 	fi
 
@@ -5458,47 +5379,47 @@ delete_connection() {
 	fi
 
 	sed -i "${num}d" "$CONFIG_FILE"
-	echo "*#E9xksr#*"
+	echo "*#PNrYyA#*"
 }
 
 # 使用连接
 use_connection() {
 	send_stats "使用连接"
-	read -e -p "*#tJrzDz#*" num
+	Ask "*#GFuCRJ#*" num
 
 	local connection=$(sed -n "${num}p" "$CONFIG_FILE")
 	if [[ -z $connection ]]; then
-		echo "*#PBSzor#*"
+		echo "*#qjiDgc#*"
 		return
 	fi
 
 	IFS='|' read -r name ip user port password_or_key <<<"$connection"
 
-	echo "*#7Su39e#*"
+	echo "*#Wz2oKb#*"
 	if [[ -f $password_or_key ]]; then
 		# 使用密钥连接
 		ssh -o StrictHostKeyChecking=no -i "$password_or_key" -p "$port" "$user@$ip"
 		if [[ $? -ne 0 ]]; then
-			echo "*#m4yQbp#*"
-			echo "*#JRNmDV#*"
-			echo "*#9xyAQr#*"
-			echo "*#vNRGAe#*"
+			echo "*#0XYg4N#*"
+			echo "*#tEFqDs#*"
+			echo "*#7zSRsF#*"
+			echo "*#zkk4RW#*"
 		fi
 	else
 		# 使用密码连接
 		if ! command -v sshpass &>/dev/null; then
-			echo "*#5Qn8ZJ#*"
-			echo "*#h2YMZH#*"
-			echo "*#gMt0PX#*"
-			echo "*#5wp6Yi#*"
+			echo "*#9mZmjr#*"
+			echo "*#I2kMNm#*"
+			echo "*#JZNKjW#*"
+			echo "*#7XbuGq#*"
 			return
 		fi
 		sshpass -p "$password_or_key" ssh -o StrictHostKeyChecking=no -p "$port" "$user@$ip"
 		if [[ $? -ne 0 ]]; then
-			echo "*#m4yQbp#*"
-			echo "*#1j1aFs#*"
-			echo "*#8hrvhp#*"
-			echo "*#GiTHEK#*"
+			echo "*#0XYg4N#*"
+			echo "*#mqdH7y#*"
+			echo "*#gVnTFP#*"
+			echo "*#GPRSRa#*"
 		fi
 	fi
 }
@@ -5521,45 +5442,45 @@ ssh_manager() {
 
 	while true; do
 		clear
-		echo "*#QjbmZ1#*"
-		echo "*#9q2nCp#*"
-		echo "*#d49Pki#*"
+		echo "*#vvNQNh#*"
+		echo "*#KZz4dW#*"
+		echo "*#u0O4YF#*"
 		list_connections
-		echo "*#Cs4Xg3#*"
-		echo "*#d49Pki#*"
-		echo "*#5ZHMg1#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#YDzc33#*" choice
+		echo "*#jMh1d4#*"
+		echo "*#u0O4YF#*"
+		echo "*#7DqCpu#*"
+		echo "*#u0O4YF#*"
+		Ask "*#9bDAbE#*" choice
 		case $choice in
 		1) add_connection ;;
 		2) use_connection ;;
 		3) delete_connection ;;
 		0) break ;;
-		*) echo "*#Z28Rqx#*" ;;
+		*) echo "*#OuTtYh#*" ;;
 		esac
 	done
 }
 
 # 列出可用的硬盘分区
 list_partitions() {
-	echo "*#D9BDos#*"
+	echo "*#8tkmMQ#*"
 	lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINT | grep -v "sr\|loop"
 }
 
 # 挂载分区
 mount_partition() {
 	send_stats "挂载分区"
-	read -e -p "*#KTFdgA#*" PARTITION
+	Ask "*#yPBOBS#*" PARTITION
 
 	# 检查分区是否存在
 	if ! lsblk -o NAME | grep -w "$PARTITION" >/dev/null; then
-		echo "*#bbsDqR#*"
+		echo "*#qRTvTm#*"
 		return
 	fi
 
 	# 检查分区是否已经挂载
 	if lsblk -o MOUNTPOINT | grep -w "$PARTITION" >/dev/null; then
-		echo "*#pCQnur#*"
+		echo "*#lYlBYu#*"
 		return
 	fi
 
@@ -5571,9 +5492,9 @@ mount_partition() {
 	mount "/dev/$PARTITION" "$MOUNT_POINT"
 
 	if [ $? -eq 0 ]; then
-		echo "*#XKwNfB#*"
+		echo "*#QL70Qz#*"
 	else
-		echo "*#QVPfUx#*"
+		echo "*#InArgQ#*"
 		rmdir "$MOUNT_POINT"
 	fi
 }
@@ -5581,12 +5502,12 @@ mount_partition() {
 # 卸载分区
 unmount_partition() {
 	send_stats "卸载分区"
-	read -e -p "*#5ZmiJc#*" PARTITION
+	Ask "*#OGSE8W#*" PARTITION
 
 	# 检查分区是否已经挂载
 	MOUNT_POINT=$(lsblk -o MOUNTPOINT | grep -w "$PARTITION")
 	if [ -z "$MOUNT_POINT" ]; then
-		echo "*#vMhvr9#*"
+		echo "*#n2HeZg#*"
 		return
 	fi
 
@@ -5594,43 +5515,43 @@ unmount_partition() {
 	umount "/dev/$PARTITION"
 
 	if [ $? -eq 0 ]; then
-		echo "*#JCWAC6#*"
+		echo "*#vnGDOm#*"
 		rmdir "$MOUNT_POINT"
 	else
-		echo "*#Oo8UQa#*"
+		echo "*#2ZiMBh#*"
 	fi
 }
 
 # 列出已挂载的分区
 list_mounted_partitions() {
-	echo "*#stG3hb#*"
+	echo "*#8jYFYf#*"
 	df -h | grep -v "tmpfs\|udev\|overlay"
 }
 
 # 格式化分区
 format_partition() {
 	send_stats "格式化分区"
-	read -e -p "*#WN8Z7A#*" PARTITION
+	Ask "*#RMEiJq#*" PARTITION
 
 	# 检查分区是否存在
 	if ! lsblk -o NAME | grep -w "$PARTITION" >/dev/null; then
-		echo "*#bbsDqR#*"
+		echo "*#qRTvTm#*"
 		return
 	fi
 
 	# 检查分区是否已经挂载
 	if lsblk -o MOUNTPOINT | grep -w "$PARTITION" >/dev/null; then
-		echo "*#38UBm8#*"
+		echo "*#SiOkXW#*"
 		return
 	fi
 
 	# 选择文件系统类型
-	echo "*#Mxlesi#*"
-	echo "*#iaxfnd#*"
-	echo "*#y29iQt#*"
-	echo "*#LWjpNu#*"
-	echo "*#TLVDI2#*"
-	read -e -p "*#YDzc33#*" FS_CHOICE
+	echo "*#YPydyy#*"
+	echo "*#ISHsYc#*"
+	echo "*#oLb4Ox#*"
+	echo "*#BhHX7z#*"
+	echo "*#6bNbWe#*"
+	Ask "*#9bDAbE#*" FS_CHOICE
 
 	case $FS_CHOICE in
 	1) FS_TYPE="ext4" ;;
@@ -5638,42 +5559,42 @@ format_partition() {
 	3) FS_TYPE="ntfs" ;;
 	4) FS_TYPE="vfat" ;;
 	*)
-		echo "*#p6KNXW#*"
+		echo "*#ohkuXQ#*"
 		return
 		;;
 	esac
 
 	# 确认格式化
-	read -e -p "*#ABOOi4#*" CONFIRM
+	Ask "*#4Oubk0#*" CONFIRM
 	if [ "$CONFIRM" != "y" ]; then
-		echo "*#wPyUWb#*"
+		echo "*#SE5XZk#*"
 		return
 	fi
 
 	# 格式化分区
-	echo "*#xtmvkw#*"
+	echo "*#ejOhVH#*"
 	mkfs.$FS_TYPE "/dev/$PARTITION"
 
 	if [ $? -eq 0 ]; then
-		echo "*#NbRLC4#*"
+		echo "*#k2fueT#*"
 	else
-		echo "*#XwyDI1#*"
+		echo "*#FEdDnc#*"
 	fi
 }
 
 # 检查分区状态
 check_partition() {
 	send_stats "检查分区状态"
-	read -e -p "*#dem8oH#*" PARTITION
+	Ask "*#9VY0W0#*" PARTITION
 
 	# 检查分区是否存在
 	if ! lsblk -o NAME | grep -w "$PARTITION" >/dev/null; then
-		echo "*#bbsDqR#*"
+		echo "*#qRTvTm#*"
 		return
 	fi
 
 	# 检查分区状态
-	echo "*#MxFEC8#*"
+	echo "*#uOPKtz#*"
 	fsck "/dev/$PARTITION"
 }
 
@@ -5682,17 +5603,17 @@ disk_manager() {
 	send_stats "硬盘管理功能"
 	while true; do
 		clear
-		echo "*#di9pvc#*"
-		echo -e "*#FlyIgU#*"
-		echo "*#d49Pki#*"
+		echo "*#iHrlA6#*"
+		echo -e "*#D8eOo0#*"
+		echo "*#u0O4YF#*"
 		list_partitions
-		echo "*#d49Pki#*"
-		echo "*#gBru2u#*"
-		echo "*#wIr2hz#*"
-		echo "*#d49Pki#*"
-		echo "*#5ZHMg1#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#YDzc33#*" choice
+		echo "*#u0O4YF#*"
+		echo "*#JBXus7#*"
+		echo "*#PNthLP#*"
+		echo "*#u0O4YF#*"
+		echo "*#7DqCpu#*"
+		echo "*#u0O4YF#*"
+		Ask "*#9bDAbE#*" choice
 		case $choice in
 		1) mount_partition ;;
 		2) unmount_partition ;;
@@ -5701,48 +5622,48 @@ disk_manager() {
 		5) check_partition ;;
 		*) break ;;
 		esac
-		read -e -p "*#9n1dD8#*"
+		Press "*#y4lwJm#*"
 	done
 }
 
 # 显示任务列表
 list_tasks() {
-	echo "*#GSfxPe#*"
-	echo "*#5XI9WC#*"
+	echo "*#yJzvpA#*"
+	echo "*#nFReq8#*"
 	awk -F'|' '{print NR " - " $1 " ( " $2 " -> " $3":"$4 " )"}' "$CONFIG_FILE"
-	echo "*#5XI9WC#*"
+	echo "*#nFReq8#*"
 }
 
 # 添加新任务
 add_task() {
 	send_stats "添加新同步任务"
-	echo "*#tCGZms#*"
-	echo "*#QnPmHs#*"
-	echo "*#vSrShX#*"
-	echo "*#Jwxs1Z#*"
-	echo "*#OQjfdn#*"
-	echo "*#YjYjNq#*"
-	echo "*#5XI9WC#*"
-	read -e -p "*#IgKNMB#*" name
-	read -e -p "*#VzJcO4#*" local_path
-	read -e -p "*#CkZsoI#*" remote_path
-	read -e -p "*#EX4XXh#*" remote
-	read -e -p "*#EV9j1f#*" port
+	echo "*#svpZ41#*"
+	echo "*#BHdFNW#*"
+	echo "*#TWWb1W#*"
+	echo "*#Wxc9wY#*"
+	echo "*#qPguqH#*"
+	echo "*#xX3dNr#*"
+	echo "*#nFReq8#*"
+	Ask "*#ak8ypA#*" name
+	Ask "*#k23bqQ#*" local_path
+	Ask "*#yKMsVB#*" remote_path
+	Ask "*#qAQbpl#*" remote
+	Ask "*#E9InJB#*" port
 	port=${port:-22}
 
-	echo "*#sGO3F7#*"
-	echo "*#NZWLZH#*"
-	echo "*#qFs70b#*"
-	read -e -p "*#L4n3Xa#*" auth_choice
+	echo "*#urYpAQ#*"
+	echo "*#cmbmm1#*"
+	echo "*#A4KICy#*"
+	Ask "*#A9rW4d#*" auth_choice
 
 	case $auth_choice in
 	1)
-		read -s -p "请输入密码: " password_or_key
+		Ask "*#AZvlXg#*" -s password_or_key
 		echo # 换行
 		auth_method="password"
 		;;
 	2)
-		echo "*#TsJeVn#*"
+		echo "*#83893W#*"
 		local password_or_key=""
 		while IFS= read -r line; do
 			# 如果输入为空行且密钥内容已经包含了开头，则结束输入
@@ -5763,44 +5684,44 @@ add_task() {
 			password_or_key="$key_file"
 			auth_method="key"
 		else
-			echo "*#0WRUC5#*"
+			echo "*#KgNgTM#*"
 			return
 		fi
 		;;
 	*)
-		echo "*#p6KNXW#*"
+		echo "*#ohkuXQ#*"
 		return
 		;;
 	esac
 
-	echo "*#AjFSnj#*"
-	echo "*#sKv32R#*"
-	echo "*#LSW5f1#*"
-	read -e -p "*#L4n3Xa#*" mode
+	echo "*#SGkzZ8#*"
+	echo "*#Uz6n2y#*"
+	echo "*#inreMN#*"
+	Ask "*#A9rW4d#*" mode
 	case $mode in
 	1) options="-avz" ;;
 	2) options="-avz --delete" ;;
 	*)
-		echo "*#YL5Kam#*"
+		echo "*#vmfcOi#*"
 		options="-avz"
 		;;
 	esac
 
-	echo "*#2vXSP0#*" >>"$CONFIG_FILE"
+	echo "*#VheHwm#*" >>"$CONFIG_FILE"
 
 	install rsync rsync
 
-	echo "*#1YgPLV#*"
+	echo "*#dzlJqw#*"
 }
 
 # 删除任务
 delete_task() {
 	send_stats "删除同步任务"
-	read -e -p "*#1RN8ki#*" num
+	Ask "*#rCZdKq#*" num
 
 	local task=$(sed -n "${num}p" "$CONFIG_FILE")
 	if [[ -z $task ]]; then
-		echo "*#FtSjSl#*"
+		echo "*#rjiVrA#*"
 		return
 	fi
 
@@ -5812,7 +5733,7 @@ delete_task() {
 	fi
 
 	sed -i "${num}d" "$CONFIG_FILE"
-	echo "*#dDXv8o#*"
+	echo "*#koiL8l#*"
 }
 
 run_task() {
@@ -5834,12 +5755,12 @@ run_task() {
 
 	# 如果没有传入任务编号，提示用户输入
 	if [[ -z $num ]]; then
-		read -e -p "*#o9MkS1#*" num
+		Ask "*#F5CRLS#*" num
 	fi
 
 	local task=$(sed -n "${num}p" "$CONFIG_FILE")
 	if [[ -z $task ]]; then
-		echo "*#5B2J9C#*"
+		echo "*#ifvh6T#*"
 		return
 	fi
 
@@ -5847,11 +5768,11 @@ run_task() {
 
 	# 根据同步方向调整源和目标路径
 	if [[ $direction == "pull" ]]; then
-		echo "*#IzjZEw#*"
+		echo "*#XeL2Rm#*"
 		source="$remote:$local_path"
 		destination="$remote_path"
 	else
-		echo "*#95GYvB#*"
+		echo "*#2TC5av#*"
 		source="$local_path"
 		destination="$remote:$remote_path"
 	fi
@@ -5861,22 +5782,22 @@ run_task() {
 
 	if [[ $auth_method == "password" ]]; then
 		if ! command -v sshpass &>/dev/null; then
-			echo "*#5Qn8ZJ#*"
-			echo "*#h2YMZH#*"
-			echo "*#gMt0PX#*"
-			echo "*#5wp6Yi#*"
+			echo "*#9mZmjr#*"
+			echo "*#I2kMNm#*"
+			echo "*#JZNKjW#*"
+			echo "*#7XbuGq#*"
 			return
 		fi
 		sshpass -p "$password_or_key" rsync $options -e "ssh $ssh_options" "$source" "$destination"
 	else
 		# 检查密钥文件是否存在和权限是否正确
 		if [[ ! -f $password_or_key ]]; then
-			echo "*#IuUmSX#*"
+			echo "*#v8kWuD#*"
 			return
 		fi
 
 		if [[ "$(stat -c %a "$password_or_key")" != "600" ]]; then
-			echo "*#SAi0wB#*"
+			echo "*#iTuAEY#*"
 			chmod 600 "$password_or_key"
 		fi
 
@@ -5884,13 +5805,13 @@ run_task() {
 	fi
 
 	if [[ $? -eq 0 ]]; then
-		echo "*#93JWub#*"
+		echo "*#TYDMUw#*"
 	else
-		echo "*#ghf6gU#*"
-		echo "*#FucJ56#*"
-		echo "*#e2j0Tf#*"
-		echo "*#4rJUR9#*"
-		echo "*#AFgllv#*"
+		echo "*#R1Z3u9#*"
+		echo "*#L9IJ5S#*"
+		echo "*#QKbiRw#*"
+		echo "*#7WYv7C#*"
+		echo "*#QQpJg2#*"
 	fi
 }
 
@@ -5898,26 +5819,27 @@ run_task() {
 schedule_task() {
 	send_stats "添加同步定时任务"
 
-	read -e -p "*#UB35tq#*" num
+	Ask "*#rEQINU#*" num
 	if ! [[ $num =~ ^[0-9]+$ ]]; then
-		echo "*#oGCbqe#*"
+		echo "*#rshdXq#*"
 		return
 	fi
 
-	echo "*#ySgqdx#*"
-	echo "*#Z8HdlB#*"
-	echo "*#boiOTG#*"
-	echo "*#Z6SGSc#*"
-	read -e -p "*#kL4GPO#*" interval
+	echo "*#5aetOi#*"
+	echo "*#XZgmsW#*"
+	echo "*#c3Gfgl#*"
+	echo "*#iLXRje#*"
+	Ask "*#WEpDNc#*" interval
 
-	local random_minute=$(shuf -i 0-59 -n 1) # 生成 0-59 之间的随机分钟数
+	local random_minute=$(shuf -i 0-59 -n 1)
+	# 生成 0-59 之间的随机分钟数
 	local cron_time=""
 	case "$interval" in
 	1) cron_time="$random_minute * * * *" ;; # 每小时，随机分钟执行
 	2) cron_time="$random_minute 0 * * *" ;; # 每天，随机分钟执行
 	3) cron_time="$random_minute 0 * * 1" ;; # 每周，随机分钟执行
 	*)
-		echo "*#t0wxcu#*"
+		echo "*#tyq5Vk#*"
 		return
 		;;
 	esac
@@ -5927,37 +5849,37 @@ schedule_task() {
 
 	# 检查是否已存在相同任务
 	if crontab -l | grep -q "k rsync_run $num"; then
-		echo "*#tybXn6#*"
+		echo "*#w5Gb3C#*"
 		return
 	fi
 
 	# 创建到用户的 crontab
 	(
 		crontab -l 2>/dev/null
-		echo "*#6FilVI#*"
+		echo "$cron_job"
 	) | crontab -
-	echo "*#zR3PRJ#*"
+	echo "*#m0cqt8#*"
 }
 
 # 查看定时任务
 view_tasks() {
-	echo "*#4kYTGf#*"
-	echo "*#5XI9WC#*"
+	echo "*#RvvojG#*"
+	echo "*#nFReq8#*"
 	crontab -l | grep "k rsync_run"
-	echo "*#5XI9WC#*"
+	echo "*#nFReq8#*"
 }
 
 # 删除定时任务
 delete_task_schedule() {
 	send_stats "删除同步定时任务"
-	read -e -p "*#1RN8ki#*" num
+	Ask "*#rCZdKq#*" num
 	if ! [[ $num =~ ^[0-9]+$ ]]; then
-		echo "*#oGCbqe#*"
+		echo "*#rshdXq#*"
 		return
 	fi
 
 	crontab -l | grep -v "k rsync_run $num" | crontab -
-	echo "*#Y0KY9j#*"
+	echo "*#ngeeOt#*"
 }
 
 # 任务管理主菜单
@@ -5967,20 +5889,20 @@ rsync_manager() {
 
 	while true; do
 		clear
-		echo "*#Otc6hD#*"
-		echo "*#drc5Iy#*"
-		echo "*#5XI9WC#*"
+		echo "*#JLFvfW#*"
+		echo "*#Y7YirK#*"
+		echo "*#nFReq8#*"
 		list_tasks
 		echo
 		view_tasks
 		echo
-		echo "*#Wrt3or#*"
-		echo "*#6vDuA8#*"
-		echo "*#cMUUyv#*"
-		echo "*#5XI9WC#*"
-		echo "*#5ZHMg1#*"
-		echo "*#5XI9WC#*"
-		read -e -p "*#YDzc33#*" choice
+		echo "*#ZXatE5#*"
+		echo "*#dPW8Vd#*"
+		echo "*#76XFNJ#*"
+		echo "*#nFReq8#*"
+		echo "*#7DqCpu#*"
+		echo "*#nFReq8#*"
+		Ask "*#9bDAbE#*" choice
 		case $choice in
 		1) add_task ;;
 		2) delete_task ;;
@@ -5989,102 +5911,50 @@ rsync_manager() {
 		5) schedule_task ;;
 		6) delete_task_schedule ;;
 		0) break ;;
-		*) echo "*#Z28Rqx#*" ;;
+		*) echo "*#OuTtYh#*" ;;
 		esac
-		read -e -p "*#9n1dD8#*"
+		Press "*#y4lwJm#*"
 	done
 }
 
 linux_ps() {
-
 	clear
 	send_stats "系统信息查询"
 
 	ip_address
 
-	local cpu_info=$(lscpu | awk -F': +' '/Model name:/ {print $2; exit}')
-
-	local cpu_usage_percent=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else printf "%.0f\n", (($2+$4-u1) * 100 / (t-t1))}' \
-		<(grep 'cpu ' /proc/stat) <(
-			sleep 1
-			grep 'cpu ' /proc/stat
-		))
-
-	local cpu_cores=$(nproc)
-
-	local cpu_freq=$(cat /proc/cpuinfo | grep "MHz" | head -n 1 | awk '{printf "%.1f GHz\n", $4/1000}')
-
-	local mem_info=$(free -b | awk 'NR==2{printf "%.2f/%.2fM (%.2f%%)", $3/1024/1024, $2/1024/1024, $3*100/$2}')
-
-	local disk_info=$(df -h | awk '$NF=="/"{printf "%s/%s (%s)", $3, $2, $5}')
-
-	local ipinfo=$(curl -s ipinfo.io)
-	local country=$(echo "*#5YzsrQ#*" | grep 'country' | awk -F': ' '{print $2}' | tr -d '",')
-	local city=$(echo "*#5YzsrQ#*" | grep 'city' | awk -F': ' '{print $2}' | tr -d '",')
-	local isp_info=$(echo "*#5YzsrQ#*" | grep 'org' | awk -F': ' '{print $2}' | tr -d '",')
-
-	local load=$(uptime | awk '{print $(NF-2), $(NF-1), $NF}')
-	local dns_addresses=$(awk '/^nameserver/{printf "%s ", $2} END {print ""}' /etc/resolv.conf)
-
-	local cpu_arch=$(uname -m)
-
-	local hostname=$(uname -n)
-
-	local kernel_version=$(uname -r)
-
-	local congestion_algorithm=$(sysctl -n net.ipv4.tcp_congestion_control)
-	local queue_algorithm=$(sysctl -n net.core.default_qdisc)
-
-	local os_info=$(grep PRETTY_NAME /etc/os-release | cut -d '=' -f2 | tr -d '"')
-
-	output_status
-
-	local current_time=$(date "+%Y-%m-%d %I:%M %p")
-
-	local swap_info=$(free -m | awk 'NR==3{used=$3; total=$2; if (total == 0) {percentage=0} else {percentage=used*100/total}; printf "%dM/%dM (%d%%)", used, total, percentage}')
-
-	local runtime=$(cat /proc/uptime | awk -F. '{run_days=int($1 / 86400);run_hours=int(($1 % 86400) / 3600);run_minutes=int(($1 % 3600) / 60); if (run_days > 0) printf("%d天 ", run_days); if (run_hours > 0) printf("%d时 ", run_hours); printf("%d分\n", run_minutes)}')
-
-	local timezone=$(current_timezone)
-
-	echo "*#KUeEyM#*"
-	echo -e "*#rMESdi#*"
-	echo -e "*#Ey6Y6X#*"
-	echo -e "*#CJwkgA#*"
-	echo -e "*#wRkzET#*"
-	echo -e "*#BQBRPp#*"
-	echo -e "*#Ey6Y6X#*"
-	echo -e "*#SucgJR#*"
-	echo -e "*#ZbHgLl#*"
-	echo -e "*#CyjOHc#*"
-	echo -e "*#DoaqDN#*"
-	echo -e "*#Ey6Y6X#*"
-	echo -e "*#ll665D#*"
-	echo -e "*#hGoHLM#*"
-	echo -e "*#qM9WAF#*"
-	echo -e "*#AdJY3A#*"
-	echo -e "*#J6Lm6t#*"
-	echo -e "*#Ey6Y6X#*"
-	echo -e "*#XpC5U1#*"
-	echo -e "*#Nk8Q4b#*"
-	echo -e "*#Ey6Y6X#*"
-	echo -e "*#ExLoVf#*"
-	echo -e "*#Ey6Y6X#*"
-	echo -e "*#AUv1Th#*"
-	if [ -n "$ipv4_address" ]; then
-		echo -e "*#jhInMA#*"
-	fi
-
-	if [ -n "$ipv6_address" ]; then
-		echo -e "*#ZdtRKf#*"
-	fi
-	echo -e "*#hEy8z0#*"
-	echo -e "*#HyLHaA#*"
-	echo -e "*#lOrO6h#*"
-	echo -e "*#Ey6Y6X#*"
-	echo -e "*#uEudwt#*"
 	echo
-
+	echo -e "*#bl0s5S#*"
+	echo -e "*#t4aKiI#*"
+	echo -e "*#TzdbW0#*"
+	echo -e "*#7Tyd61#*"
+	echo -e "*#dzNjEO#*"
+	echo -e "*#t4aKiI#*"
+	echo -e "*#538U79#*"
+	echo -e "*#heJB0y#*"
+	echo -e "*#5IdPsT#*"
+	echo -e "*#Ks0tkp#*"
+	echo -e "*#t4aKiI#*"
+	echo -e "*#GVC83V#*"
+	echo -e "*#tVKEQT#*"
+	echo -e "*#8OKGWf#*"
+	echo -e "*#XJaIo3#*"
+	echo -e "*#vyiDZ7#*"
+	echo -e "*#t4aKiI#*"
+	echo -e "*#gOsM24#*"
+	echo -e "*#WTPNHt#*"
+	echo -e "*#t4aKiI#*"
+	echo -e "*#uq3BIT#*"
+	echo -e "*#t4aKiI#*"
+	echo -e "*#VdooZt#*"
+	echo -e "*#SMJmxB#*"
+	echo -e "*#zg82Uw#*"
+	echo -e "*#jJPSy1#*"
+	echo -e "*#wew2KU#*"
+	echo -e "*#eMA6I1#*"%Y-%m-%d %H:%M:%S")"
+	echo -e "*#t4aKiI#*"
+	echo -e "*#bckRRZ#*"
+	echo
 }
 
 linux_tools() {
@@ -6092,38 +5962,38 @@ linux_tools() {
 	while true; do
 		clear
 		# send_stats "基础工具"
-		echo -e "*#8NZgC8#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#ujvz6V#*"
-		echo -e "*#6fjwwZ#*"
-		echo -e "*#2I1sPg#*"
-		echo -e "*#w2hr8j#*"
-		echo -e "*#aQPHa9#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#6lBgmn#*"
-		echo -e "*#OJ98wF#*"
-		echo -e "*#DpT3cN#*"
-		echo -e "*#BIZlzM#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#pnfVve#*"
-		echo -e "*#Ki7Ex4#*"
-		echo -e "*#hsOjwH#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#KImpcl#*"
-		echo -e "*#VJIAWj#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#fAZ9uU#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#YPjthn#*"
-		echo -e "*#wYoQzy#*"
-		read -e -p "*#YDzc33#*" sub_choice
+		echo -e "*#tA31ev#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#veUiDM#*"
+		echo -e "*#2C4vcR#*"
+		echo -e "*#8ekzvz#*"
+		echo -e "*#x2K0MK#*"
+		echo -e "*#2SAMOI#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#XlyliS#*"
+		echo -e "*#2jkAzk#*"
+		echo -e "*#GNP8DF#*"
+		echo -e "*#60Z7KB#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#a7oDzC#*"
+		echo -e "*#qjhnB0#*"
+		echo -e "*#zC48pW#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#XTKxKZ#*"
+		echo -e "*#6IIlR0#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#GQH4Pp#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#m3SoXD#*"
+		echo -e "*#bPMjZg#*"
+		Ask "*#9bDAbE#*" sub_choice
 
 		case $sub_choice in
 		1)
 			clear
 			install curl
 			clear
-			echo "*#npaZYz#*"
+			echo "*#ZXc5uT#*"
 			curl --help
 			send_stats "安装curl"
 			;;
@@ -6131,7 +6001,7 @@ linux_tools() {
 			clear
 			install wget
 			clear
-			echo "*#npaZYz#*"
+			echo "*#ZXc5uT#*"
 			wget --help
 			send_stats "安装wget"
 			;;
@@ -6139,7 +6009,7 @@ linux_tools() {
 			clear
 			install sudo
 			clear
-			echo "*#npaZYz#*"
+			echo "*#ZXc5uT#*"
 			sudo --help
 			send_stats "安装sudo"
 			;;
@@ -6147,7 +6017,7 @@ linux_tools() {
 			clear
 			install socat
 			clear
-			echo "*#npaZYz#*"
+			echo "*#ZXc5uT#*"
 			socat -h
 			send_stats "安装socat"
 			;;
@@ -6169,7 +6039,7 @@ linux_tools() {
 			clear
 			install unzip
 			clear
-			echo "*#npaZYz#*"
+			echo "*#ZXc5uT#*"
 			unzip
 			send_stats "安装unzip"
 			;;
@@ -6177,7 +6047,7 @@ linux_tools() {
 			clear
 			install tar
 			clear
-			echo "*#npaZYz#*"
+			echo "*#ZXc5uT#*"
 			tar --help
 			send_stats "安装tar"
 			;;
@@ -6185,7 +6055,7 @@ linux_tools() {
 			clear
 			install tmux
 			clear
-			echo "*#npaZYz#*"
+			echo "*#ZXc5uT#*"
 			tmux --help
 			send_stats "安装tmux"
 			;;
@@ -6193,7 +6063,7 @@ linux_tools() {
 			clear
 			install ffmpeg
 			clear
-			echo "*#npaZYz#*"
+			echo "*#ZXc5uT#*"
 			ffmpeg --help
 			send_stats "安装ffmpeg"
 			;;
@@ -6317,13 +6187,13 @@ linux_tools() {
 
 		41)
 			clear
-			read -e -p "*#lU09K2#*" installname
+			Ask "*#AF13X5#*" installname
 			install $installname
 			send_stats "安装指定软件"
 			;;
 		42)
 			clear
-			read -e -p "*#2dQg55#*" removename
+			Ask "*#py35ok#*" removename
 			remove $removename
 			send_stats "卸载指定软件"
 			;;
@@ -6333,7 +6203,7 @@ linux_tools() {
 			;;
 
 		*)
-			echo "*#SVFIXm#*"
+			echo "*#tbV75u#*"
 			;;
 		esac
 		break_end
@@ -6349,16 +6219,16 @@ linux_bbr() {
 			clear
 			local congestion_algorithm=$(sysctl -n net.ipv4.tcp_congestion_control)
 			local queue_algorithm=$(sysctl -n net.core.default_qdisc)
-			echo "*#KOKppr#*"
+			echo "*#gXSgo2#*"
 
-			echo "*#KUeEyM#*"
-			echo "*#atuUYX#*"
-			echo "*#d49Pki#*"
-			echo "*#pF0F8u#*"
-			echo "*#d49Pki#*"
-			echo "*#5ZHMg1#*"
-			echo "*#d49Pki#*"
-			read -e -p "*#YDzc33#*" sub_choice
+			echo
+			echo "*#SwgLYd#*"
+			echo "*#u0O4YF#*"
+			echo "*#cBe2vw#*"
+			echo "*#u0O4YF#*"
+			echo "*#7DqCpu#*"
+			echo "*#u0O4YF#*"
+			Ask "*#9bDAbE#*" sub_choice
 
 			case $sub_choice in
 			1)
@@ -6371,7 +6241,7 @@ linux_bbr() {
 				server_reboot
 				;;
 			*)
-				break # 跳出循环，退出菜单
+				break
 				;;
 
 			esac
@@ -6390,31 +6260,31 @@ linux_docker() {
 	while true; do
 		clear
 		# send_stats "docker管理"
-		echo -e "*#O6wn8v#*"
+		echo -e "*#AUV3OY#*"
 		docker_tato
-		echo -e "*#9rR5US#*"
-		echo -e "*#MH2Zka#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#zuoWjr#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#P5byeL#*"
-		echo -e "*#dlPNfb#*"
-		echo -e "*#7cu9gI#*"
-		echo -e "*#eVEKmr#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#ErtCJB#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#VDlrpL#*"
-		echo -e "*#9oBvi2#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#gZagC3#*"
-		echo -e "*#e32ULN#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#fSn5TT#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#YPjthn#*"
-		echo -e "*#wYoQzy#*"
-		read -e -p "*#YDzc33#*" sub_choice
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#jiyEVZ#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#1NbZ0P#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#507nei#*"
+		echo -e "*#1KjjZG#*"
+		echo -e "*#oHlrN4#*"
+		echo -e "*#AML6GY#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#WGeYeG#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#bNWE7x#*"
+		echo -e "*#Y6s0zh#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#0IftFo#*"
+		echo -e "*#xe32lA#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#4clLPr#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#m3SoXD#*"
+		echo -e "*#bPMjZg#*"
+		Ask "*#9bDAbE#*" sub_choice
 
 		case $sub_choice in
 		1)
@@ -6431,23 +6301,23 @@ linux_docker() {
 			local volume_count=$(docker volume ls -q 2>/dev/null | wc -l)
 
 			send_stats "docker全局状态"
-			echo "*#Rc11dX#*"
+			echo "*#0Qzbnl#*"
 			docker -v
 			docker compose version
 
-			echo "*#KUeEyM#*"
-			echo -e "*#YsH2Ei#*"
+			echo
+			echo -e "*#y1REOM#*"
 			docker image ls
-			echo "*#KUeEyM#*"
-			echo -e "*#FVYQBG#*"
+			echo
+			echo -e "*#S8Aze3#*"
 			docker ps -a
-			echo "*#KUeEyM#*"
-			echo -e "*#yOjVaE#*"
+			echo
+			echo -e "*#OVvzqj#*"
 			docker volume ls
-			echo "*#KUeEyM#*"
-			echo -e "*#nCghm2#*"
+			echo
+			echo -e "*#de22HP#*"
 			docker network ls
-			echo "*#KUeEyM#*"
+			echo
 
 			;;
 		3)
@@ -6461,51 +6331,51 @@ linux_docker() {
 			while true; do
 				clear
 				send_stats "Docker网络管理"
-				echo "*#HJXEpJ#*"
-				echo "*#77H8Z1#*"
+				echo "*#opvfax#*"
+				echo "*#c0Nm6p#*"
 				docker network ls
-				echo "*#KUeEyM#*"
+				echo
 
-				echo "*#77H8Z1#*"
+				echo "*#c0Nm6p#*"
 				container_ids=$(docker ps -q)
-				echo "*#GndItq#*"
+				echo "*#mnqRvs#*"
 
 				for container_id in $container_ids; do
 					local container_info=$(docker inspect --format '{{ .Name }}{{ range $network, $config := .NetworkSettings.Networks }} {{ $network }} {{ $config.IPAddress }}{{ end }}' "$container_id")
 
-					local container_name=$(echo "*#0Ii5kF#*" | awk '{print $1}')
-					local network_info=$(echo "*#0Ii5kF#*" | cut -d' ' -f2-)
+					local container_name=$(echo "$container_info" | awk '{print $1}')
+					local network_info=$(echo "$container_info" | cut -d' ' -f2-)
 
 					while IFS= read -r line; do
-						local network_name=$(echo "*#PvavEW#*" | awk '{print $1}')
-						local ip_address=$(echo "*#PvavEW#*" | awk '{print $2}')
+						local network_name=$(echo "$line" | awk '{print $1}')
+						local ip_address=$(echo "$line" | awk '{print $2}')
 
 						printf "%-20s %-20s %-15s\n" "$container_name" "$network_name" "$ip_address"
 					done <<<"$network_info"
 				done
 
-				echo "*#KUeEyM#*"
-				echo "*#v4uqW2#*"
-				echo "*#d49Pki#*"
-				echo "*#ejObrU#*"
-				echo "*#aB4K5r#*"
-				echo "*#pPhjLi#*"
-				echo "*#2E5ArO#*"
-				echo "*#d49Pki#*"
-				echo "*#5ZHMg1#*"
-				echo "*#d49Pki#*"
-				read -e -p "*#YDzc33#*" sub_choice
+				echo
+				echo "*#5N7EQZ#*"
+				echo "*#u0O4YF#*"
+				echo "*#hY9Xrz#*"
+				echo "*#2D0Xp2#*"
+				echo "*#gCJnBL#*"
+				echo "*#ZxyUji#*"
+				echo "*#u0O4YF#*"
+				echo "*#7DqCpu#*"
+				echo "*#u0O4YF#*"
+				Ask "*#9bDAbE#*" sub_choice
 
 				case $sub_choice in
 				1)
 					send_stats "创建网络"
-					read -e -p "*#TWMJfk#*" dockernetwork
+					Ask "*#1Ss32g#*" dockernetwork
 					docker network create $dockernetwork
 					;;
 				2)
 					send_stats "加入网络"
-					read -e -p "*#XLrhCq#*" dockernetwork
-					read -e -p "*#gZvdyI#*" dockernames
+					Ask "*#HJUp2e#*" dockernetwork
+					Ask "*#iskHMB#*" dockernames
 
 					for dockername in $dockernames; do
 						docker network connect $dockernetwork $dockername
@@ -6513,8 +6383,8 @@ linux_docker() {
 					;;
 				3)
 					send_stats "加入网络"
-					read -e -p "*#eH9nKY#*" dockernetwork
-					read -e -p "*#HiauEK#*" dockernames
+					Ask "*#SllZpJ#*" dockernetwork
+					Ask "*#spvHnz#*" dockernames
 
 					for dockername in $dockernames; do
 						docker network disconnect $dockernetwork $dockername
@@ -6524,12 +6394,12 @@ linux_docker() {
 
 				4)
 					send_stats "删除网络"
-					read -e -p "*#ugxjy5#*" dockernetwork
+					Ask "*#OrK99a#*" dockernetwork
 					docker network rm $dockernetwork
 					;;
 
 				*)
-					break # 跳出循环，退出菜单
+					break
 					;;
 				esac
 			done
@@ -6539,28 +6409,28 @@ linux_docker() {
 			while true; do
 				clear
 				send_stats "Docker卷管理"
-				echo "*#nptNVq#*"
+				echo "*#kKCplX#*"
 				docker volume ls
-				echo "*#KUeEyM#*"
-				echo "*#ELGRRF#*"
-				echo "*#d49Pki#*"
-				echo "*#uKGIUP#*"
-				echo "*#Q2Kttl#*"
-				echo "*#oN3CRc#*"
-				echo "*#d49Pki#*"
-				echo "*#5ZHMg1#*"
-				echo "*#d49Pki#*"
-				read -e -p "*#YDzc33#*" sub_choice
+				echo
+				echo "*#o2gpnK#*"
+				echo "*#u0O4YF#*"
+				echo "*#LAZAsQ#*"
+				echo "*#eBE1Vc#*"
+				echo "*#9JYcTM#*"
+				echo "*#u0O4YF#*"
+				echo "*#7DqCpu#*"
+				echo "*#u0O4YF#*"
+				Ask "*#9bDAbE#*" sub_choice
 
 				case $sub_choice in
 				1)
 					send_stats "新建卷"
-					read -e -p "*#OJsQnB#*" dockerjuan
+					Ask "*#BROcTN#*" dockerjuan
 					docker volume create $dockerjuan
 
 					;;
 				2)
-					read -e -p "*#R5zizD#*" dockerjuans
+					Ask "*#hRREPz#*" dockerjuans
 
 					for dockerjuan in $dockerjuans; do
 						docker volume rm $dockerjuan
@@ -6570,20 +6440,20 @@ linux_docker() {
 
 				3)
 					send_stats "删除所有卷"
-					read -e -p "*#CXTMCd#*"${gl_hong}注意: ${gl_bai}确定删除所有未使用的卷吗？(Y/N): ")" choice
+					Ask "*#pHbwIH#*" choice
 					case "$choice" in
 					[Yy])
 						docker volume prune -f
 						;;
 					[Nn]) ;;
 					*)
-						echo "*#hTC3dG#*"
+						echo "*#gQOs0K#*"
 						;;
 					esac
 					;;
 
 				*)
-					break # 跳出循环，退出菜单
+					break
 					;;
 				esac
 			done
@@ -6591,14 +6461,14 @@ linux_docker() {
 		7)
 			clear
 			send_stats "Docker清理"
-			read -e -p "*#CXTMCd#*"${gl_huang}提示: ${gl_bai}将清理无用的镜像容器网络，包括停止的容器，确定清理吗？(Y/N): ")" choice
+			Ask "*#sMPSGc#*" choice
 			case "$choice" in
 			[Yy])
 				docker system prune -af --volumes
 				;;
 			[Nn]) ;;
 			*)
-				echo "*#hTC3dG#*"
+				echo "*#gQOs0K#*"
 				;;
 			esac
 			;;
@@ -6630,7 +6500,7 @@ linux_docker() {
 		20)
 			clear
 			send_stats "Docker卸载"
-			read -e -p "*#CXTMCd#*"${gl_hong}注意: ${gl_bai}确定卸载docker环境吗？(Y/N): ")" choice
+			Ask "*#Dl96ZU#*" choice
 			case "$choice" in
 			[Yy])
 				docker ps -a -q | xargs -r docker rm -f && docker images -q | xargs -r docker rmi && docker network prune -f && docker volume prune -f
@@ -6640,7 +6510,7 @@ linux_docker() {
 				;;
 			[Nn]) ;;
 			*)
-				echo "*#hTC3dG#*"
+				echo "*#gQOs0K#*"
 				;;
 			esac
 			;;
@@ -6649,7 +6519,7 @@ linux_docker() {
 			kejilion
 			;;
 		*)
-			echo "*#SVFIXm#*"
+			echo "*#tbV75u#*"
 			;;
 		esac
 		break_end
@@ -6663,38 +6533,38 @@ linux_test() {
 	while true; do
 		clear
 		# send_stats "测试脚本合集"
-		echo -e "*#BUYAcr#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#8ayO9G#*"
-		echo -e "*#RP0E0R#*"
-		echo -e "*#wDVsQC#*"
-		echo -e "*#4Ep3Ca#*"
-		echo -e "*#A10ypV#*"
+		echo -e "*#vtaS8Q#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#BTAe12#*"
+		echo -e "*#LKyt3a#*"
+		echo -e "*#9KOo19#*"
+		echo -e "*#lkbd2T#*"
+		echo -e "*#2GO7DO#*"
 
-		echo -e "*#9rR5US#*"
-		echo -e "*#5zKhIf#*"
-		echo -e "*#4rO3JO#*"
-		echo -e "*#nl2WJy#*"
-		echo -e "*#TuiBkk#*"
-		echo -e "*#SjMJHY#*"
-		echo -e "*#WfC8MA#*"
-		echo -e "*#ewUR8c#*"
-		echo -e "*#cSfWYB#*"
-		echo -e "*#4BaMfk#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#QlYcBq#*"
+		echo -e "*#CoFePx#*"
+		echo -e "*#Z9oOdj#*"
+		echo -e "*#iL0Kam#*"
+		echo -e "*#V6TDCi#*"
+		echo -e "*#mwGxvg#*"
+		echo -e "*#lvV0hi#*"
+		echo -e "*#kHGGC5#*"
+		echo -e "*#cgVCdZ#*"
 
-		echo -e "*#9rR5US#*"
-		echo -e "*#PotNaW#*"
-		echo -e "*#ZxwceJ#*"
-		echo -e "*#cvdRwZ#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#eU5M6g#*"
+		echo -e "*#KQuNah#*"
+		echo -e "*#IPLjEM#*"
 
-		echo -e "*#9rR5US#*"
-		echo -e "*#gt87At#*"
-		echo -e "*#ea0Eqh#*"
-		echo -e "*#Dwyayr#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#YPjthn#*"
-		echo -e "*#wYoQzy#*"
-		read -e -p "*#YDzc33#*" sub_choice
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#aajonY#*"
+		echo -e "*#ytmvwJ#*"
+		echo -e "*#N3PzYD#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#m3SoXD#*"
+		echo -e "*#bPMjZg#*"
+		Ask "*#9bDAbE#*" sub_choice
 
 		case $sub_choice in
 		1)
@@ -6744,26 +6614,26 @@ linux_test() {
 		15)
 			clear
 			send_stats "nxtrace指定IP回程测试脚本"
-			echo "*#pvpN5K#*"
-			echo "*#d49Pki#*"
-			echo "*#zYioYO#*"
-			echo "*#XhdU6Z#*"
-			echo "*#jRABMw#*"
-			echo "*#FsUw4h#*"
-			echo "*#x1X2gY#*"
-			echo "*#8p0QHm#*"
-			echo "*#7fUTOl#*"
-			echo "*#MFkmKe#*"
-			echo "*#HwsiE3#*"
-			echo "*#udFgnC#*"
-			echo "*#nbRCsJ#*"
-			echo "*#uAtbqg#*"
-			echo "*#GP2mkU#*"
-			echo "*#JvX8Ia#*"
-			echo "*#omDmr9#*"
-			echo "*#d49Pki#*"
+			echo "*#MXbXoX#*"
+			echo "*#u0O4YF#*"
+			echo "*#VIADy6#*"
+			echo "*#xoeuj2#*"
+			echo "*#9UgkfM#*"
+			echo "*#V4YZT3#*"
+			echo "*#880rqm#*"
+			echo "*#K3CRfo#*"
+			echo "*#Zqs2ou#*"
+			echo "*#0WQtJM#*"
+			echo "*#NJmd5t#*"
+			echo "*#IqBaAc#*"
+			echo "*#I9rBTY#*"
+			echo "*#XxJy5C#*"
+			echo "*#EpvKNt#*"
+			echo "*#9Dd6eO#*"
+			echo "*#BQwaLP#*"
+			echo "*#u0O4YF#*"
 
-			read -e -p "*#wYZ8b4#*" testip
+			Ask "*#rehpkr#*" testip
 			curl nxtrace.org/nt | bash
 			nexttrace $testip
 			;;
@@ -6815,7 +6685,7 @@ linux_test() {
 
 			;;
 		*)
-			echo "*#SVFIXm#*"
+			echo "*#tbV75u#*"
 			;;
 		esac
 		break_end
@@ -6829,25 +6699,25 @@ linux_Oracle() {
 	while true; do
 		clear
 		send_stats "甲骨文云脚本合集"
-		echo -e "*#sqFAZs#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#MBfbZP#*"
-		echo -e "*#hL79pM#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#zjOGwS#*"
-		echo -e "*#l48DgF#*"
-		echo -e "*#VDieJf#*"
-		echo -e "*#Cf0Znf#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#YPjthn#*"
-		echo -e "*#wYoQzy#*"
-		read -e -p "*#YDzc33#*" sub_choice
+		echo -e "*#Bz6qg8#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#E3Rhfe#*"
+		echo -e "*#n4NwMa#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#kBxTty#*"
+		echo -e "*#XCwKzb#*"
+		echo -e "*#VL2aqA#*"
+		echo -e "*#c2mVYE#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#m3SoXD#*"
+		echo -e "*#bPMjZg#*"
+		Ask "*#9bDAbE#*" sub_choice
 
 		case $sub_choice in
 		1)
 			clear
-			echo "*#ZW389m#*"
-			read -e -p "*#58XQzF#*" choice
+			echo "*#X9faYL#*"
+			Ask "*#jyx8L3#*" choice
 			case "$choice" in
 			[Yy])
 
@@ -6860,16 +6730,16 @@ linux_Oracle() {
 				local DEFAULT_SPEEDTEST_INTERVAL=120
 
 				# 提示用户输入CPU核心数和占用百分比，如果回车则使用默认值
-				read -e -p "*#QNtb2x#*" cpu_core
+				Ask "*#apKJpD#*" cpu_core
 				local cpu_core=${cpu_core:-$DEFAULT_CPU_CORE}
 
-				read -e -p "*#kvHdtI#*" cpu_util
+				Ask "*#bcgKod#*" cpu_util
 				local cpu_util=${cpu_util:-$DEFAULT_CPU_UTIL}
 
-				read -e -p "*#UoTXl8#*" mem_util
+				Ask "*#XN4WEQ#*" mem_util
 				local mem_util=${mem_util:-$DEFAULT_MEM_UTIL}
 
-				read -e -p "*#Xu2gW2#*" speedtest_interval
+				Ask "*#CpBrwq#*" speedtest_interval
 				local speedtest_interval=${speedtest_interval:-$DEFAULT_SPEEDTEST_INTERVAL}
 
 				# 运行Docker容器
@@ -6885,7 +6755,7 @@ linux_Oracle() {
 				;;
 			[Nn]) ;;
 			*)
-				echo "*#hTC3dG#*"
+				echo "*#gQOs0K#*"
 				;;
 			esac
 			;;
@@ -6898,48 +6768,48 @@ linux_Oracle() {
 
 		3)
 			clear
-			echo "*#DTpKn4#*"
-			echo "*#NLXZ8v#*"
-			echo -e "*#B7W9nV#*"
-			read -e -p "*#KISjSB#*" choice
+			echo "*#a1Jd7U#*"
+			echo "*#fkMnYr#*"
+			echo -e "*#XfuWlQ#*"
+			Ask "*#7sdrLr#*" choice
 
 			case "$choice" in
 			[Yy])
 				while true; do
-					read -e -p "*#2dJCYX#*" sys_choice
+					Ask "*#qC9MDJ#*" sys_choice
 
 					case "$sys_choice" in
 					1)
 						local xitong="-d 12"
-						break # 结束循环
+						break
 						;;
 					2)
 						local xitong="-u 20.04"
-						break # 结束循环
+						break
 						;;
 					*)
-						echo "*#YlNdDg#*"
+						echo "*#MJqs6p#*"
 						;;
 					esac
 				done
 
-				read -e -p "*#d3adlg#*" vpspasswd
+				Ask "*#J6ygfA#*" vpspasswd
 				install wget
 				bash <(wget --no-check-certificate -qO- "${gh_proxy}raw.githubusercontent.com/MoeClub/Note/master/InstallNET.sh") $xitong -v 64 -p $vpspasswd -port 22
 				send_stats "甲骨文云重装系统脚本"
 				;;
 			[Nn])
-				echo "*#03i9Gh#*"
+				echo "*#yS8n2l#*"
 				;;
 			*)
-				echo "*#hTC3dG#*"
+				echo "*#gQOs0K#*"
 				;;
 			esac
 			;;
 
 		4)
 			clear
-			echo "*#E1EBid#*"
+			echo "*#rZkkxw#*"
 			;;
 		5)
 			clear
@@ -6949,7 +6819,7 @@ linux_Oracle() {
 		6)
 			clear
 			bash <(curl -L -s jhb.ovh/jb/v6.sh)
-			echo "*#m6A7AR#*"
+			echo "*#XPu9oq#*"
 			send_stats "ipv6修复"
 			;;
 		0)
@@ -6957,7 +6827,7 @@ linux_Oracle() {
 
 			;;
 		*)
-			echo "*#SVFIXm#*"
+			echo "*#tbV75u#*"
 			;;
 		esac
 		break_end
@@ -6974,26 +6844,26 @@ docker_tato() {
 	local volume_count=$(docker volume ls -q 2>/dev/null | wc -l)
 
 	if command -v docker &>/dev/null; then
-		echo -e "*#9rR5US#*"
-		echo -e "*#r38Yjm#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#bi2CV4#*"
 	fi
 }
 
 ldnmp_tato() {
 	local cert_count=$(ls /home/web/certs/*_cert.pem 2>/dev/null | wc -l)
-	local output="站点: ${gl_lv}${cert_count}${gl_bai}"
+	local output="*#ZdWLFs#*"
 
 	local dbrootpasswd=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /home/web/docker-compose.yml 2>/dev/null | tr -d '[:space:]')
 	if [ -n "$dbrootpasswd" ]; then
 		local db_count=$(docker exec mysql mysql -u root -p"$dbrootpasswd" -e "SHOW DATABASES;" 2>/dev/null | grep -Ev "Database|information_schema|mysql|performance_schema|sys" | wc -l)
 	fi
 
-	local db_output="数据库: ${gl_lv}${db_count}${gl_bai}"
+	local db_output="*#5CUPYs#*"
 
 	if command -v docker &>/dev/null; then
 		if docker ps --filter "name=nginx" --filter "status=running" | grep -q nginx; then
-			echo -e "*#qqJiQY#*"
-			echo -e "*#v3VcHb#*"
+			echo -e "*#nXgHVQ#*"
+			echo -e "*#KlAe1J#*"
 		fi
 	fi
 
@@ -7016,30 +6886,30 @@ linux_ldnmp() {
 
 		clear
 		# send_stats "LDNMP建站"
-		echo -e "*#UwI1uW#*"
+		echo -e "*#j8QuRj#*"
 		ldnmp_tato
-		echo -e "*#qqJiQY#*"
-		echo -e "*#cNCG4Z#*"
-		echo -e "*#R99iUp#*"
-		echo -e "*#YrivWL#*"
-		echo -e "*#ofc2Q1#*"
-		echo -e "*#Fk1ncG#*"
-		echo -e "*#qqJiQY#*"
-		echo -e "*#sx84VD#*"
-		echo -e "*#cSw74J#*"
-		echo -e "*#FOTDCR#*"
-		echo -e "*#o0gfSP#*"
-		echo -e "*#lARwmt#*"
-		echo -e "*#qqJiQY#*"
-		echo -e "*#S1Z5ot#*"
-		echo -e "*#I8DzMB#*"
-		echo -e "*#qqJiQY#*"
-		echo -e "*#XEtbRD#*"
-		echo -e "*#66y1ob#*"
-		echo -e "*#qqJiQY#*"
-		echo -e "*#c6TPzJ#*"
-		echo -e "*#jqpG3x#*"
-		read -e -p "*#YDzc33#*" sub_choice
+		echo -e "*#nXgHVQ#*"
+		echo -e "*#w6rVGQ#*"
+		echo -e "*#NXShvx#*"
+		echo -e "*#RhSuyV#*"
+		echo -e "*#8OvwLK#*"
+		echo -e "*#d1flCM#*"
+		echo -e "*#nXgHVQ#*"
+		echo -e "*#f8ZxAL#*"
+		echo -e "*#0vb4Y4#*"
+		echo -e "*#hYAOv3#*"
+		echo -e "*#C7714Y#*"
+		echo -e "*#ZxFlcY#*"
+		echo -e "*#nXgHVQ#*"
+		echo -e "*#SdxBpw#*"
+		echo -e "*#KJ3YR2#*"
+		echo -e "*#nXgHVQ#*"
+		echo -e "*#vmBg9J#*"
+		echo -e "*#4aydE9#*"
+		echo -e "*#nXgHVQ#*"
+		echo -e "*#XLdhGb#*"
+		echo -e "*#CZe3sN#*"
+		Ask "*#9bDAbE#*" sub_choice
 
 		case $sub_choice in
 		1)
@@ -7053,9 +6923,9 @@ linux_ldnmp() {
 		3)
 			clear
 			# Discuz论坛
-			webname="Discuz论坛"
+			webname="*#amE83J#*"
 			send_stats "安装$webname"
-			echo "*#7bEZO8#*"
+			echo "*#0uRNte#*"
 			add_yuming
 			repeat_add_yuming
 			ldnmp_install_status
@@ -7077,20 +6947,20 @@ linux_ldnmp() {
 			restart_ldnmp
 
 			ldnmp_web_on
-			echo "*#OeZNbg#*"
-			echo "*#uoLPAq#*"
-			echo "*#AHa4ix#*"
-			echo "*#gLXuSj#*"
-			echo "*#UQxOGp#*"
+			echo "*#mbpKS2#*"
+			echo "*#GD0y3c#*"
+			echo "*#L6l4FJ#*"
+			echo "*#OjX4JF#*"
+			echo "*#dgXiFa#*"
 
 			;;
 
 		4)
 			clear
 			# 可道云桌面
-			webname="可道云桌面"
+			webname="*#soA6Nm#*"
 			send_stats "安装$webname"
-			echo "*#7bEZO8#*"
+			echo "*#0uRNte#*"
 			add_yuming
 			repeat_add_yuming
 			ldnmp_install_status
@@ -7112,20 +6982,20 @@ linux_ldnmp() {
 			restart_ldnmp
 
 			ldnmp_web_on
-			echo "*#OeZNbg#*"
-			echo "*#AHa4ix#*"
-			echo "*#gLXuSj#*"
-			echo "*#uoLPAq#*"
-			echo "*#2xhRxU#*"
+			echo "*#mbpKS2#*"
+			echo "*#L6l4FJ#*"
+			echo "*#OjX4JF#*"
+			echo "*#GD0y3c#*"
+			echo "*#70Bwng#*"
 
 			;;
 
 		5)
 			clear
 			# 苹果CMS
-			webname="苹果CMS"
+			webname="*#7Xeyut#*"
 			send_stats "安装$webname"
-			echo "*#7bEZO8#*"
+			echo "*#0uRNte#*"
 			add_yuming
 			repeat_add_yuming
 			ldnmp_install_status
@@ -7150,24 +7020,24 @@ linux_ldnmp() {
 			restart_ldnmp
 
 			ldnmp_web_on
-			echo "*#OeZNbg#*"
-			echo "*#dcqhs4#*"
-			echo "*#uoLPAq#*"
-			echo "*#AHa4ix#*"
-			echo "*#gLXuSj#*"
-			echo "*#hy2m2Z#*"
-			echo "*#d49Pki#*"
-			echo "*#FfxRTd#*"
-			echo "*#ahMw8D#*"
+			echo "*#mbpKS2#*"
+			echo "*#H9V9N6#*"
+			echo "*#GD0y3c#*"
+			echo "*#L6l4FJ#*"
+			echo "*#OjX4JF#*"
+			echo "*#FVkmRs#*"
+			echo "*#u0O4YF#*"
+			echo "*#RjcBNe#*"
+			echo "*#zeS253#*"
 
 			;;
 
 		6)
 			clear
 			# 独脚数卡
-			webname="独脚数卡"
+			webname="*#R3NRxs#*"
 			send_stats "安装$webname"
-			echo "*#7bEZO8#*"
+			echo "*#0uRNte#*"
 			add_yuming
 			repeat_add_yuming
 			ldnmp_install_status
@@ -7187,34 +7057,34 @@ linux_ldnmp() {
 			restart_ldnmp
 
 			ldnmp_web_on
-			echo "*#OeZNbg#*"
-			echo "*#dcqhs4#*"
-			echo "*#uoLPAq#*"
-			echo "*#AHa4ix#*"
-			echo "*#gLXuSj#*"
-			echo "*#KUeEyM#*"
-			echo "*#8Wj7M5#*"
-			echo "*#fACd37#*"
-			echo "*#yLQ4o0#*"
-			echo "*#KUeEyM#*"
-			echo "*#GtNZAG#*"
-			echo "*#bzgyUM#*"
-			echo "*#d49Pki#*"
-			echo "*#7Ky2q6#*"
-			echo "*#LdJGxm#*"
-			echo "*#d49Pki#*"
-			echo "*#U8fJ39#*"
-			echo "*#4kZ6Yu#*"
-			echo "*#QBpcTx#*"
+			echo "*#mbpKS2#*"
+			echo "*#H9V9N6#*"
+			echo "*#GD0y3c#*"
+			echo "*#L6l4FJ#*"
+			echo "*#OjX4JF#*"
+			echo
+			echo "*#lziKGQ#*"
+			echo "*#deZAMu#*"
+			echo "*#TpACbu#*"
+			echo
+			echo "*#Kxzm19#*"
+			echo "*#2Ef3WK#*"
+			echo "*#u0O4YF#*"
+			echo "*#OtWVDz#*"
+			echo "*#dbphkI#*"
+			echo "*#u0O4YF#*"
+			echo "*#vp2qto#*"
+			echo "*#qvXKMN#*"
+			echo "*#rhtZBU#*"
 
 			;;
 
 		7)
 			clear
 			# flarum论坛
-			webname="flarum论坛"
+			webname="*#Rhzx9M#*"
 			send_stats "安装$webname"
-			echo "*#7bEZO8#*"
+			echo "*#0uRNte#*"
 			add_yuming
 			repeat_add_yuming
 			ldnmp_install_status
@@ -7249,21 +7119,21 @@ linux_ldnmp() {
 			restart_ldnmp
 
 			ldnmp_web_on
-			echo "*#OeZNbg#*"
-			echo "*#uoLPAq#*"
-			echo "*#AHa4ix#*"
-			echo "*#gLXuSj#*"
-			echo "*#3ja4KK#*"
-			echo "*#vkEGFX#*"
+			echo "*#mbpKS2#*"
+			echo "*#GD0y3c#*"
+			echo "*#L6l4FJ#*"
+			echo "*#OjX4JF#*"
+			echo "*#4yLz4I#*"
+			echo "*#cnvZjG#*"
 
 			;;
 
 		8)
 			clear
 			# typecho
-			webname="typecho"
+			webname="*#WlFOpJ#*"
 			send_stats "安装$webname"
-			echo "*#7bEZO8#*"
+			echo "*#0uRNte#*"
 			add_yuming
 			repeat_add_yuming
 			ldnmp_install_status
@@ -7286,20 +7156,20 @@ linux_ldnmp() {
 
 			clear
 			ldnmp_web_on
-			echo "*#UFi5RT#*"
-			echo "*#OeZNbg#*"
-			echo "*#AHa4ix#*"
-			echo "*#gLXuSj#*"
-			echo "*#uoLPAq#*"
+			echo "*#81Gacx#*"
+			echo "*#mbpKS2#*"
+			echo "*#L6l4FJ#*"
+			echo "*#OjX4JF#*"
+			echo "*#GD0y3c#*"
 
 			;;
 
 		9)
 			clear
 			# LinkStack
-			webname="LinkStack"
+			webname="*#klRrkN#*"
 			send_stats "安装$webname"
-			echo "*#7bEZO8#*"
+			echo "*#0uRNte#*"
 			add_yuming
 			repeat_add_yuming
 			ldnmp_install_status
@@ -7323,18 +7193,18 @@ linux_ldnmp() {
 
 			clear
 			ldnmp_web_on
-			echo "*#OeZNbg#*"
-			echo "*#dcqhs4#*"
-			echo "*#uoLPAq#*"
-			echo "*#AHa4ix#*"
-			echo "*#gLXuSj#*"
+			echo "*#mbpKS2#*"
+			echo "*#H9V9N6#*"
+			echo "*#GD0y3c#*"
+			echo "*#L6l4FJ#*"
+			echo "*#OjX4JF#*"
 			;;
 
 		20)
 			clear
-			webname="PHP动态站点"
+			webname="*#daxu6k#*"
 			send_stats "安装$webname"
-			echo "*#7bEZO8#*"
+			echo "*#0uRNte#*"
 			add_yuming
 			repeat_add_yuming
 			ldnmp_install_status
@@ -7351,10 +7221,10 @@ linux_ldnmp() {
 			cd $yuming
 
 			clear
-			echo -e "*#UQWOYC#*"
-			echo "*#PFnt6f#*"
-			echo "*#0shic0#*"
-			read -e -p "*#Zq2QWX#*" url_download
+			echo -e "*#95zbLd#*"
+			echo "*#LrhT4W#*"
+			echo "*#C9Qp1z#*"
+			Ask "*#Zsr0zW#*" url_download
 
 			if [ -n "$url_download" ]; then
 				wget "$url_download"
@@ -7364,20 +7234,20 @@ linux_ldnmp() {
 			rm -f $(ls -t *.zip | head -n 1)
 
 			clear
-			echo -e "*#F0vJID#*"
-			echo "*#PFnt6f#*"
+			echo -e "*#vCSYOB#*"
+			echo "*#LrhT4W#*"
 			# find "$(realpath .)" -name "index.php" -print
 			find "$(realpath .)" -name "index.php" -print | xargs -I {} dirname {}
 
-			read -e -p "*#BGjjH2#*" index_lujing
+			Ask "*#o1GTZI#*" index_lujing
 
 			sed -i "s#root /var/www/html/$yuming/#root $index_lujing#g" /home/web/conf.d/$yuming.conf
 			sed -i "s#/home/web/#/var/www/#g" /home/web/conf.d/$yuming.conf
 
 			clear
-			echo -e "*#qtz5wm#*"
-			echo "*#PFnt6f#*"
-			read -e -p "*#EpMfJi#*" pho_v
+			echo -e "*#dwyRZp#*"
+			echo "*#LrhT4W#*"
+			Ask "*#8NBeSu#*" pho_v
 			case "$pho_v" in
 			1)
 				sed -i "s#php:9000#php:9000#g" /home/web/conf.d/$yuming.conf
@@ -7388,40 +7258,39 @@ linux_ldnmp() {
 				local PHP_Version="php74"
 				;;
 			*)
-				echo "*#YlNdDg#*"
+				echo "*#MJqs6p#*"
 				;;
 			esac
 
 			clear
-			echo -e "*#v5ItOC#*"
-			echo "*#PFnt6f#*"
-			echo "*#l7vhph#*"
+			echo -e "*#ZL4uAb#*"
+			echo "*#LrhT4W#*"
+			echo "*#guKnVM#*"
 			docker exec php php -m
 
-			read -e -p "*#CXTMCd#*"输入需要安装的扩展名称，如 ${gl_huang}SourceGuardian imap ftp${gl_bai} 等等。直接回车将跳过安装 ： ")" php_extensions
+			Ask "*#WppyOF#*" php_extensions
 			if [ -n "$php_extensions" ]; then
 				docker exec $PHP_Version install-php-extensions $php_extensions
 			fi
 
 			clear
-			echo -e "*#xBdeK8#*"
-			echo "*#PFnt6f#*"
-			echo "*#F3GeyP#*"
-			read -n 1 -s -r -p ""
+			echo -e "*#vOnfOW#*"
+			echo "*#LrhT4W#*"
+			Press "*#njVYLQ#*"
 			install nano
 			nano /home/web/conf.d/$yuming.conf
 
 			clear
-			echo -e "*#mI4fft#*"
-			echo "*#PFnt6f#*"
-			read -e -p "*#VIpJWW#*" use_db
+			echo -e "*#EcwMam#*"
+			echo "*#LrhT4W#*"
+			Ask "*#E5wXgo#*" use_db
 			case $use_db in
 			1)
 				echo
 				;;
 			2)
-				echo "*#BXHN9r#*"
-				read -e -p "*#jSslgp#*" url_download_db
+				echo "*#o14ArO#*"
+				Ask "*#McJ82O#*" url_download_db
 
 				cd /home/
 				if [ -n "$url_download_db" ]; then
@@ -7431,10 +7300,10 @@ linux_ldnmp() {
 				latest_sql=$(ls -t *.sql | head -n 1)
 				dbrootpasswd=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /home/web/docker-compose.yml | tr -d '[:space:]')
 				docker exec -i mysql mysql -u root -p"$dbrootpasswd" $dbname <"/home/$latest_sql"
-				echo "*#CDlVji#*"
+				echo "*#CrtMWa#*"
 				docker exec -i mysql mysql -u root -p"$dbrootpasswd" -e "USE $dbname; SHOW TABLES;"
 				rm -f *.sql
-				echo "*#HntYX2#*"
+				echo "*#waVuXj#*"
 				;;
 			*)
 				echo
@@ -7446,12 +7315,12 @@ linux_ldnmp() {
 			restart_ldnmp
 			ldnmp_web_on
 			prefix="web$(shuf -i 10-99 -n 1)_"
-			echo "*#OeZNbg#*"
-			echo "*#uoLPAq#*"
-			echo "*#AHa4ix#*"
-			echo "*#gLXuSj#*"
-			echo "*#HNN1JS#*"
-			echo "*#I8VAVS#*"
+			echo "*#mbpKS2#*"
+			echo "*#GD0y3c#*"
+			echo "*#L6l4FJ#*"
+			echo "*#OjX4JF#*"
+			echo "*#IG3tBe#*"
+			echo "*#XBEnMc#*"
 
 			;;
 
@@ -7462,11 +7331,11 @@ linux_ldnmp() {
 
 		22)
 			clear
-			webname="站点重定向"
+			webname="*#HmRRTS#*"
 			send_stats "安装$webname"
-			echo "*#7bEZO8#*"
+			echo "*#0uRNte#*"
 			add_yuming
-			read -e -p "*#hMKwKm#*" reverseproxy
+			Ask "*#hx6Bn8#*" reverseproxy
 			nginx_install_status
 			install_ssltls
 			certs_status
@@ -7488,12 +7357,12 @@ linux_ldnmp() {
 
 		24)
 			clear
-			webname="反向代理-域名"
+			webname="*#4qzFta#*"
 			send_stats "安装$webname"
-			echo "*#7bEZO8#*"
+			echo "*#0uRNte#*"
 			add_yuming
-			echo -e "*#a8OeKR#*"
-			read -e -p "*#obFMmH#*" fandai_yuming
+			echo -e "*#bSmDr0#*"
+			Ask "*#j7CvdV#*" fandai_yuming
 			nginx_install_status
 			install_ssltls
 			certs_status
@@ -7511,9 +7380,9 @@ linux_ldnmp() {
 
 		25)
 			clear
-			webname="Bitwarden"
+			webname="*#aABsDO#*"
 			send_stats "安装$webname"
-			echo "*#7bEZO8#*"
+			echo "*#0uRNte#*"
 			add_yuming
 			nginx_install_status
 			install_ssltls
@@ -7534,9 +7403,9 @@ linux_ldnmp() {
 
 		26)
 			clear
-			webname="halo"
+			webname="*#O8nFur#*"
 			send_stats "安装$webname"
-			echo "*#7bEZO8#*"
+			echo "*#0uRNte#*"
 			add_yuming
 			nginx_install_status
 			install_ssltls
@@ -7552,9 +7421,9 @@ linux_ldnmp() {
 
 		27)
 			clear
-			webname="AI绘画提示词生成器"
+			webname="*#MlIYeT#*"
 			send_stats "安装$webname"
-			echo "*#7bEZO8#*"
+			echo "*#0uRNte#*"
 			add_yuming
 			nginx_install_status
 			install_ssltls
@@ -7585,9 +7454,9 @@ linux_ldnmp() {
 
 		30)
 			clear
-			webname="静态站点"
+			webname="*#D50bRj#*"
 			send_stats "安装$webname"
-			echo "*#7bEZO8#*"
+			echo "*#0uRNte#*"
 			add_yuming
 			repeat_add_yuming
 			nginx_install_status
@@ -7603,10 +7472,10 @@ linux_ldnmp() {
 			cd $yuming
 
 			clear
-			echo -e "*#fXPCBN#*"
-			echo "*#PFnt6f#*"
-			echo "*#0shic0#*"
-			read -e -p "*#Zq2QWX#*" url_download
+			echo -e "*#fy9cz2#*"
+			echo "*#LrhT4W#*"
+			echo "*#C9Qp1z#*"
+			Ask "*#Zsr0zW#*" url_download
 
 			if [ -n "$url_download" ]; then
 				wget "$url_download"
@@ -7616,12 +7485,12 @@ linux_ldnmp() {
 			rm -f $(ls -t *.zip | head -n 1)
 
 			clear
-			echo -e "*#bsYnxq#*"
-			echo "*#PFnt6f#*"
+			echo -e "*#BzGjIv#*"
+			echo "*#LrhT4W#*"
 			# find "$(realpath .)" -name "index.html" -print
 			find "$(realpath .)" -name "index.html" -print | xargs -I {} dirname {}
 
-			read -e -p "*#x27uiq#*" index_lujing
+			Ask "*#ukl2jq#*" index_lujing
 
 			sed -i "s#root /var/www/html/$yuming/#root $index_lujing#g" /home/web/conf.d/$yuming.conf
 			sed -i "s#/home/web/#/var/www/#g" /home/web/conf.d/$yuming.conf
@@ -7642,18 +7511,18 @@ linux_ldnmp() {
 			send_stats "LDNMP环境备份"
 
 			local backup_filename="web_$(date +"%Y%m%d%H%M%S").tar.gz"
-			echo -e "*#DWh6Dr#*"
+			echo -e "*#qXughZ#*"
 			cd /home/ && tar czvf "$backup_filename" web
 
 			while true; do
 				clear
-				echo "*#n5wFpN#*"
-				read -e -p "*#pMsybk#*" choice
+				echo "*#2rx8jc#*"
+				Ask "*#r3Jqau#*" choice
 				case "$choice" in
 				[Yy])
-					read -e -p "*#9Q7yca#*" remote_ip
+					Ask "*#fucvfE#*" remote_ip
 					if [ -z "$remote_ip" ]; then
-						echo "*#RDWncB#*"
+						echo "*#iD112k#*"
 						continue
 					fi
 					local latest_tar=$(ls -t /home/*.tar.gz | head -1)
@@ -7661,9 +7530,9 @@ linux_ldnmp() {
 						ssh-keygen -f "/root/.ssh/known_hosts" -R "$remote_ip"
 						sleep 2 # 添加等待时间
 						scp -o StrictHostKeyChecking=no "$latest_tar" "root@$remote_ip:/home/"
-						echo "*#8hZjKt#*"
+						echo "*#9sEODJ#*"
 					else
-						echo "*#hmUqgw#*"
+						echo "*#OLdRyb#*"
 					fi
 					break
 					;;
@@ -7671,7 +7540,7 @@ linux_ldnmp() {
 					break
 					;;
 				*)
-					echo "*#hTC3dG#*"
+					echo "*#gQOs0K#*"
 					;;
 				esac
 			done
@@ -7680,8 +7549,8 @@ linux_ldnmp() {
 		33)
 			clear
 			send_stats "定时远程备份"
-			read -e -p "*#Cqizem#*" useip
-			read -e -p "*#nFGraG#*" usepasswd
+			Ask "*#No43JT#*" useip
+			Ask "*#1SK4ZY#*" usepasswd
 
 			cd ~
 			wget -O ${useip}_beifen.sh ${gh_proxy}raw.githubusercontent.com/kejilion/sh/main/beifen.sh >/dev/null 2>&1
@@ -7690,29 +7559,29 @@ linux_ldnmp() {
 			sed -i "s/0.0.0.0/$useip/g" ${useip}_beifen.sh
 			sed -i "s/123456/$usepasswd/g" ${useip}_beifen.sh
 
-			echo "*#d49Pki#*"
-			echo "*#79zIsp#*"
-			read -e -p "*#YDzc33#*" dingshi
+			echo "*#u0O4YF#*"
+			echo "*#XPfdQd#*"
+			Ask "*#9bDAbE#*" dingshi
 
 			case $dingshi in
 			1)
 				check_crontab_installed
-				read -e -p "*#jCun0z#*" weekday
+				Ask "*#jPKFCj#*" weekday
 				(
 					crontab -l
-					echo "*#08bevw#*"
+					echo "*#aHefyg#*"
 				) | crontab - >/dev/null 2>&1
 				;;
 			2)
 				check_crontab_installed
-				read -e -p "*#Qyxbz6#*" hour
+				Ask "*#u0uuHS#*" hour
 				(
 					crontab -l
-					echo "*#xJ6J8M#*"
+					echo "*#sGhq9G#*"
 				) | crontab - >/dev/null 2>&1
 				;;
 			*)
-				break # 跳出
+				break
 				;;
 			esac
 
@@ -7723,11 +7592,11 @@ linux_ldnmp() {
 		34)
 			root_use
 			send_stats "LDNMP环境还原"
-			echo "*#uB5D3i#*"
-			echo "*#rnbROD#*"
+			echo "*#UEb8Z1#*"
+			echo "*#W8gIsv#*"
 			ls -lt /home/*.gz | awk '{print $NF}'
-			echo "*#KUeEyM#*"
-			read -e -p "*#ajMJMx#*" filename
+			echo
+			Ask "*#b2ipFf#*" filename
 
 			if [ "$filename" == "0" ]; then
 				break_end
@@ -7744,7 +7613,7 @@ linux_ldnmp() {
 				docker compose down >/dev/null 2>&1
 				rm -rf /home/web >/dev/null 2>&1
 
-				echo -e "*#cQwU9X#*"
+				echo -e "*#9y05Rf#*"
 				cd /home/ && tar -xzf "$filename"
 
 				check_port
@@ -7753,7 +7622,7 @@ linux_ldnmp() {
 				install_certbot
 				install_ldnmp
 			else
-				echo "*#aADAfZ#*"
+				echo "*#uqfsyr#*"
 			fi
 
 			;;
@@ -7771,36 +7640,36 @@ linux_ldnmp() {
 			while true; do
 				clear
 				send_stats "更新LDNMP环境"
-				echo "*#OA90ot#*"
-				echo "*#d49Pki#*"
+				echo "*#txncyw#*"
+				echo "*#u0O4YF#*"
 				ldnmp_v
-				echo "*#sTLXrk#*"
-				echo "*#d49Pki#*"
+				echo "*#mP3Tnc#*"
+				echo "*#u0O4YF#*"
 				check_docker_image_update nginx
 				if [ -n "$update_status" ]; then
-					echo -e "*#ekvMd4#*"
+					echo -e "*#4CzOLL#*"
 				fi
 				check_docker_image_update php
 				if [ -n "$update_status" ]; then
-					echo -e "*#NAZZLJ#*"
+					echo -e "*#xb96Ge#*"
 				fi
 				check_docker_image_update mysql
 				if [ -n "$update_status" ]; then
-					echo -e "*#9SyAk6#*"
+					echo -e "*#cUuCxE#*"
 				fi
 				check_docker_image_update redis
 				if [ -n "$update_status" ]; then
-					echo -e "*#dhIOEg#*"
+					echo -e "*#MY4Oqp#*"
 				fi
-				echo "*#d49Pki#*"
+				echo "*#u0O4YF#*"
 				echo
-				echo "*#ncSpMx#*"
-				echo "*#d49Pki#*"
-				echo "*#hosZ5l#*"
-				echo "*#d49Pki#*"
-				echo "*#5ZHMg1#*"
-				echo "*#d49Pki#*"
-				read -e -p "*#YDzc33#*" sub_choice
+				echo "*#MWNc7q#*"
+				echo "*#u0O4YF#*"
+				echo "*#527Pmh#*"
+				echo "*#u0O4YF#*"
+				echo "*#7DqCpu#*"
+				echo "*#u0O4YF#*"
+				Ask "*#9bDAbE#*" sub_choice
 				case $sub_choice in
 				1)
 					nginx_upgrade
@@ -7809,7 +7678,7 @@ linux_ldnmp() {
 
 				2)
 					local ldnmp_pods="mysql"
-					read -e -p "*#NEhdfa#*" version
+					Ask "*#B1loQm#*" version
 					local version=${version:-latest}
 
 					cd /home/web/
@@ -7821,12 +7690,12 @@ linux_ldnmp() {
 					docker restart $ldnmp_pods
 					cp /home/web/docker-compose1.yml /home/web/docker-compose.yml
 					send_stats "更新$ldnmp_pods"
-					echo "*#nnIThX#*"
+					echo "*#sUeRzl#*"
 
 					;;
 				3)
 					local ldnmp_pods="php"
-					read -e -p "*#RoGbkw#*" version
+					Ask "*#HnkjMv#*" version
 					local version=${version:-8.3}
 					cd /home/web/
 					cp /home/web/docker-compose.yml /home/web/docker-compose1.yml
@@ -7847,19 +7716,19 @@ linux_ldnmp() {
 					docker exec php chmod +x /usr/local/bin/install-php-extensions
 					docker exec php install-php-extensions mysqli pdo_mysql gd intl zip exif bcmath opcache redis imagick
 
-					docker exec php sh -c 'echo "*#zSdpSk#*" > /usr/local/etc/php/conf.d/uploads.ini' >/dev/null 2>&1
-					docker exec php sh -c 'echo "*#lsOSuK#*" > /usr/local/etc/php/conf.d/post.ini' >/dev/null 2>&1
-					docker exec php sh -c 'echo "*#3Kh0yN#*" > /usr/local/etc/php/conf.d/memory.ini' >/dev/null 2>&1
-					docker exec php sh -c 'echo "*#uktzey#*" > /usr/local/etc/php/conf.d/max_execution_time.ini' >/dev/null 2>&1
-					docker exec php sh -c 'echo "*#5U8aWV#*" > /usr/local/etc/php/conf.d/max_input_time.ini' >/dev/null 2>&1
-					docker exec php sh -c 'echo "*#6UlI6e#*" > /usr/local/etc/php/conf.d/max_input_vars.ini' >/dev/null 2>&1
+					docker exec php sh -c 'echo "*#OdPYAX#*" > /usr/local/etc/php/conf.d/uploads.ini' >/dev/null 2>&1
+					docker exec php sh -c 'echo "*#3pGWDO#*" > /usr/local/etc/php/conf.d/post.ini' >/dev/null 2>&1
+					docker exec php sh -c 'echo "*#pPRBpa#*" > /usr/local/etc/php/conf.d/memory.ini' >/dev/null 2>&1
+					docker exec php sh -c 'echo "*#fD0YCw#*" > /usr/local/etc/php/conf.d/max_execution_time.ini' >/dev/null 2>&1
+					docker exec php sh -c 'echo "*#mytb6E#*" > /usr/local/etc/php/conf.d/max_input_time.ini' >/dev/null 2>&1
+					docker exec php sh -c 'echo "*#EMXdos#*" > /usr/local/etc/php/conf.d/max_input_vars.ini' >/dev/null 2>&1
 
 					fix_phpfpm_con $ldnmp_pods
 
 					docker restart $ldnmp_pods >/dev/null 2>&1
 					cp /home/web/docker-compose1.yml /home/web/docker-compose.yml
 					send_stats "更新$ldnmp_pods"
-					echo "*#nnIThX#*"
+					echo "*#sUeRzl#*"
 
 					;;
 				4)
@@ -7871,11 +7740,11 @@ linux_ldnmp() {
 					docker restart $ldnmp_pods >/dev/null 2>&1
 					restart_redis
 					send_stats "更新$ldnmp_pods"
-					echo "*#nnIThX#*"
+					echo "*#sUeRzl#*"
 
 					;;
 				5)
-					read -e -p "*#CXTMCd#*"${gl_huang}提示: ${gl_bai}长时间不更新环境的用户，请慎重更新LDNMP环境，会有数据库更新失败的风险。确定更新LDNMP环境吗？(Y/N): ")" choice
+					Ask "*#yH66D8#*" choice
 					case "$choice" in
 					[Yy])
 						send_stats "完整更新LDNMP环境"
@@ -7903,7 +7772,7 @@ linux_ldnmp() {
 		38)
 			root_use
 			send_stats "卸载LDNMP环境"
-			read -e -p "*#CXTMCd#*"${gl_hong}强烈建议：${gl_bai}先备份全部网站数据，再卸载LDNMP环境。确定删除所有网站数据吗？(Y/N): ")" choice
+			Ask "*#hWW3iM#*" choice
 			case "$choice" in
 			[Yy])
 				cd /home/web/
@@ -7914,7 +7783,7 @@ linux_ldnmp() {
 				;;
 			[Nn]) ;;
 			*)
-				echo "*#hTC3dG#*"
+				echo "*#gQOs0K#*"
 				;;
 			esac
 			;;
@@ -7924,7 +7793,7 @@ linux_ldnmp() {
 			;;
 
 		*)
-			echo "*#SVFIXm#*"
+			echo "*#tbV75u#*"
 			;;
 		esac
 		break_end
@@ -7938,66 +7807,66 @@ linux_panel() {
 	while true; do
 		clear
 		# send_stats "应用市场"
-		echo -e "*#UBoDmo#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#vuxRPV#*"
-		echo -e "*#Dz1EzR#*"
-		echo -e "*#4cc97C#*"
-		echo -e "*#hQtwud#*"
-		echo -e "*#Fj1X3c#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#kGFRwa#*"
-		echo -e "*#TvOCtf#*"
-		echo -e "*#9VkTp3#*"
-		echo -e "*#vsJsqJ#*"
-		echo -e "*#P04ul7#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#b6fE5D#*"
-		echo -e "*#NNvty1#*"
-		echo -e "*#EDvRFD#*"
-		echo -e "*#KPx5xP#*"
-		echo -e "*#EZ85WO#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#AQ2LwE#*"
-		echo -e "*#JdDIrj#*"
-		echo -e "*#hiYMdg#*"
-		echo -e "*#gS2pxT#*"
-		echo -e "*#LY0SYY#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#XQ2euA#*"
-		echo -e "*#DB7RBM#*"
-		echo -e "*#m9VZ7J#*"
-		echo -e "*#sgeezT#*"
-		echo -e "*#GzHRMk#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#vYEhDT#*"
-		echo -e "*#8Irmmy#*"
-		echo -e "*#qCBM52#*"
-		echo -e "*#Qfsp3m#*"
-		echo -e "*#Mab9Br#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#yHPL2G#*"
-		echo -e "*#eWaasE#*"
-		echo -e "*#GmJRPu#*"
-		echo -e "*#IKIhrL#*"
-		echo -e "*#lBLZus#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#leSJSj#*"
-		echo -e "*#Eh3fWF#*"
-		echo -e "*#sN30at#*"
-		echo -e "*#6s49se#*"
-		echo -e "*#XOXkkz#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#YPjthn#*"
-		echo -e "*#wYoQzy#*"
-		read -e -p "*#YDzc33#*" sub_choice
+		echo -e "*#43fjtk#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#vnXXp3#*"
+		echo -e "*#QYdGiH#*"
+		echo -e "*#F8otwb#*"
+		echo -e "*#nSjMG5#*"
+		echo -e "*#QZVMGg#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#phylTe#*"
+		echo -e "*#usSzYz#*"
+		echo -e "*#Ey5nrk#*"
+		echo -e "*#bcCDY0#*"
+		echo -e "*#WzdYY6#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#HG92fd#*"
+		echo -e "*#M668Pd#*"
+		echo -e "*#rbGXCi#*"
+		echo -e "*#BRGT9X#*"
+		echo -e "*#xGOAkV#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#IaqAca#*"
+		echo -e "*#u77RUi#*"
+		echo -e "*#C02fD6#*"
+		echo -e "*#ScGedn#*"
+		echo -e "*#Lzd8ti#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#V7IOUi#*"
+		echo -e "*#ELSCd7#*"
+		echo -e "*#RYRLbe#*"
+		echo -e "*#7vxxDp#*"
+		echo -e "*#lIXE8M#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#IBcR71#*"
+		echo -e "*#Pt8y39#*"
+		echo -e "*#qLr1mW#*"
+		echo -e "*#KN7hC6#*"
+		echo -e "*#I8Y3H4#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#oi7CtW#*"
+		echo -e "*#VLfluo#*"
+		echo -e "*#xGxcfv#*"
+		echo -e "*#Vxjin3#*"
+		echo -e "*#3Qibd7#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#5dVST9#*"
+		echo -e "*#ontLk7#*"
+		echo -e "*#zMnF03#*"
+		echo -e "*#mPdv3q#*"
+		echo -e "*#dWwypd#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#m3SoXD#*"
+		echo -e "*#bPMjZg#*"
+		Ask "*#9bDAbE#*" sub_choice
 
 		case $sub_choice in
 		1)
 
 			local lujing="[ -d "/www/server/panel" ]"
-			local panelname="宝塔面板"
-			local panelurl="https://www.bt.cn/new/index.html"
+			local panelname="*#6QKgd3#*"
+			local panelurl="*#PwPEIm#*"
 
 			panel_app_install() {
 				if [ -f /usr/bin/curl ]; then curl -sSO https://download.bt.cn/install/install_panel.sh; else wget -O install_panel.sh https://download.bt.cn/install/install_panel.sh; fi
@@ -8020,8 +7889,8 @@ linux_panel() {
 		2)
 
 			local lujing="[ -d "/www/server/panel" ]"
-			local panelname="aapanel"
-			local panelurl="https://www.aapanel.com/new/index.html"
+			local panelname="*#P6Dm49#*"
+			local panelurl="*#UxZyoV#*"
 
 			panel_app_install() {
 				URL=https://www.aapanel.com/script/install_7.0_en.sh && if [ -f /usr/bin/curl ]; then curl -ksSO "$URL"; else wget --no-check-certificate -O install_7.0_en.sh "$URL"; fi
@@ -8044,8 +7913,8 @@ linux_panel() {
 		3)
 
 			local lujing="command -v 1pctl"
-			local panelname="1Panel"
-			local panelurl="https://1panel.cn/"
+			local panelname="*#pHi3Wg#*"
+			local panelurl="*#VuhHLn#*"
 
 			panel_app_install() {
 				install bash
@@ -8084,10 +7953,10 @@ linux_panel() {
 
 			}
 
-			local docker_describe="一个Nginx反向代理工具面板，不支持添加域名访问。"
-			local docker_url="官网介绍: https://nginxproxymanager.com/"
-			local docker_use='echo "*#NRimgT#*"'
-			local docker_passwd='echo "*#cJwlJ5#*"'
+			local docker_describe="*#Emm8t1#*"
+			local docker_url="*#Wwfpf9#*"
+			local docker_use='echo "*#6ktq4t#*"'
+			local docker_passwd='echo "*#bd5ZyT#*"'
 			local app_size="1"
 
 			docker_app
@@ -8114,9 +7983,9 @@ linux_panel() {
 
 			}
 
-			local docker_describe="一个支持多种存储，支持网页浏览和 WebDAV 的文件列表程序，由 gin 和 Solidjs 驱动"
-			local docker_url="官网介绍: https://github.com/OpenListTeam/OpenList"
-			local docker_use="docker exec -it openlist ./openlist admin random"
+			local docker_describe="*#XirOO7#*"
+			local docker_url="*#j9mjds#*"
+			local docker_use="*#elUPIx#*"
 			local docker_passwd=""
 			local app_size="1"
 			docker_app
@@ -8150,10 +8019,10 @@ linux_panel() {
 
 			}
 
-			local docker_describe="webtop基于Ubuntu的容器。若IP无法访问，请添加域名访问。"
-			local docker_url="官网介绍: https://docs.linuxserver.io/images/docker-webtop/"
-			local docker_use='echo "*#7wt3ET#*"'
-			local docker_passwd='echo "*#JOwNGF#*"'
+			local docker_describe="*#GptBEz#*"
+			local docker_url="*#RMCIQq#*"
+			local docker_use='echo "*#LTHgR6#*"'
+			local docker_passwd='echo "*#kpOhWI#*"'
 			local app_size="2"
 			docker_app
 
@@ -8167,20 +8036,20 @@ linux_panel() {
 				check_docker_app
 				check_docker_image_update $docker_name
 				clear
-				echo -e "*#X94tQj#*"
-				echo "*#9R6Au4#*"
-				echo "*#6k8tkz#*"
+				echo -e "*#Qe69pg#*"
+				echo "*#cfS7Ux#*"
+				echo "*#rIb8PW#*"
 				if docker inspect "$docker_name" &>/dev/null; then
 					local docker_port=$(docker port $docker_name | awk -F'[:]' '/->/ {print $NF}' | uniq)
 					check_docker_app_ip
 				fi
-				echo "*#KUeEyM#*"
-				echo "*#d49Pki#*"
-				echo "*#e6Ttvk#*"
-				echo "*#d49Pki#*"
-				echo "*#5ZHMg1#*"
-				echo "*#d49Pki#*"
-				read -e -p "*#MbQfAN#*" choice
+				echo
+				echo "*#u0O4YF#*"
+				echo "*#8ELx0c#*"
+				echo "*#u0O4YF#*"
+				echo "*#7DqCpu#*"
+				echo "*#u0O4YF#*"
+				Ask "*#5xF3Mn#*" choice
 
 				case $choice in
 				1)
@@ -8226,10 +8095,10 @@ linux_panel() {
 
 			}
 
-			local docker_describe="qbittorrent离线BT磁力下载服务"
-			local docker_url="官网介绍: https://hub.docker.com/r/linuxserver/qbittorrent"
-			local docker_use="sleep 3"
-			local docker_passwd="docker logs qbittorrent"
+			local docker_describe="*#jlVXqA#*"
+			local docker_url="*#f0HfKJ#*"
+			local docker_use="*#MMaaG3#*"
+			local docker_passwd="*#zMlsN6#*"
 			local app_size="1"
 			docker_app
 
@@ -8245,54 +8114,53 @@ linux_panel() {
 				check_docker_image_update $docker_name
 
 				clear
-				echo -e "*#5FBI1R#*"
-				echo "*#v0cz4E#*"
-				echo "*#Z4uNgj#*"
+				echo -e "*#EUJjq5#*"
+				echo "*#tZKvJU#*"
+				echo "*#yYbMBC#*"
 
-				echo "*#KUeEyM#*"
-				echo "*#5txt6Z#*"
+				echo
+				echo "*#SV3qab#*"
 				port=25
 				timeout=3
-				if echo "*#5sAwlE#*" | timeout $timeout telnet smtp.qq.com $port | grep 'Connected'; then
-					echo -e "*#fuXw7y#*"
+				if echo "*#e0mbV5#*" | timeout $timeout telnet smtp.qq.com $port | grep 'Connected'; then
+					echo -e "*#r40odv#*"
 				else
-					echo -e "*#IMjEiw#*"
+					echo -e "*#qBrFXQ#*"
 				fi
-				echo "*#KUeEyM#*"
+				echo
 
 				if docker inspect "$docker_name" &>/dev/null; then
 					yuming=$(cat /home/docker/mail.txt)
-					echo "*#wmuQEG#*"
-					echo "*#KLHbMF#*"
+					echo "*#D55eLo#*"
+					echo "*#w6wiLo#*"
 				fi
 
-				echo "*#d49Pki#*"
-				echo "*#6C7jeA#*"
-				echo "*#d49Pki#*"
-				echo "*#5ZHMg1#*"
-				echo "*#d49Pki#*"
-				read -e -p "*#MbQfAN#*" choice
+				echo "*#u0O4YF#*"
+				echo "*#GIpgE9#*"
+				echo "*#u0O4YF#*"
+				echo "*#7DqCpu#*"
+				echo "*#u0O4YF#*"
+				Ask "*#5xF3Mn#*" choice
 
 				case $choice in
 				1)
 					check_disk_space 2
-					read -e -p "*#yVK6jQ#*" yuming
+					Ask "*#P6a8M4#*" yuming
 					mkdir -p /home/docker
-					echo "*#GpGbnk#*" >/home/docker/mail.txt
-					echo "*#d49Pki#*"
+					echo "$yuming" >/home/docker/mail.txt
+					echo "*#u0O4YF#*"
 					ip_address
-					echo "*#PK1McK#*"
-					echo "*#13G06Y#*"
-					echo "*#kWpYHZ#*"
-					echo "*#FjqYwO#*"
-					echo "*#brOlzu#*"
-					echo "*#U4nRic#*"
-					echo "*#j0eSI8#*"
-					echo "*#3QIE1s#*"
-					echo "*#KUeEyM#*"
-					echo "*#d49Pki#*"
-					echo "*#iPlEvQ#*"
-					read -n 1 -s -r -p ""
+					echo "*#2vdajc#*"
+					echo "*#EMcGyQ#*"
+					echo "*#iFydDJ#*"
+					echo "*#Zrddkc#*"
+					echo "*#pZSF4b#*"
+					echo "*#3j3oIL#*"
+					echo "*#UTdj0C#*"
+					echo "*#dGguCl#*"
+					echo
+					echo "*#u0O4YF#*"
+					Press "*#VuMXX3#*"
 
 					install jq
 					install_docker
@@ -8307,11 +8175,11 @@ linux_panel() {
 						-d analogic/poste.io
 
 					clear
-					echo "*#33LelD#*"
-					echo "*#d49Pki#*"
-					echo "*#e7aqlb#*"
-					echo "*#KLHbMF#*"
-					echo "*#KUeEyM#*"
+					echo "*#wKgJKT#*"
+					echo "*#u0O4YF#*"
+					echo "*#3TS6vF#*"
+					echo "*#w6wiLo#*"
+					echo
 
 					;;
 
@@ -8328,18 +8196,18 @@ linux_panel() {
 						--restart=always \
 						-d analogic/poste.i
 					clear
-					echo "*#33LelD#*"
-					echo "*#d49Pki#*"
-					echo "*#e7aqlb#*"
-					echo "*#KLHbMF#*"
-					echo "*#KUeEyM#*"
+					echo "*#wKgJKT#*"
+					echo "*#u0O4YF#*"
+					echo "*#3TS6vF#*"
+					echo "*#w6wiLo#*"
+					echo
 					;;
 				3)
 					docker rm -f mailserver
 					docker rmi -f analogic/poste.io
 					rm /home/docker/mail.txt
 					rm -rf /home/docker/mail
-					echo "*#U2LgZv#*"
+					echo "*#qLDjkK#*"
 					;;
 
 				*)
@@ -8354,9 +8222,9 @@ linux_panel() {
 
 		10)
 
-			local app_name="Rocket.Chat聊天系统"
-			local app_text="Rocket.Chat 是一个开源的团队通讯平台，支持实时聊天、音视频通话、文件共享等多种功能，"
-			local app_url="官方介绍: https://www.rocket.chat/"
+			local app_name="*#bz7D0r#*"
+			local app_text="*#HWUVP1#*"
+			local app_url="*#5ncudU#*"
 			local docker_name="rocketchat"
 			local docker_port="3897"
 			local app_size="2"
@@ -8372,7 +8240,7 @@ linux_panel() {
 
 				clear
 				ip_address
-				echo "*#QQbaMZ#*"
+				echo "*#hlNDcb#*"
 				check_docker_app_ip
 			}
 
@@ -8382,7 +8250,7 @@ linux_panel() {
 				docker run --name rocketchat --restart=always -p ${docker_port}:3000 --link db --env ROOT_URL=http://localhost --env MONGO_OPLOG_URL=mongodb://db:27017/rs5 -d rocket.chat
 				clear
 				ip_address
-				echo "*#JYYFRO#*"
+				echo "*#WMWZFA#*"
 				check_docker_app_ip
 			}
 
@@ -8392,7 +8260,7 @@ linux_panel() {
 				docker rm -f db
 				docker rmi -f mongo:latest
 				rm -rf /home/docker/mongo
-				echo "*#U2LgZv#*"
+				echo "*#qLDjkK#*"
 			}
 
 			docker_app_plus
@@ -8416,10 +8284,10 @@ linux_panel() {
 
 			}
 
-			local docker_describe="禅道是通用的项目管理软件"
-			local docker_url="官网介绍: https://www.zentao.net/"
-			local docker_use='echo "*#YywrB8#*"'
-			local docker_passwd='echo "*#EyEZQW#*"'
+			local docker_describe="*#FkaiRg#*"
+			local docker_url="*#9kYJuR#*"
+			local docker_use='echo "*#r8IAN5#*"'
+			local docker_passwd='echo "*#s6iHuh#*"'
 			local app_size="2"
 			docker_app
 
@@ -8442,8 +8310,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="青龙面板是一个定时任务管理平台"
-			local docker_url="官网介绍: ${gh_proxy}github.com/whyour/qinglong"
+			local docker_describe="*#TWDj7K#*"
+			local docker_url="*#IgyC8t#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -8452,9 +8320,9 @@ linux_panel() {
 			;;
 		13)
 
-			local app_name="cloudreve网盘"
-			local app_text="cloudreve是一个支持多家云存储的网盘系统"
-			local app_url="视频介绍: https://www.bilibili.com/video/BV13F4m1c7h7?t=0.1"
+			local app_name="*#H8oJIz#*"
+			local app_text="*#6WWpd5#*"
+			local app_url="*#FU62ZF#*"
 			local docker_name="cloudreve"
 			local docker_port="5212"
 			local app_size="2"
@@ -8466,7 +8334,7 @@ linux_panel() {
 				cd /home/docker/cloud/
 				docker compose up -d
 				clear
-				echo "*#QQbaMZ#*"
+				echo "*#hlNDcb#*"
 				check_docker_app_ip
 			}
 
@@ -8478,7 +8346,7 @@ linux_panel() {
 			docker_app_uninstall() {
 				cd /home/docker/cloud/ && docker compose down --rmi all
 				rm -rf /home/docker/cloud
-				echo "*#U2LgZv#*"
+				echo "*#qLDjkK#*"
 			}
 
 			docker_app_plus
@@ -8503,8 +8371,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="简单图床是一个简单的图床程序"
-			local docker_url="官网介绍: ${gh_proxy}github.com/icret/EasyImages2.0"
+			local docker_describe="*#32Uetb#*"
+			local docker_url="*#MOL0V5#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -8529,8 +8397,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="emby是一个主从式架构的媒体服务器软件，可以用来整理服务器上的视频和音频，并将音频和视频流式传输到客户端设备"
-			local docker_url="官网介绍: https://emby.media/"
+			local docker_describe="*#twymzx#*"
+			local docker_url="*#4Wr776#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -8548,8 +8416,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="Speedtest测速面板是一个VPS网速测试工具，多项测试功能，还可以实时监控VPS进出站流量"
-			local docker_url="官网介绍: ${gh_proxy}github.com/wikihost-opensource/als"
+			local docker_describe="*#kPpSVt#*"
+			local docker_url="*#ZTjDxj#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -8576,8 +8444,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="AdGuardHome是一款全网广告拦截与反跟踪软件，未来将不止是一个DNS服务器。"
-			local docker_url="官网介绍: https://hub.docker.com/r/adguard/adguardhome"
+			local docker_describe="*#bnj6Sq#*"
+			local docker_url="*#BYayYI#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -8602,8 +8470,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="onlyoffice是一款开源的在线office工具，太强大了！"
-			local docker_url="官网介绍: https://www.onlyoffice.com/"
+			local docker_describe="*#WYCPhL#*"
+			local docker_url="*#firYVH#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="2"
@@ -8619,20 +8487,20 @@ linux_panel() {
 			while true; do
 				check_docker_app
 				clear
-				echo -e "*#3oFyRS#*"
-				echo "*#KXxwMy#*"
-				echo "*#6X1riU#*"
+				echo -e "*#9ptxP6#*"
+				echo "*#j12JDL#*"
+				echo "*#T2ox3t#*"
 				if docker inspect "$docker_name" &>/dev/null; then
 					check_docker_app_ip
 				fi
-				echo "*#KUeEyM#*"
+				echo
 
-				echo "*#d49Pki#*"
-				echo "*#CyJnVS#*"
-				echo "*#d49Pki#*"
-				echo "*#5ZHMg1#*"
-				echo "*#d49Pki#*"
-				read -e -p "*#MbQfAN#*" choice
+				echo "*#u0O4YF#*"
+				echo "*#LjwvLv#*"
+				echo "*#u0O4YF#*"
+				echo "*#7DqCpu#*"
+				echo "*#u0O4YF#*"
+				Ask "*#5xF3Mn#*" choice
 
 				case $choice in
 				1)
@@ -8640,7 +8508,7 @@ linux_panel() {
 					check_disk_space 5
 					bash -c "$(curl -fsSLk https://waf-ce.chaitin.cn/release/latest/setup.sh)"
 					clear
-					echo "*#MJMRVt#*"
+					echo "*#BIycmf#*"
 					check_docker_app_ip
 					docker exec safeline-mgt resetadmin
 
@@ -8649,9 +8517,9 @@ linux_panel() {
 				2)
 					bash -c "$(curl -fsSLk https://waf-ce.chaitin.cn/release/latest/upgrade.sh)"
 					docker rmi $(docker images | grep "safeline" | grep "none" | awk '{print $3}')
-					echo "*#KUeEyM#*"
+					echo
 					clear
-					echo "*#lQmQNO#*"
+					echo "*#1HJXAM#*"
 					check_docker_app_ip
 					;;
 				3)
@@ -8660,8 +8528,8 @@ linux_panel() {
 				4)
 					cd /data/safeline
 					docker compose down --rmi all
-					echo "*#yIu0vU#*"
-					echo "*#WfUoGh#*"
+					echo "*#0aSe21#*"
+					echo "*#Vl9f5c#*"
 					;;
 				*)
 					break
@@ -8690,8 +8558,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="portainer是一个轻量级的docker容器管理面板"
-			local docker_url="官网介绍: https://www.portainer.io/"
+			local docker_describe="*#yXoksB#*"
+			local docker_url="*#TELRRd#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -8710,10 +8578,10 @@ linux_panel() {
 
 			}
 
-			local docker_describe="VScode是一款强大的在线代码编写工具"
-			local docker_url="官网介绍: ${gh_proxy}github.com/coder/code-server"
-			local docker_use="sleep 3"
-			local docker_passwd="docker exec vscode-web cat /home/coder/.config/code-server/config.yaml"
+			local docker_describe="*#GxLZ1a#*"
+			local docker_url="*#1dpYnq#*"
+			local docker_use="*#MMaaG3#*"
+			local docker_passwd="*#SV75gB#*"
 			local app_size="1"
 			docker_app
 			;;
@@ -8733,8 +8601,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="Uptime Kuma 易于使用的自托管监控工具"
-			local docker_url="官网介绍: ${gh_proxy}github.com/louislam/uptime-kuma"
+			local docker_describe="*#BQAjiH#*"
+			local docker_url="*#oWGN3C#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -8752,8 +8620,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="Memos是一款轻量级、自托管的备忘录中心"
-			local docker_url="官网介绍: ${gh_proxy}github.com/usememos/memos"
+			local docker_describe="*#kWvoso#*"
+			local docker_url="*#p5hJuK#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -8789,10 +8657,10 @@ linux_panel() {
 
 			}
 
-			local docker_describe="webtop基于Alpine的中文版容器。若IP无法访问，请添加域名访问。"
-			local docker_url="官网介绍: https://docs.linuxserver.io/images/docker-webtop/"
-			local docker_use='echo "*#sbDc2A#*"'
-			local docker_passwd='echo "*#n97Rs7#*"'
+			local docker_describe="*#lQaFYA#*"
+			local docker_url="*#RMCIQq#*"
+			local docker_use='echo "*#qfmMLv#*"'
+			local docker_passwd='echo "*#WmnTd3#*"'
 			local app_size="2"
 			docker_app
 			;;
@@ -8809,9 +8677,9 @@ linux_panel() {
 
 			}
 
-			local docker_describe="Nextcloud拥有超过 400,000 个部署，是您可以下载的最受欢迎的本地内容协作平台"
-			local docker_url="官网介绍: https://nextcloud.com/"
-			local docker_use="echo \"账号: nextcloud  密码: $rootpasswd\""
+			local docker_describe="*#1YUHO1#*"
+			local docker_url="*#vDdhrk#*"
+			local docker_use="*#cE7Q4K#*"
 			local docker_passwd=""
 			local app_size="3"
 			docker_app
@@ -8828,8 +8696,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="QD-Today是一个HTTP请求定时任务自动执行框架"
-			local docker_url="官网介绍: https://qd-today.github.io/qd/zh_CN/"
+			local docker_describe="*#KddTCy#*"
+			local docker_url="*#Pjvt9y#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -8846,8 +8714,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="dockge是一个可视化的docker-compose容器管理面板"
-			local docker_url="官网介绍: ${gh_proxy}github.com/louislam/dockge"
+			local docker_describe="*#rkSTQp#*"
+			local docker_url="*#mULESD#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -8865,8 +8733,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="librespeed是用Javascript实现的轻量级速度测试工具，即开即用"
-			local docker_url="官网介绍: ${gh_proxy}github.com/librespeed/speedtest"
+			local docker_describe="*#yCQL4U#*"
+			local docker_url="*#5Vt24w#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -8889,8 +8757,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="searxng是一个私有且隐私的搜索引擎站点"
-			local docker_url="官网介绍: https://hub.docker.com/r/alandoyle/searxng"
+			local docker_describe="*#BjlxFp#*"
+			local docker_url="*#yCuf0L#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -8919,9 +8787,9 @@ linux_panel() {
 
 			}
 
-			local docker_describe="photoprism非常强大的私有相册系统"
-			local docker_url="官网介绍: https://www.photoprism.app/"
-			local docker_use="echo \"账号: admin  密码: $rootpasswd\""
+			local docker_describe="*#HRoZAg#*"
+			local docker_url="*#EHBI6S#*"
+			local docker_use="*#bNxdgO#*"
 			local docker_passwd=""
 			local app_size="1"
 			docker_app
@@ -8945,8 +8813,8 @@ linux_panel() {
 					frooodle/s-pdf:latest
 			}
 
-			local docker_describe="这是一个强大的本地托管基于 Web 的 PDF 操作工具，使用 docker，允许您对 PDF 文件执行各种操作，例如拆分合并、转换、重新组织、添加图像、旋转、压缩等。"
-			local docker_url="官网介绍: ${gh_proxy}github.com/Stirling-Tools/Stirling-PDF"
+			local docker_describe="*#DJBqi4#*"
+			local docker_url="*#K3b1DK#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -8964,8 +8832,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="这是一个强大图表绘制软件。思维导图，拓扑图，流程图，都能画"
-			local docker_url="官网介绍: https://www.drawio.com/"
+			local docker_describe="*#8hbuQx#*"
+			local docker_url="*#Y9xc46#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -8988,9 +8856,9 @@ linux_panel() {
 
 			}
 
-			local docker_describe="Sun-Panel服务器、NAS导航面板、Homepage、浏览器首页"
-			local docker_url="官网介绍: https://doc.sun-panel.top/zh_cn/"
-			local docker_use='echo "*#1Z4tAe#*"'
+			local docker_describe="*#iVl68G#*"
+			local docker_url="*#KTgWp1#*"
+			local docker_use='echo "*#LHT3F2#*"'
 			local docker_passwd=""
 			local app_size="1"
 			docker_app
@@ -9011,8 +8879,8 @@ linux_panel() {
 					stonith404/pingvin-share
 			}
 
-			local docker_describe="Pingvin Share 是一个可自建的文件分享平台，是 WeTransfer 的一个替代品"
-			local docker_url="官网介绍: ${gh_proxy}github.com/stonith404/pingvin-share"
+			local docker_describe="*#rPncCo#*"
+			local docker_url="*#qnwt8J#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9035,9 +8903,9 @@ linux_panel() {
 					kingwrcy/moments:latest
 			}
 
-			local docker_describe="极简朋友圈，高仿微信朋友圈，记录你的美好生活"
-			local docker_url="官网介绍: ${gh_proxy}github.com/kingwrcy/moments?tab=readme-ov-file"
-			local docker_use='echo "*#iWZyua#*"'
+			local docker_describe="*#O05WxV#*"
+			local docker_url="*#0VqjX9#*"
+			local docker_use='echo "*#bRqnYG#*"'
 			local docker_passwd=""
 			local app_size="1"
 			docker_app
@@ -9056,8 +8924,8 @@ linux_panel() {
 					lobehub/lobe-chat
 			}
 
-			local docker_describe="LobeChat聚合市面上主流的AI大模型，ChatGPT/Claude/Gemini/Groq/Ollama"
-			local docker_url="官网介绍: ${gh_proxy}github.com/lobehub/lobe-chat"
+			local docker_describe="*#bjR4on#*"
+			local docker_url="*#xoWiIc#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="2"
@@ -9075,8 +8943,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="是一个多功能IP工具箱，可以查看自己IP信息及连通性，用网页面板呈现"
-			local docker_url="官网介绍: ${gh_proxy}github.com/jason5ng32/MyIP/blob/main/README_ZH.md"
+			local docker_describe="*#INygsq#*"
+			local docker_url="*#d7c3uG#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9108,8 +8976,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="Bililive-go是一个支持多种直播平台的直播录制工具"
-			local docker_url="官网介绍: ${gh_proxy}github.com/hr3lxphr6j/bililive-go"
+			local docker_describe="*#NuX0Jq#*"
+			local docker_url="*#qsUTif#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9124,8 +8992,8 @@ linux_panel() {
 				docker run -d -p ${docker_port}:5032 --restart always --name webssh -e TZ=Asia/Shanghai jrohy/webssh
 			}
 
-			local docker_describe="简易在线ssh连接工具和sftp工具"
-			local docker_url="官网介绍: ${gh_proxy}github.com/Jrohy/webssh"
+			local docker_describe="*#4T7WiJ#*"
+			local docker_url="*#VQrG6i#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9135,8 +9003,8 @@ linux_panel() {
 		41)
 
 			local lujing="[ -d "/www/server/panel" ]"
-			local panelname="耗子面板"
-			local panelurl="官方地址: ${gh_proxy}github.com/TheTNB/panel"
+			local panelname="*#vllpnl#*"
+			local panelurl="*#eCUYlq#*"
 
 			panel_app_install() {
 				mkdir -p ~/haozi && cd ~/haozi && curl -fsLm 10 -o install.sh https://dl.cdn.haozi.net/panel/install.sh && bash install.sh
@@ -9172,8 +9040,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="nexterm是一款强大的在线SSH/VNC/RDP连接工具。"
-			local docker_url="官网介绍: ${gh_proxy}github.com/gnmyt/Nexterm"
+			local docker_describe="*#rJh9r9#*"
+			local docker_url="*#TSAFRU#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9191,10 +9059,10 @@ linux_panel() {
 
 			}
 
-			local docker_describe="rustdesk开源的远程桌面(服务端)，类似自己的向日葵私服。"
-			local docker_url="官网介绍: https://rustdesk.com/zh-cn/"
-			local docker_use="docker logs hbbs"
-			local docker_passwd='echo "*#5Gjar5#*"'
+			local docker_describe="*#BkzLDm#*"
+			local docker_url="*#dVS5Ok#*"
+			local docker_use="*#39iEV6#*"
+			local docker_passwd='echo "*#H1YgFu#*"'
 			local app_size="1"
 			docker_app
 			;;
@@ -9210,9 +9078,9 @@ linux_panel() {
 
 			}
 
-			local docker_describe="rustdesk开源的远程桌面(中继端)，类似自己的向日葵私服。"
-			local docker_url="官网介绍: https://rustdesk.com/zh-cn/"
-			local docker_use='echo "*#9RTCfR#*"'
+			local docker_describe="*#Ea0HZJ#*"
+			local docker_url="*#dVS5Ok#*"
+			local docker_use='echo "*#9h3DZT#*"'
 			local docker_passwd=""
 			local app_size="1"
 			docker_app
@@ -9235,8 +9103,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="Docker Registry 是一个用于存储和分发 Docker 镜像的服务。"
-			local docker_url="官网介绍: https://hub.docker.com/_/registry"
+			local docker_describe="*#9Ba6Ml#*"
+			local docker_url="*#L5o1zk#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="2"
@@ -9254,8 +9122,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="使用Go实现的GHProxy，用于加速部分地区Github仓库的拉取。"
-			local docker_url="官网介绍: https://github.com/WJQSERVER-STUDIO/ghproxy"
+			local docker_describe="*#If7QRY#*"
+			local docker_url="*#ZYHakV#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9264,9 +9132,9 @@ linux_panel() {
 
 		47)
 
-			local app_name="普罗米修斯监控"
-			local app_text="Prometheus+Grafana企业级监控系统"
-			local app_url="官网介绍: https://prometheus.io"
+			local app_name="*#NzRKui#*"
+			local app_text="*#ue2vpj#*"
+			local app_url="*#pKIrlr#*"
 			local docker_name="grafana"
 			local docker_port="8047"
 			local app_size="2"
@@ -9275,9 +9143,9 @@ linux_panel() {
 				prometheus_install
 				clear
 				ip_address
-				echo "*#QQbaMZ#*"
+				echo "*#hlNDcb#*"
 				check_docker_app_ip
-				echo "*#HkKPYO#*"
+				echo "*#iYwiKL#*"
 			}
 
 			docker_app_update() {
@@ -9295,7 +9163,7 @@ linux_panel() {
 				docker rmi -f grafana/grafana:latest
 
 				rm -rf /home/docker/monitoring
-				echo "*#U2LgZv#*"
+				echo "*#qLDjkK#*"
 			}
 
 			docker_app_plus
@@ -9316,8 +9184,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="这是一个普罗米修斯的主机数据采集组件，请部署在被监控主机上。"
-			local docker_url="官网介绍: https://github.com/prometheus/node_exporter"
+			local docker_describe="*#iOrECE#*"
+			local docker_url="*#iB5Iyq#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9345,8 +9213,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="这是一个普罗米修斯的容器数据采集组件，请部署在被监控主机上。"
-			local docker_url="官网介绍: https://github.com/google/cadvisor"
+			local docker_describe="*#r9UPYY#*"
+			local docker_url="*#cHng3H#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9366,8 +9234,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="这是一款网站变化检测、补货监控和通知的小工具"
-			local docker_url="官网介绍: https://github.com/dgtlmoon/changedetection.io"
+			local docker_describe="*#hod9xZ#*"
+			local docker_url="*#fmu5Qt#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9396,8 +9264,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="Docker可视化面板系统，提供完善的docker管理功能。"
-			local docker_url="官网介绍: https://github.com/donknap/dpanel"
+			local docker_describe="*#1j44xT#*"
+			local docker_url="*#5ACCGo#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9415,9 +9283,9 @@ linux_panel() {
 
 			}
 
-			local docker_describe="OpenWebUI一款大语言模型网页框架，接入全新的llama3大语言模型"
-			local docker_url="官网介绍: https://github.com/open-webui/open-webui"
-			local docker_use="docker exec ollama ollama run llama3.2:1b"
+			local docker_describe="*#CGu9ms#*"
+			local docker_url="*#fltUMP#*"
+			local docker_use="*#dE3vwR#*"
 			local docker_passwd=""
 			local app_size="5"
 			docker_app
@@ -9426,8 +9294,8 @@ linux_panel() {
 		54)
 
 			local lujing="[ -d "/www/server/panel" ]"
-			local panelname="AMH面板"
-			local panelurl="官方地址: https://amh.sh/index.htm?amh"
+			local panelname="*#2ptUXn#*"
+			local panelurl="*#LKjiak#*"
 
 			panel_app_install() {
 				cd ~
@@ -9464,18 +9332,18 @@ linux_panel() {
 
 			}
 
-			local docker_describe="OpenWebUI一款大语言模型网页框架，接入全新的DeepSeek R1大语言模型"
-			local docker_url="官网介绍: https://github.com/open-webui/open-webui"
-			local docker_use="docker exec ollama ollama run deepseek-r1:1.5b"
+			local docker_describe="*#50jFHz#*"
+			local docker_url="*#fltUMP#*"
+			local docker_use="*#dA0vjL#*"
 			local docker_passwd=""
 			local app_size="5"
 			docker_app
 			;;
 
 		58)
-			local app_name="Dify知识库"
-			local app_text="是一款开源的大语言模型(LLM) 应用开发平台。自托管训练数据用于AI生成"
-			local app_url="官方网站: https://docs.dify.ai/zh-hans"
+			local app_name="*#Jc4wla#*"
+			local app_text="*#mLtUtW#*"
+			local app_url="*#0CB57W#*"
 			local docker_name="docker-nginx-1"
 			local docker_port="8058"
 			local app_size="3"
@@ -9488,7 +9356,7 @@ linux_panel() {
 
 				docker compose up -d
 				clear
-				echo "*#QQbaMZ#*"
+				echo "*#hlNDcb#*"
 				check_docker_app_ip
 			}
 
@@ -9503,7 +9371,7 @@ linux_panel() {
 			docker_app_uninstall() {
 				cd /home/docker/dify/docker/ && docker compose down --rmi all
 				rm -rf /home/docker/dify
-				echo "*#U2LgZv#*"
+				echo "*#qLDjkK#*"
 			}
 
 			docker_app_plus
@@ -9511,9 +9379,9 @@ linux_panel() {
 			;;
 
 		59)
-			local app_name="New API"
-			local app_text="新一代大模型网关与AI资产管理系统"
-			local app_url="官方网站: https://github.com/Calcium-Ion/new-api"
+			local app_name="*#0c0rPQ#*"
+			local app_text="*#TvCAF4#*"
+			local app_url="*#zRRXAG#*"
 			local docker_name="new-api"
 			local docker_port="8059"
 			local app_size="3"
@@ -9529,7 +9397,7 @@ linux_panel() {
 
 				docker compose up -d
 				clear
-				echo "*#QQbaMZ#*"
+				echo "*#hlNDcb#*"
 				check_docker_app_ip
 			}
 
@@ -9544,7 +9412,7 @@ linux_panel() {
 
 				docker compose up -d
 				clear
-				echo "*#QQbaMZ#*"
+				echo "*#hlNDcb#*"
 				check_docker_app_ip
 
 			}
@@ -9552,7 +9420,7 @@ linux_panel() {
 			docker_app_uninstall() {
 				cd /home/docker/new-api/ && docker compose down --rmi all
 				rm -rf /home/docker/new-api
-				echo "*#U2LgZv#*"
+				echo "*#qLDjkK#*"
 			}
 
 			docker_app_plus
@@ -9561,9 +9429,9 @@ linux_panel() {
 
 		60)
 
-			local app_name="JumpServer开源堡垒机"
-			local app_text="是一个开源的特权访问管理 (PAM) 工具，该程序占用80端口不支持添加域名访问了"
-			local app_url="官方介绍: https://github.com/jumpserver/jumpserver"
+			local app_name="*#Bm54VD#*"
+			local app_text="*#4ZLobx#*"
+			local app_url="*#mI009G#*"
 			local docker_name="jms_web"
 			local docker_port="80"
 			local app_size="2"
@@ -9571,16 +9439,16 @@ linux_panel() {
 			docker_app_install() {
 				curl -sSL ${gh_proxy}github.com/jumpserver/jumpserver/releases/latest/download/quick_start.sh | bash
 				clear
-				echo "*#QQbaMZ#*"
+				echo "*#hlNDcb#*"
 				check_docker_app_ip
-				echo "*#YywrB8#*"
-				echo "*#DUi7zw#*"
+				echo "*#r8IAN5#*"
+				echo "*#xvZRvM#*"
 			}
 
 			docker_app_update() {
 				cd /opt/jumpserver-installer*/
 				./jmsctl.sh upgrade
-				echo "*#N5829z#*"
+				echo "*#1uptDu#*"
 			}
 
 			docker_app_uninstall() {
@@ -9589,7 +9457,7 @@ linux_panel() {
 				cd /opt
 				rm -rf jumpserver-installer*/
 				rm -rf jumpserver
-				echo "*#U2LgZv#*"
+				echo "*#qLDjkK#*"
 			}
 
 			docker_app_plus
@@ -9610,8 +9478,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="免费开源机器翻译 API，完全自托管，它的翻译引擎由开源Argos Translate库提供支持。"
-			local docker_url="官网介绍: https://github.com/LibreTranslate/LibreTranslate"
+			local docker_describe="*#RgMEZ4#*"
+			local docker_url="*#YYCvkI#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="5"
@@ -9619,9 +9487,9 @@ linux_panel() {
 			;;
 
 		62)
-			local app_name="RAGFlow知识库"
-			local app_text="基于深度文档理解的开源 RAG（检索增强生成）引擎"
-			local app_url="官方网站: https://github.com/infiniflow/ragflow"
+			local app_name="*#G6KObd#*"
+			local app_text="*#Rzlvst#*"
+			local app_url="*#ABTFfj#*"
 			local docker_name="ragflow-server"
 			local docker_port="8062"
 			local app_size="8"
@@ -9632,7 +9500,7 @@ linux_panel() {
 				sed -i "s/- 80:80/- ${docker_port}:80/; /- 443:443/d" docker-compose.yml
 				docker compose up -d
 				clear
-				echo "*#QQbaMZ#*"
+				echo "*#hlNDcb#*"
 				check_docker_app_ip
 			}
 
@@ -9648,7 +9516,7 @@ linux_panel() {
 			docker_app_uninstall() {
 				cd /home/docker/ragflow/docker/ && docker compose down --rmi all
 				rm -rf /home/docker/ragflow
-				echo "*#U2LgZv#*"
+				echo "*#qLDjkK#*"
 			}
 
 			docker_app_plus
@@ -9666,8 +9534,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="OpenWebUI一款大语言模型网页框架，官方精简版本，支持各大模型API接入"
-			local docker_url="官网介绍: https://github.com/open-webui/open-webui"
+			local docker_describe="*#8f4j8B#*"
+			local docker_url="*#fltUMP#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="3"
@@ -9683,8 +9551,8 @@ linux_panel() {
 				docker run -d --name it-tools --restart unless-stopped -p ${docker_port}:80 corentinth/it-tools:latest
 			}
 
-			local docker_describe="对开发人员和 IT 工作者来说非常有用的工具"
-			local docker_url="官网介绍: https://github.com/CorentinTh/it-tools"
+			local docker_describe="*#nXKxsW#*"
+			local docker_url="*#G8kEA3#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9717,8 +9585,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="是一款功能强大的自动化工作流平台"
-			local docker_url="官网介绍: https://github.com/n8n-io/n8n"
+			local docker_describe="*#FHnBOx#*"
+			local docker_url="*#MGRe0Z#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9744,8 +9612,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="自动将你的公网 IP（IPv4/IPv6）实时更新到各大 DNS 服务商，实现动态域名解析。"
-			local docker_url="官网介绍: https://github.com/jeessy2/ddns-go"
+			local docker_describe="*#OMrcXD#*"
+			local docker_url="*#vytFO5#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9761,10 +9629,10 @@ linux_panel() {
 				docker run -itd --name allinssl -p ${docker_port}:8888 -v /home/docker/allinssl/data:/www/allinssl/data -e ALLINSSL_USER=allinssl -e ALLINSSL_PWD=allinssldocker -e ALLINSSL_URL=allinssl allinssl/allinssl:latest
 			}
 
-			local docker_describe="开源免费的 SSL 证书自动化管理平台"
-			local docker_url="官网介绍: https://allinssl.com"
-			local docker_use='echo "*#SAMzd9#*"'
-			local docker_passwd='echo "*#tGppNI#*"'
+			local docker_describe="*#iPpcjz#*"
+			local docker_url="*#JxFNrG#*"
+			local docker_use='echo "*#nYzE4D#*"'
+			local docker_passwd='echo "*#YvHCW3#*"'
 			local app_size="1"
 			docker_app
 			;;
@@ -9791,8 +9659,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="开源免费随时随地SFTP FTP WebDAV 文件传输工具"
-			local docker_url="官网介绍: https://sftpgo.com/"
+			local docker_describe="*#uefYSC#*"
+			local docker_url="*#gJ1DiL#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9821,9 +9689,9 @@ linux_panel() {
 
 			}
 
-			local docker_describe="开源AI聊天机器人框架，支持微信，QQ，TG接入AI大模型"
-			local docker_url="官网介绍: https://astrbot.app/"
-			local docker_use='echo "*#y60dEj#*"'
+			local docker_describe="*#6CSH96#*"
+			local docker_url="*#HRZyjt#*"
+			local docker_use='echo "*#zdhzQJ#*"'
 			local docker_passwd=""
 			local app_size="1"
 			docker_app
@@ -9848,8 +9716,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="是一个轻量、高性能的音乐流媒体服务器"
-			local docker_url="官网介绍: https://www.navidrome.org/"
+			local docker_describe="*#dNTR1n#*"
+			local docker_url="*#ZtIGMw#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9873,8 +9741,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="一个你可以控制数据的密码管理器"
-			local docker_url="官网介绍: https://bitwarden.com/"
+			local docker_describe="*#X3c14c#*"
+			local docker_url="*#oOOes9#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9890,7 +9758,7 @@ linux_panel() {
 
 			docker_rum() {
 
-				read -e -p "*#46jlmT#*" app_passwd
+				Ask "*#biS02M#*" app_passwd
 
 				docker run -d \
 					--name libretv \
@@ -9901,8 +9769,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="免费在线视频搜索与观看平台"
-			local docker_url="官网介绍: https://github.com/LibreSpark/LibreTV"
+			local docker_describe="*#VGWvqx#*"
+			local docker_url="*#Woloef#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9918,7 +9786,7 @@ linux_panel() {
 
 			docker_rum() {
 
-				read -e -p "*#FA8uue#*" app_passwd
+				Ask "*#8x338F#*" app_passwd
 
 				docker run -d \
 					--name moontv \
@@ -9929,8 +9797,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="免费在线视频搜索与观看平台"
-			local docker_url="官网介绍: https://github.com/senshinya/MoonTV"
+			local docker_describe="*#VGWvqx#*"
+			local docker_url="*#cMYYTt#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9955,8 +9823,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="你的音乐精灵，旨在帮助你更好地管理音乐。"
-			local docker_url="官网介绍: https://github.com/foamzou/melody"
+			local docker_describe="*#UkH7IE#*"
+			local docker_url="*#7B83NJ#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -9979,8 +9847,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="是一个中文DOS游戏合集网站"
-			local docker_url="官网介绍: https://github.com/rwv/chinese-dos-games"
+			local docker_describe="*#YvWn7H#*"
+			local docker_url="*#JBNDlg#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="2"
@@ -9996,8 +9864,8 @@ linux_panel() {
 
 			docker_rum() {
 
-				read -e -p "*#GK1Scs#*" app_use
-				read -e -p "*#aUU9X9#*" app_passwd
+				Ask "*#a2nikl#*" app_use
+				Ask "*#FXql8H#*" app_passwd
 
 				docker run -d \
 					--name xunlei \
@@ -10012,9 +9880,9 @@ linux_panel() {
 
 			}
 
-			local docker_describe="迅雷你的离线高速BT磁力下载工具"
-			local docker_url="官网介绍: https://github.com/cnk3x/xunlei"
-			local docker_use='echo "*#fOuCWr#*"'
+			local docker_describe="*#XbY9rs#*"
+			local docker_url="*#doT4QH#*"
+			local docker_use='echo "*#xv0yzq#*"'
 			local docker_passwd=""
 			local app_size="1"
 			docker_app
@@ -10023,9 +9891,9 @@ linux_panel() {
 
 		78)
 
-			local app_name="PandaWiki"
-			local app_text="PandaWiki是一款AI大模型驱动的开源智能文档管理系统，强烈建议不要自定义端口部署。"
-			local app_url="官方介绍: https://github.com/chaitin/PandaWiki"
+			local app_name="*#aKXX8j#*"
+			local app_text="*#onVqcy#*"
+			local app_url="*#PsN4pq#*"
 			local docker_name="panda-wiki-nginx"
 			local docker_port="2443"
 			local app_size="2"
@@ -10063,8 +9931,8 @@ linux_panel() {
 
 			}
 
-			local docker_describe="Beszel轻量易用的服务器监控"
-			local docker_url="官网介绍: https://beszel.dev/zh/"
+			local docker_describe="*#7RG0yx#*"
+			local docker_url="*#4RbXKo#*"
 			local docker_use=""
 			local docker_passwd=""
 			local app_size="1"
@@ -10076,7 +9944,7 @@ linux_panel() {
 			kejilion
 			;;
 		*)
-			echo "*#SVFIXm#*"
+			echo "*#tbV75u#*"
 			;;
 		esac
 		break_end
@@ -10089,34 +9957,34 @@ linux_work() {
 	while true; do
 		clear
 		send_stats "后台工作区"
-		echo -e "*#DrZgP2#*"
-		echo -e "*#zz6SAz#*"
-		echo -e "*#pehZ2B#*"
-		echo -e "*#J2tAEj#*"
-		echo -e "*#9rR5US#*"
-		echo "*#tjnkPz#*"
-		echo -e "*#9rR5US#*"
+		echo -e "*#xJz4qU#*"
+		echo -e "*#8vXp98#*"
+		echo -e "*#f91Y8p#*"
+		echo -e "*#hbhKke#*"
+		echo -e "*#sl2Qjk#*"
+		echo "*#bkaqT1#*"
+		echo -e "*#sl2Qjk#*"
 		tmux list-sessions
-		echo -e "*#9rR5US#*"
-		echo -e "*#ZQtcIB#*"
-		echo -e "*#0iGU0J#*"
-		echo -e "*#irdzJz#*"
-		echo -e "*#dCvplH#*"
-		echo -e "*#5ET92u#*"
-		echo -e "*#EwhgxY#*"
-		echo -e "*#Y34K9T#*"
-		echo -e "*#FwKSup#*"
-		echo -e "*#ilwBsz#*"
-		echo -e "*#Zg7EiO#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#ur7rdk#*"
-		echo -e "*#oCgT4O#*"
-		echo -e "*#HlQcfZ#*"
-		echo -e "*#3wUP0z#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#YPjthn#*"
-		echo -e "*#wYoQzy#*"
-		read -e -p "*#YDzc33#*" sub_choice
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#Ka74ZP#*"
+		echo -e "*#wnNlXz#*"
+		echo -e "*#jLk210#*"
+		echo -e "*#9E4CIw#*"
+		echo -e "*#2eBtmK#*"
+		echo -e "*#y4W3AG#*"
+		echo -e "*#xtt8rJ#*"
+		echo -e "*#LBoNEe#*"
+		echo -e "*#Fvbq4J#*"
+		echo -e "*#vDIsqe#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#1flvXN#*"
+		echo -e "*#QfrhYD#*"
+		echo -e "*#s0ysfu#*"
+		echo -e "*#XOdwDG#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#m3SoXD#*"
+		echo -e "*#bPMjZg#*"
+		Ask "*#9bDAbE#*" sub_choice
 
 		case $sub_choice in
 
@@ -10196,25 +10064,28 @@ linux_work() {
 			while true; do
 				clear
 				if grep -q 'tmux attach-session -t sshd || tmux new-session -s sshd' ~/.bashrc; then
-					local tmux_sshd_status="${gl_lv}开启${gl_bai}"
+					local tmux_sshd_status="*#hLcnv8#*"
 				else
-					local tmux_sshd_status="${gl_hui}关闭${gl_bai}"
+					local tmux_sshd_status="*#ujuf8t#*"
 				fi
 				send_stats "SSH常驻模式 "
-				echo -e "*#VVKSSP#*"
-				echo "*#k2PXT3#*"
-				echo "*#d49Pki#*"
-				echo "*#ZIgrAF#*"
-				echo "*#d49Pki#*"
-				echo "*#5ZHMg1#*"
-				echo "*#d49Pki#*"
-				read -e -p "*#YDzc33#*" gongzuoqu_del
+				echo -e "*#fJva3u#*"
+				echo "*#4PpCPG#*"
+				echo "*#u0O4YF#*"
+				echo "*#1UJbzs#*"
+				echo "*#u0O4YF#*"
+				echo "*#7DqCpu#*"
+				echo "*#u0O4YF#*"
+				Ask "*#9bDAbE#*" gongzuoqu_del
 				case "$gongzuoqu_del" in
 				1)
 					install tmux
 					local SESSION_NAME="sshd"
 					send_stats "启动工作区$SESSION_NAME"
-					grep -q "tmux attach-session -t sshd" ~/.bashrc || echo -e "*#pqSjsR#*"\$TMUX\" ]]; then\n    tmux attach-session -t sshd || tmux new-session -s sshd\nfi" >>~/.bashrc
+					grep -q "tmux attach-session -t sshd" ~/.bashrc || {
+						NO_TRAN="\n# 自动进入 tmux 会话\nif [[ -z \"\$TMUX\" ]]; then\n    tmux attach-session -t sshd || tmux new-session -s sshd\nfi"
+						echo -e "$NO_TRAN" >>~/.bashrc
+					}
 					source ~/.bashrc
 					tmux_run
 					;;
@@ -10230,19 +10101,19 @@ linux_work() {
 			;;
 
 		22)
-			read -e -p "*#loJ3AQ#*" SESSION_NAME
+			Ask "*#TIk8Rp#*" SESSION_NAME
 			tmux_run
 			send_stats "自定义工作区"
 			;;
 
 		23)
-			read -e -p "*#8JfMS6#*" tmuxd
+			Ask "*#rp7Qr4#*" tmuxd
 			tmux_run_d
 			send_stats "注入命令到后台工作区"
 			;;
 
 		24)
-			read -e -p "*#3Xz9KQ#*" gongzuoqu_name
+			Ask "*#vOb42M#*" gongzuoqu_name
 			tmux kill-window -t $gongzuoqu_name
 			send_stats "删除工作区"
 			;;
@@ -10251,7 +10122,7 @@ linux_work() {
 			kejilion
 			;;
 		*)
-			echo "*#SVFIXm#*"
+			echo "*#tbV75u#*"
 			;;
 		esac
 		break_end
@@ -10265,51 +10136,51 @@ linux_Settings() {
 	while true; do
 		clear
 		# send_stats "系统工具"
-		echo -e "*#JnM6Bp#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#zHZTG1#*"
-		echo -e "*#OoJ7Dk#*"
-		echo -e "*#5OM0MN#*"
-		echo -e "*#gCqB8M#*"
-		echo -e "*#pNHVOj#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#l28jGt#*"
-		echo -e "*#VxqzKS#*"
-		echo -e "*#BEZZTX#*"
-		echo -e "*#KqMsdu#*"
-		echo -e "*#gdtDvC#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#LaZqQM#*"
-		echo -e "*#ZkZldL#*"
-		echo -e "*#Xzpfhk#*"
-		echo -e "*#e07qq7#*"
-		echo -e "*#ntCZ7x#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#lMAhaj#*"
-		echo -e "*#ij3ckh#*"
-		echo -e "*#wfBFP6#*"
-		echo -e "*#5BoLIv#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#LTJic8#*"
-		echo -e "*#3bwG56#*"
-		echo -e "*#m1glB8#*"
-		echo -e "*#9rR5US#*"
-		echo -e "*#YPjthn#*"
-		echo -e "*#wYoQzy#*"
-		read -e -p "*#YDzc33#*" sub_choice
+		echo -e "*#mD2bGp#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#6KPvQ1#*"
+		echo -e "*#JNoHdn#*"
+		echo -e "*#KhB8Lr#*"
+		echo -e "*#I5Fk8L#*"
+		echo -e "*#Zb6yLu#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#LSuxQE#*"
+		echo -e "*#1BDkvm#*"
+		echo -e "*#ZuIoh7#*"
+		echo -e "*#NtOyaN#*"
+		echo -e "*#8k69yR#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#Jdbwp7#*"
+		echo -e "*#lezoW7#*"
+		echo -e "*#ktcla2#*"
+		echo -e "*#fhkFDa#*"
+		echo -e "*#LcNqhL#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#PA8hzE#*"
+		echo -e "*#goscUO#*"
+		echo -e "*#xxohnA#*"
+		echo -e "*#C19hLE#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#HVWdxZ#*"
+		echo -e "*#tfAW7y#*"
+		echo -e "*#dVwmgZ#*"
+		echo -e "*#sl2Qjk#*"
+		echo -e "*#m3SoXD#*"
+		echo -e "*#bPMjZg#*"
+		Ask "*#9bDAbE#*" sub_choice
 
 		case $sub_choice in
 		1)
 			while true; do
 				clear
-				read -e -p "*#I5YZjh#*" kuaijiejian
+				Ask "*#hJPi5W#*" kuaijiejian
 				if [ "$kuaijiejian" == "0" ]; then
 					break_end
 					linux_Settings
 				fi
 				find /usr/local/bin/ -type l -exec bash -c 'test "$(readlink -f {})" = "/usr/local/bin/k" && rm -f {}' \;
 				ln -s /usr/local/bin/k /usr/local/bin/$kuaijiejian
-				echo "*#yQ0C6R#*"
+				echo "*#4l0y8P#*"
 				send_stats "脚本快捷键已设置"
 				break_end
 				linux_Settings
@@ -10319,7 +10190,7 @@ linux_Settings() {
 		2)
 			clear
 			send_stats "设置你的登录密码"
-			echo "*#5QxM0P#*"
+			echo "*#mvtCBW#*"
 			passwd
 			;;
 		3)
@@ -10331,17 +10202,17 @@ linux_Settings() {
 		4)
 			root_use
 			send_stats "py版本管理"
-			echo "*#WcRA7T#*"
-			echo "*#yLDd9m#*"
-			echo "*#UbGqAA#*"
-			echo "*#D8saav#*"
+			echo "*#gILrZ8#*"
+			echo "*#svM0aR#*"
+			echo "*#yCl4Sm#*"
+			echo "*#wta8mz#*"
 			local VERSION=$(python3 -V 2>&1 | awk '{print $2}')
-			echo -e "*#skkIXx#*"
-			echo "*#ZtGFqI#*"
-			echo "*#XNFr9m#*"
-			echo "*#5u6XyD#*"
-			echo "*#ZtGFqI#*"
-			read -e -p "*#z7YMXV#*" py_new_v
+			echo -e "*#1rBPkK#*"
+			echo "*#MMKC1U#*"
+			echo "*#vceRFg#*"
+			echo "*#ulZ5cx#*"
+			echo "*#MMKC1U#*"
+			Ask "*#ok0W1u#*" py_new_v
 
 			if [[ $py_new_v == "0" ]]; then
 				send_stats "脚本PY管理"
@@ -10361,7 +10232,7 @@ linux_Settings() {
 					./config --prefix=/usr/local/openssl --openssldir=/usr/local/openssl shared zlib
 					make
 					make install
-					echo "*#PslCkS#*" >/etc/ld.so.conf.d/openssl-1.1.1u.conf
+					echo "*#675gUr#*" >/etc/ld.so.conf.d/openssl-1.1.1u.conf
 					ldconfig -v
 					cd ..
 
@@ -10376,23 +10247,13 @@ linux_Settings() {
 					apk update && apk add git
 					apk add --no-cache bash gcc musl-dev libffi-dev openssl-dev bzip2-dev zlib-dev readline-dev sqlite-dev libc6-compat linux-headers make xz-dev build-base ncurses-dev
 				else
-					echo "*#vKALGd#*"
+					echo "*#uXAvIN#*"
 					return
 				fi
 
 				curl https://pyenv.run | bash
-				cat <<EOF >>~/.bashrc
-
-export PYENV_ROOT="\$HOME/.pyenv"
-if [[ -d "\$PYENV_ROOT/bin" ]]; then
-  export PATH="\$PYENV_ROOT/bin:\$PATH"
-fi
-eval "\$(pyenv init --path)"
-eval "\$(pyenv init -)"
-eval "\$(pyenv virtualenv-init -)"
-
-EOF
-
+				NO_TRAN=$'\nexport PYENV_ROOT="$HOME/.pyenv"\nif [[ -d "$PYENV_ROOT/bin" ]]; then\n  export PATH="$PYENV_ROOT/bin:$PATH"\nfi\neval "$(pyenv init --path)"\neval "$(pyenv init -)"\neval "$(pyenv virtualenv-init -)"\n\n'
+				echo -e "$NO_TRAN" >>~/.bashrc
 			fi
 
 			sleep 1
@@ -10405,7 +10266,7 @@ EOF
 			rm -rf $(pyenv root)/cache/*
 
 			local VERSION=$(python -V 2>&1 | awk '{print $2}')
-			echo -e "*#skkIXx#*"
+			echo -e "*#1rBPkK#*"
 			send_stats "脚本PY版本切换"
 
 			;;
@@ -10415,7 +10276,7 @@ EOF
 			send_stats "开放端口"
 			iptables_open
 			remove iptables-persistent ufw firewalld iptables-services >/dev/null 2>&1
-			echo "*#tN7SF2#*"
+			echo "*#nRUXWY#*"
 
 			;;
 		6)
@@ -10430,13 +10291,13 @@ EOF
 				local current_port=$(grep -E '^ *Port [0-9]+' /etc/ssh/sshd_config | awk '{print $2}')
 
 				# 打印当前的 SSH 端口号
-				echo -e "*#1QB0UO#*"
+				echo -e "*#0cuY4c#*"
 
-				echo "*#d49Pki#*"
-				echo "*#ITMpbY#*"
+				echo "*#u0O4YF#*"
+				echo "*#Mr1kPQ#*"
 
 				# 提示用户输入新的 SSH 端口号
-				read -e -p "*#WBIEb6#*" new_port
+				Ask "*#h0dWzm#*" new_port
 
 				# 判断端口号是否在有效范围内
 				if [[ $new_port =~ ^[0-9]+$ ]]; then # 检查输入是否为数字
@@ -10447,12 +10308,12 @@ EOF
 						send_stats "退出SSH端口修改"
 						break
 					else
-						echo "*#oCB5EU#*"
+						echo "*#AJih0C#*"
 						send_stats "输入无效SSH端口"
 						break_end
 					fi
 				else
-					echo "*#sIMjaU#*"
+					echo "*#lJdQqC#*"
 					send_stats "输入无效SSH端口"
 					break_end
 				fi
@@ -10471,7 +10332,7 @@ EOF
 		9)
 			root_use
 			send_stats "新用户禁用root"
-			read -e -p "*#saFEhn#*" new_username
+			Ask "*#r2U2mP#*" new_username
 			if [ "$new_username" == "0" ]; then
 				break_end
 				linux_Settings
@@ -10480,11 +10341,11 @@ EOF
 			useradd -m -s /bin/bash "$new_username"
 			passwd "$new_username"
 
-			echo "*#ci0ZCR#*" | tee -a /etc/sudoers
+			echo "*#dnAKNs#*" | tee -a /etc/sudoers
 
 			passwd -l root
 
-			echo "*#N4V9U4#*"
+			echo "*#6RzBjR#*"
 			;;
 
 		10)
@@ -10492,39 +10353,39 @@ EOF
 			send_stats "设置v4/v6优先级"
 			while true; do
 				clear
-				echo "*#xpclMI#*"
-				echo "*#d49Pki#*"
+				echo "*#iMsPUs#*"
+				echo "*#u0O4YF#*"
 				local ipv6_disabled=$(sysctl -n net.ipv6.conf.all.disable_ipv6)
 
 				if [ "$ipv6_disabled" -eq 1 ]; then
-					echo -e "*#0xmR5f#*"
+					echo -e "*#P5PDBN#*"
 				else
-					echo -e "*#JfvRBW#*"
+					echo -e "*#g0ESro#*"
 				fi
-				echo "*#KUeEyM#*"
-				echo "*#d49Pki#*"
-				echo "*#BWugR1#*"
-				echo "*#d49Pki#*"
-				echo "*#5ZHMg1#*"
-				echo "*#d49Pki#*"
-				read -e -p "*#HgqDRg#*" choice
+				echo
+				echo "*#u0O4YF#*"
+				echo "*#m5wbzz#*"
+				echo "*#u0O4YF#*"
+				echo "*#7DqCpu#*"
+				echo "*#u0O4YF#*"
+				Ask "*#8pduDF#*" choice
 
 				case $choice in
 				1)
 					sysctl -w net.ipv6.conf.all.disable_ipv6=1 >/dev/null 2>&1
-					echo "*#4oxRWd#*"
+					echo "*#zYhfK3#*"
 					send_stats "已切换为 IPv4 优先"
 					;;
 				2)
 					sysctl -w net.ipv6.conf.all.disable_ipv6=0 >/dev/null 2>&1
-					echo "*#bdzDaL#*"
+					echo "*#IaNCRH#*"
 					send_stats "已切换为 IPv6 优先"
 					;;
 
 				3)
 					clear
 					bash <(curl -L -s jhb.ovh/jb/v6.sh)
-					echo "*#m6A7AR#*"
+					echo "*#XPu9oq#*"
 					send_stats "ipv6修复"
 					;;
 
@@ -10546,18 +10407,18 @@ EOF
 			send_stats "设置虚拟内存"
 			while true; do
 				clear
-				echo "*#XLIaUU#*"
+				echo "*#loS8PC#*"
 				local swap_used=$(free -m | awk 'NR==3{print $3}')
 				local swap_total=$(free -m | awk 'NR==3{print $2}')
 				local swap_info=$(free -m | awk 'NR==3{used=$3; total=$2; if (total == 0) {percentage=0} else {percentage=used*100/total}; printf "%dM/%dM (%d%%)", used, total, percentage}')
 
-				echo -e "*#jm0WFh#*"
-				echo "*#d49Pki#*"
-				echo "*#t2zrpb#*"
-				echo "*#d49Pki#*"
-				echo "*#5ZHMg1#*"
-				echo "*#d49Pki#*"
-				read -e -p "*#YDzc33#*" choice
+				echo -e "*#ZB1Lsf#*"
+				echo "*#u0O4YF#*"
+				echo "*#fCyw08#*"
+				echo "*#u0O4YF#*"
+				echo "*#7DqCpu#*"
+				echo "*#u0O4YF#*"
+				Ask "*#9bDAbE#*" choice
 
 				case "$choice" in
 				1)
@@ -10577,7 +10438,7 @@ EOF
 					;;
 
 				4)
-					read -e -p "*#X6z5Ym#*" new_swap
+					Ask "*#hLlFp0#*" new_swap
 					add_swap "$new_swap"
 					send_stats "已设置自定义虚拟内存"
 					;;
@@ -10593,73 +10454,73 @@ EOF
 			while true; do
 				root_use
 				send_stats "用户管理"
-				echo "*#C3EPhz#*"
-				echo "*#n7ZExD#*"
-				echo "*#ZncPQp#*"
+				echo "*#Il3nYT#*"
+				echo "*#QbzDzg#*"
+				echo "*#FSNpHN#*"
 				while IFS=: read -r username _ userid groupid _ _ homedir shell; do
 					local groups=$(groups "$username" | cut -d : -f 2)
-					local sudo_status=$(sudo -n -lU "$username" 2>/dev/null | grep -q '(ALL : ALL)' && echo "*#0qxdqK#*" || echo "*#Kcczky#*")
+					local sudo_status=$(sudo -n -lU "$username" 2>/dev/null | grep -q '(ALL : ALL)' && echo "*#MRtMXw#*" || echo "*#4VwxlG#*")
 					printf "%-20s %-30s %-20s %-10s\n" "$username" "$homedir" "$groups" "$sudo_status"
 				done </etc/passwd
 
-				echo "*#KUeEyM#*"
-				echo "*#Gv3zRw#*"
-				echo "*#d49Pki#*"
-				echo "*#Y3jraj#*"
-				echo "*#d49Pki#*"
-				echo "*#RNFNE4#*"
-				echo "*#d49Pki#*"
-				echo "*#0RhYU6#*"
-				echo "*#d49Pki#*"
-				echo "*#5ZHMg1#*"
-				echo "*#d49Pki#*"
-				read -e -p "*#YDzc33#*" sub_choice
+				echo
+				echo "*#Soi8i2#*"
+				echo "*#u0O4YF#*"
+				echo "*#9avNBB#*"
+				echo "*#u0O4YF#*"
+				echo "*#HXXsjQ#*"
+				echo "*#u0O4YF#*"
+				echo "*#53Vb4g#*"
+				echo "*#u0O4YF#*"
+				echo "*#7DqCpu#*"
+				echo "*#u0O4YF#*"
+				Ask "*#9bDAbE#*" sub_choice
 
 				case $sub_choice in
 				1)
 					# 提示用户输入新用户名
-					read -e -p "*#Tpaav4#*" new_username
+					Ask "*#M3FWiO#*" new_username
 
 					# 创建新用户并设置密码
 					useradd -m -s /bin/bash "$new_username"
 					passwd "$new_username"
 
-					echo "*#N4V9U4#*"
+					echo "*#6RzBjR#*"
 					;;
 
 				2)
 					# 提示用户输入新用户名
-					read -e -p "*#Tpaav4#*" new_username
+					Ask "*#M3FWiO#*" new_username
 
 					# 创建新用户并设置密码
 					useradd -m -s /bin/bash "$new_username"
 					passwd "$new_username"
 
 					# 赋予新用户sudo权限
-					echo "*#ci0ZCR#*" | tee -a /etc/sudoers
+					echo "*#dnAKNs#*" | tee -a /etc/sudoers
 
-					echo "*#N4V9U4#*"
+					echo "*#6RzBjR#*"
 
 					;;
 				3)
-					read -e -p "*#yAR5jQ#*" username
+					Ask "*#YW3d3V#*" username
 					# 赋予新用户sudo权限
-					echo "*#pjuh5Q#*" | tee -a /etc/sudoers
+					echo "*#wDmCZM#*" | tee -a /etc/sudoers
 					;;
 				4)
-					read -e -p "*#yAR5jQ#*" username
+					Ask "*#YW3d3V#*" username
 					# 从sudoers文件中移除用户的sudo权限
 					sed -i "/^$username\sALL=(ALL:ALL)\sALL/d" /etc/sudoers
 
 					;;
 				5)
-					read -e -p "*#IwPhTV#*" username
+					Ask "*#knpF5L#*" username
 					# 删除用户及其主目录
 					userdel -r "$username"
 					;;
 
 				*)
-					break # 跳出循环，退出菜单
+					break
 					;;
 				esac
 			done
@@ -10668,16 +10529,16 @@ EOF
 		14)
 			clear
 			send_stats "用户信息生成器"
-			echo "*#grpnZj#*"
-			echo "*#d49Pki#*"
+			echo "*#tvq6vq#*"
+			echo "*#u0O4YF#*"
 			for i in {1..5}; do
 				username="user$(</dev/urandom tr -dc _a-z0-9 | head -c6)"
-				echo "*#KVdtKi#*"
+				echo "*#2hhrbg#*"
 			done
 
-			echo "*#KUeEyM#*"
-			echo "*#u1ilT1#*"
-			echo "*#d49Pki#*"
+			echo
+			echo "*#2JKLYg#*"
+			echo "*#u0O4YF#*"
 			local first_names=("John" "Jane" "Michael" "Emily" "David" "Sophia" "William" "Olivia" "James" "Emma" "Ava" "Liam" "Mia" "Noah" "Isabella")
 			local last_names=("Smith" "Johnson" "Brown" "Davis" "Wilson" "Miller" "Jones" "Garcia" "Martinez" "Williams" "Lee" "Gonzalez" "Rodriguez" "Hernandez")
 
@@ -10686,33 +10547,33 @@ EOF
 				local first_name_index=$((RANDOM % ${#first_names[@]}))
 				local last_name_index=$((RANDOM % ${#last_names[@]}))
 				local user_name="${first_names[$first_name_index]} ${last_names[$last_name_index]}"
-				echo "*#ABi1xJ#*"
+				echo "*#G8fhaM#*"
 			done
 
-			echo "*#KUeEyM#*"
-			echo "*#uvVJaY#*"
-			echo "*#d49Pki#*"
+			echo
+			echo "*#bQfwai#*"
+			echo "*#u0O4YF#*"
 			for i in {1..5}; do
 				uuid=$(cat /proc/sys/kernel/random/uuid)
-				echo "*#MzUjka#*"
+				echo "*#KB0gju#*"
 			done
 
-			echo "*#KUeEyM#*"
-			echo "*#M0arKH#*"
-			echo "*#d49Pki#*"
+			echo
+			echo "*#zrIBMU#*"
+			echo "*#u0O4YF#*"
 			for i in {1..5}; do
 				local password=$(</dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
-				echo "*#0qOLhs#*"
+				echo "*#2JDwQx#*"
 			done
 
-			echo "*#KUeEyM#*"
-			echo "*#RsYjtv#*"
-			echo "*#d49Pki#*"
+			echo
+			echo "*#EKGZZy#*"
+			echo "*#u0O4YF#*"
 			for i in {1..5}; do
 				local password=$(</dev/urandom tr -dc _A-Z-a-z-0-9 | head -c32)
-				echo "*#0qOLhs#*"
+				echo "*#2JDwQx#*"
 			done
-			echo "*#KUeEyM#*"
+			echo
 
 			;;
 
@@ -10721,43 +10582,37 @@ EOF
 			send_stats "换时区"
 			while true; do
 				clear
-				echo "*#dEKBQd#*"
-
-				# 获取当前系统时区
-				local timezone=$(current_timezone)
-
-				# 获取当前系统时间
-				local current_time=$(date +"%Y-%m-%d %H:%M:%S")
+				echo "*#tBVmGl#*"
 
 				# 显示时区和时间
-				echo "*#T7n0fe#*"
-				echo "*#2kZGDT#*"
+				echo "*#nFfHPA#*"
+				echo "*#u5vG8v#*"%Y-%m-%d %H:%M:%S")"
 
-				echo "*#KUeEyM#*"
-				echo "*#iYMdxr#*"
-				echo "*#d49Pki#*"
-				echo "*#NSmaGV#*"
-				echo "*#msnYSs#*"
-				echo "*#8gtkW7#*"
-				echo "*#ge3gHR#*"
-				echo "*#0XXllF#*"
-				echo "*#qjM8or#*"
-				echo "*#d49Pki#*"
-				echo "*#IkUIgY#*"
-				echo "*#RGjRqd#*"
-				echo "*#zmTpAO#*"
-				echo "*#cqEBWe#*"
-				echo "*#d49Pki#*"
-				echo "*#GjkVWn#*"
-				echo "*#jxs1Bk#*"
-				echo "*#q4MGxZ#*"
-				echo "*#PLPXYg#*"
-				echo "*#d49Pki#*"
-				echo "*#bPZHxT#*"
-				echo "*#d49Pki#*"
-				echo "*#5ZHMg1#*"
-				echo "*#d49Pki#*"
-				read -e -p "*#YDzc33#*" sub_choice
+				echo
+				echo "*#rXv9Ws#*"
+				echo "*#u0O4YF#*"
+				echo "*#CsPRNe#*"
+				echo "*#AjZecI#*"
+				echo "*#LjqlEa#*"
+				echo "*#Rw1fkd#*"
+				echo "*#DA4FR9#*"
+				echo "*#17axAl#*"
+				echo "*#u0O4YF#*"
+				echo "*#WmsZV9#*"
+				echo "*#MrgcZp#*"
+				echo "*#my40Ln#*"
+				echo "*#L2LKxz#*"
+				echo "*#u0O4YF#*"
+				echo "*#3NNFL9#*"
+				echo "*#NvyNgo#*"
+				echo "*#DLqaUE#*"
+				echo "*#hLUcou#*"
+				echo "*#u0O4YF#*"
+				echo "*#NaMTP1#*"
+				echo "*#u0O4YF#*"
+				echo "*#7DqCpu#*"
+				echo "*#u0O4YF#*"
+				Ask "*#9bDAbE#*" sub_choice
 
 				case $sub_choice in
 				1) set_timedate Asia/Shanghai ;;
@@ -10804,13 +10659,13 @@ EOF
 			while true; do
 				clear
 				local current_hostname=$(uname -n)
-				echo -e "*#Qf6noI#*"
-				echo "*#d49Pki#*"
-				read -e -p "*#FCXBfx#*" new_hostname
+				echo -e "*#BKrrov#*"
+				echo "*#u0O4YF#*"
+				Ask "*#8RlduT#*" new_hostname
 				if [ -n "$new_hostname" ] && [ "$new_hostname" != "0" ]; then
 					if [ -f /etc/alpine-release ]; then
 						# Alpine
-						echo "*#ZZv5hm#*" >/etc/hostname
+						echo "$new_hostname" >/etc/hostname
 						hostname "$new_hostname"
 					else
 						# 其他系统，如 Debian, Ubuntu, CentOS 等
@@ -10822,20 +10677,20 @@ EOF
 					if grep -q "127.0.0.1" /etc/hosts; then
 						sed -i "s/127.0.0.1 .*/127.0.0.1       $new_hostname localhost localhost.localdomain/g" /etc/hosts
 					else
-						echo "*#q4Wrk4#*" >>/etc/hosts
+						echo "*#1x9fav#*" >>/etc/hosts
 					fi
 
 					if grep -q "^::1" /etc/hosts; then
 						sed -i "s/^::1 .*/::1             $new_hostname localhost localhost.localdomain ipv6-localhost ipv6-loopback/g" /etc/hosts
 					else
-						echo "*#OlbM65#*" >>/etc/hosts
+						echo "*#99ToHk#*" >>/etc/hosts
 					fi
 
-					echo "*#yPzaIG#*"
+					echo "*#VIb2jg#*"
 					send_stats "主机名已更改"
 					sleep 1
 				else
-					echo "*#ewXOkk#*"
+					echo "*#hr2sQa#*"
 					break
 				fi
 			done
@@ -10845,14 +10700,14 @@ EOF
 			root_use
 			send_stats "换系统更新源"
 			clear
-			echo "*#ScyfdW#*"
-			echo "*#F4vuA8#*"
-			echo "*#d49Pki#*"
-			echo "*#qszqSj#*"
-			echo "*#d49Pki#*"
-			echo "*#5ZHMg1#*"
-			echo "*#d49Pki#*"
-			read -e -p "*#MbQfAN#*" choice
+			echo "*#QLYVWR#*"
+			echo "*#LnYshg#*"
+			echo "*#u0O4YF#*"
+			echo "*#63vqUd#*"
+			echo "*#u0O4YF#*"
+			echo "*#7DqCpu#*"
+			echo "*#u0O4YF#*"
+			Ask "*#5xF3Mn#*" choice
 
 			case $choice in
 			1)
@@ -10868,7 +10723,7 @@ EOF
 				bash <(curl -sSL https://linuxmirrors.cn/main.sh) --abroad
 				;;
 			*)
-				echo "*#03i9Gh#*"
+				echo "*#yS8n2l#*"
 				;;
 
 			esac
@@ -10881,63 +10736,63 @@ EOF
 				clear
 				check_crontab_installed
 				clear
-				echo "*#AWN9lq#*"
+				echo "*#cKWxuB#*"
 				crontab -l
-				echo "*#KUeEyM#*"
-				echo "*#EesXCG#*"
-				echo "*#d49Pki#*"
-				echo "*#FOepoe#*"
-				echo "*#d49Pki#*"
-				echo "*#5ZHMg1#*"
-				echo "*#d49Pki#*"
-				read -e -p "*#YDzc33#*" sub_choice
+				echo
+				echo "*#G0tItU#*"
+				echo "*#u0O4YF#*"
+				echo "*#qzUW8l#*"
+				echo "*#u0O4YF#*"
+				echo "*#7DqCpu#*"
+				echo "*#u0O4YF#*"
+				Ask "*#9bDAbE#*" sub_choice
 
 				case $sub_choice in
 				1)
-					read -e -p "*#Bv5Mcu#*" newquest
-					echo "*#d49Pki#*"
-					echo "*#G2YsJk#*"
-					echo "*#addIX7#*"
-					echo "*#d49Pki#*"
-					read -e -p "*#YDzc33#*" dingshi
+					Ask "*#L17nXl#*" newquest
+					echo "*#u0O4YF#*"
+					echo "*#x6bRrE#*"
+					echo "*#owVoWO#*"
+					echo "*#u0O4YF#*"
+					Ask "*#9bDAbE#*" dingshi
 
 					case $dingshi in
 					1)
-						read -e -p "*#u5o0ik#*" day
+						Ask "*#X3Zx8j#*" day
 						(
 							crontab -l
-							echo "*#aHOA2D#*"
+							echo "*#t1WJl3#*"
 						) | crontab - >/dev/null 2>&1
 						;;
 					2)
-						read -e -p "*#ptF5Iw#*" weekday
+						Ask "*#IohvYz#*" weekday
 						(
 							crontab -l
-							echo "*#CXM17L#*"
+							echo "*#Z4SqSi#*"
 						) | crontab - >/dev/null 2>&1
 						;;
 					3)
-						read -e -p "*#7G5SIb#*" hour
+						Ask "*#GveY3b#*" hour
 						(
 							crontab -l
-							echo "*#xkSgFc#*"
+							echo "*#QrAx0I#*"
 						) | crontab - >/dev/null 2>&1
 						;;
 					4)
-						read -e -p "*#b8Tzp4#*" minute
+						Ask "*#slyxgP#*" minute
 						(
 							crontab -l
-							echo "*#zJEwQx#*"
+							echo "*#quQKUx#*"
 						) | crontab - >/dev/null 2>&1
 						;;
 					*)
-						break # 跳出
+						break
 						;;
 					esac
 					send_stats "添加定时任务"
 					;;
 				2)
-					read -e -p "*#6Ar93p#*" kquest
+					Ask "*#BpNaoM#*" kquest
 					crontab -l | grep -v "$kquest" | crontab -
 					send_stats "删除定时任务"
 					;;
@@ -10946,7 +10801,7 @@ EOF
 					send_stats "编辑定时任务"
 					;;
 				*)
-					break # 跳出循环，退出菜单
+					break
 					;;
 				esac
 			done
@@ -10958,32 +10813,32 @@ EOF
 			send_stats "本地host解析"
 			while true; do
 				clear
-				echo "*#BnMMx5#*"
-				echo "*#Ru9ryh#*"
+				echo "*#Togc12#*"
+				echo "*#MYFOWB#*"
 				cat /etc/hosts
-				echo "*#KUeEyM#*"
-				echo "*#EesXCG#*"
-				echo "*#d49Pki#*"
-				echo "*#IShYYi#*"
-				echo "*#d49Pki#*"
-				echo "*#5ZHMg1#*"
-				echo "*#d49Pki#*"
-				read -e -p "*#YDzc33#*" host_dns
+				echo
+				echo "*#G0tItU#*"
+				echo "*#u0O4YF#*"
+				echo "*#Sp0dUD#*"
+				echo "*#u0O4YF#*"
+				echo "*#7DqCpu#*"
+				echo "*#u0O4YF#*"
+				Ask "*#9bDAbE#*" host_dns
 
 				case $host_dns in
 				1)
-					read -e -p "*#HiiUZw#*" addhost
-					echo "*#5zCTrt#*" >>/etc/hosts
+					Ask "*#5oS6Tf#*" addhost
+					echo "$addhost" >>/etc/hosts
 					send_stats "本地host解析新增"
 
 					;;
 				2)
-					read -e -p "*#UtfewG#*" delhost
+					Ask "*#vIo5w0#*" delhost
 					sed -i "/$delhost/d" /etc/hosts
 					send_stats "本地host解析删除"
 					;;
 				*)
-					break # 跳出循环，退出菜单
+					break
 					;;
 				esac
 			done
@@ -11001,20 +10856,20 @@ EOF
 					clear
 					docker_name="fail2ban"
 					check_docker_app
-					echo -e "*#gYxKLo#*"
-					echo "*#i9J2PQ#*"
-					echo "*#npR2sU#*"
-					echo "*#d49Pki#*"
-					echo "*#WGdMqe#*"
-					echo "*#d49Pki#*"
-					echo "*#m3trgM#*"
-					echo "*#FbaP8C#*"
-					echo "*#d49Pki#*"
-					echo "*#Ajz8jY#*"
-					echo "*#d49Pki#*"
-					echo "*#5ZHMg1#*"
-					echo "*#d49Pki#*"
-					read -e -p "*#YDzc33#*" sub_choice
+					echo -e "*#YmLxe7#*"
+					echo "*#Tgjmao#*"
+					echo "*#cc0lht#*"
+					echo "*#u0O4YF#*"
+					echo "*#yt839v#*"
+					echo "*#u0O4YF#*"
+					echo "*#SzLvHV#*"
+					echo "*#NkXHAE#*"
+					echo "*#u0O4YF#*"
+					echo "*#xPPn5x#*"
+					echo "*#u0O4YF#*"
+					echo "*#7DqCpu#*"
+					echo "*#u0O4YF#*"
+					Ask "*#9bDAbE#*" sub_choice
 					case $sub_choice in
 					1)
 						install_docker
@@ -11025,9 +10880,9 @@ EOF
 						break_end
 						;;
 					2)
-						echo "*#d49Pki#*"
+						echo "*#u0O4YF#*"
 						f2b_sshd
-						echo "*#d49Pki#*"
+						echo "*#u0O4YF#*"
 						break_end
 						;;
 					3)
@@ -11037,7 +10892,7 @@ EOF
 					9)
 						docker rm -f fail2ban
 						rm -rf /path/to/fail2ban
-						echo "*#e72Unp#*"
+						echo "*#SwZE4P#*"
 						;;
 					*)
 						break
@@ -11052,44 +10907,43 @@ EOF
 			send_stats "限流关机功能"
 			while true; do
 				clear
-				echo "*#itYqEy#*"
-				echo "*#pGPGHU#*"
-				echo "*#ISaWaa#*"
-				echo "*#E2EMH8#*"
-				output_status
-				echo -e "*#vFY6Sd#*"
-				echo -e "*#XdwQHk#*"
+				echo "*#l6Fo31#*"
+				echo "*#XyQpXW#*"
+				echo "*#UZMS6k#*"
+				echo "*#MW5vLM#*"
+				echo -e "*#6Adgn5#*"
+				echo -e "*#GVXSfd#*"
 
 				# 检查是否存在 Limiting_Shut_down.sh 文件
 				if [ -f ~/Limiting_Shut_down.sh ]; then
 					# 获取 threshold_gb 的值
 					local rx_threshold_gb=$(grep -oP 'rx_threshold_gb=\K\d+' ~/Limiting_Shut_down.sh)
 					local tx_threshold_gb=$(grep -oP 'tx_threshold_gb=\K\d+' ~/Limiting_Shut_down.sh)
-					echo -e "*#LfOiEG#*"
-					echo -e "*#AvIcX6#*"
+					echo -e "*#pHSykm#*"
+					echo -e "*#eEUDE3#*"
 				else
-					echo -e "*#KCHZfF#*"
+					echo -e "*#rDxnZb#*"
 				fi
 
 				echo
-				echo "*#ISaWaa#*"
-				echo "*#Eyg5vJ#*"
-				echo "*#d49Pki#*"
-				echo "*#Oc9Xfw#*"
-				echo "*#d49Pki#*"
-				echo "*#5ZHMg1#*"
-				echo "*#d49Pki#*"
-				read -e -p "*#YDzc33#*" Limiting
+				echo "*#UZMS6k#*"
+				echo "*#kpgKIe#*"
+				echo "*#u0O4YF#*"
+				echo "*#XDuEku#*"
+				echo "*#u0O4YF#*"
+				echo "*#7DqCpu#*"
+				echo "*#u0O4YF#*"
+				Ask "*#9bDAbE#*" Limiting
 
 				case "$Limiting" in
 				1)
 					# 输入新的虚拟内存大小
-					echo "*#DonccW#*"
-					read -e -p "*#zsvkPe#*" rx_threshold_gb
+					echo "*#1fC0aY#*"
+					Ask "*#bMu0Ql#*" rx_threshold_gb
 					rx_threshold_gb=${rx_threshold_gb:-100}
-					read -e -p "*#BAWZf0#*" tx_threshold_gb
+					Ask "*#50iY8m#*" tx_threshold_gb
 					tx_threshold_gb=${tx_threshold_gb:-100}
-					read -e -p "*#aGjM3o#*" cz_day
+					Ask "*#RFucei#*" cz_day
 					cz_day=${cz_day:-1}
 
 					cd ~
@@ -11101,14 +10955,14 @@ EOF
 					crontab -l | grep -v '~/Limiting_Shut_down.sh' | crontab -
 					(
 						crontab -l
-						echo "*#D3jjMg#*"
+						echo "*#UaPRH0#*"
 					) | crontab - >/dev/null 2>&1
 					crontab -l | grep -v 'reboot' | crontab -
 					(
 						crontab -l
-						echo "*#m9cA8k#*"
+						echo "*#WiOfqy#*"
 					) | crontab - >/dev/null 2>&1
-					echo "*#nOmKBl#*"
+					echo "*#Juk7Qq#*"
 					send_stats "限流关机已设置"
 					;;
 				2)
@@ -11116,7 +10970,7 @@ EOF
 					crontab -l | grep -v '~/Limiting_Shut_down.sh' | crontab -
 					crontab -l | grep -v 'reboot' | crontab -
 					rm ~/Limiting_Shut_down.sh
-					echo "*#Gt38Ig#*"
+					echo "*#QvIJYt#*"
 					;;
 				*)
 					break
@@ -11131,16 +10985,16 @@ EOF
 			send_stats "私钥登录"
 			while true; do
 				clear
-				echo "*#l26Ne9#*"
-				echo "*#1mZitd#*"
-				echo "*#ISaWaa#*"
-				echo "*#kBYzmr#*"
-				echo "*#d49Pki#*"
-				echo "*#RQU4yr#*"
-				echo "*#d49Pki#*"
-				echo "*#5ZHMg1#*"
-				echo "*#d49Pki#*"
-				read -e -p "*#YDzc33#*" host_dns
+				echo "*#fz9sXA#*"
+				echo "*#7IMZKy#*"
+				echo "*#UZMS6k#*"
+				echo "*#Ede7Gj#*"
+				echo "*#u0O4YF#*"
+				echo "*#LQOL7n#*"
+				echo "*#u0O4YF#*"
+				echo "*#7DqCpu#*"
+				echo "*#u0O4YF#*"
+				Ask "*#9bDAbE#*" host_dns
 
 				case $host_dns in
 				1)
@@ -11157,18 +11011,18 @@ EOF
 					;;
 				3)
 					send_stats "查看本机密钥"
-					echo "*#d49Pki#*"
-					echo "*#n1H6E6#*"
+					echo "*#u0O4YF#*"
+					echo "*#TN14Kb#*"
 					cat ~/.ssh/authorized_keys
-					echo "*#d49Pki#*"
-					echo "*#Dl53MO#*"
+					echo "*#u0O4YF#*"
+					echo "*#4uQHjm#*"
 					cat ~/.ssh/sshkey
-					echo "*#d49Pki#*"
+					echo "*#u0O4YF#*"
 					break_end
 
 					;;
 				*)
-					break # 跳出循环，退出菜单
+					break
 					;;
 				esac
 			done
@@ -11178,13 +11032,13 @@ EOF
 		25)
 			root_use
 			send_stats "电报预警"
-			echo "*#LiN8Ny#*"
-			echo "*#zCcYa5#*"
-			echo "*#ISaWaa#*"
-			echo "*#9jZVTs#*"
-			echo "*#49bHpB#*"
-			echo -e "*#Ap2wNb#*"
-			read -e -p "*#KISjSB#*" choice
+			echo "*#WqjYzh#*"
+			echo "*#U0MfBU#*"
+			echo "*#UZMS6k#*"
+			echo "*#aAtd39#*"
+			echo "*#EFcOWG#*"
+			echo -e "*#KhZNgi#*"
+			Ask "*#7sdrLr#*" choice
 
 			case "$choice" in
 			[Yy])
@@ -11205,7 +11059,7 @@ EOF
 				crontab -l | grep -v '~/TG-check-notify.sh' | crontab - >/dev/null 2>&1
 				(
 					crontab -l
-					echo "*#PLFnTF#*"
+					echo "*#CMP7h8#*"
 				) | crontab - >/dev/null 2>&1
 
 				curl -sS -O ${gh_proxy}raw.githubusercontent.com/kejilion/sh/main/TG-SSH-check-notify.sh >/dev/null 2>&1
@@ -11224,14 +11078,14 @@ EOF
 				source ~/.profile
 
 				clear
-				echo "*#fmX7iF#*"
-				echo -e "*#EOx7F4#*"
+				echo "*#Khdtvi#*"
+				echo -e "*#dTWQ8x#*"
 				;;
 			[Nn])
-				echo "*#03i9Gh#*"
+				echo "*#yS8n2l#*"
 				;;
 			*)
-				echo "*#hTC3dG#*"
+				echo "*#gQOs0K#*"
 				;;
 			esac
 			;;
@@ -11286,7 +11140,7 @@ EOF
 			get_history_file() {
 				for file in "$HOME"/.bash_history "$HOME"/.ash_history "$HOME"/.zsh_history "$HOME"/.local/share/fish/fish_history; do
 					[ -f "$file" ] && {
-						echo "*#CYMNRc#*"
+						echo "$file"
 						return
 					}
 				done
@@ -11303,62 +11157,62 @@ EOF
 		41)
 			clear
 			send_stats "留言板"
-			echo "*#gPZPNq#*"
-			echo "*#IM6H3F#*"
+			echo "*#5zEIDw#*"
+			echo "*#E4IjMs#*"
 			;;
 
 		66)
 
 			root_use
 			send_stats "一条龙调优"
-			echo "*#JueeXE#*"
-			echo "*#ISaWaa#*"
-			echo "*#uhWKcz#*"
-			echo "*#pCG9YP#*"
-			echo "*#mmMf3H#*"
-			echo -e "*#wfqblt#*"
-			echo -e "*#xpc4Sg#*"
-			echo -e "*#ck3X8N#*"
-			echo -e "*#zSrvF8#*"
-			echo -e "*#lliZ9z#*"
-			echo -e "*#nn8bJ6#*"
-			echo -e "*#dhM8TS#*"
-			echo -e "*#FBKZfc#*"
-			echo "*#ISaWaa#*"
-			read -e -p "*#pR4MZi#*" choice
+			echo "*#SNSsmg#*"
+			echo "*#UZMS6k#*"
+			echo "*#38Rm3A#*"
+			echo "*#ZaEsXC#*"
+			echo "*#N2pP2a#*"
+			echo -e "*#Ijhzl3#*"
+			echo -e "*#pbfkDk#*"
+			echo -e "*#4y2O7K#*"
+			echo -e "*#7rqIY5#*"
+			echo -e "*#vqgFtP#*"
+			echo -e "*#oUNwMu#*"
+			echo -e "*#W46iYY#*"
+			echo -e "*#b1IRea#*"
+			echo "*#UZMS6k#*"
+			Ask "*#TVge4J#*" choice
 
 			case "$choice" in
 			[Yy])
 				clear
 				send_stats "一条龙调优启动"
-				echo "*#ISaWaa#*"
+				echo "*#UZMS6k#*"
 				linux_update
-				echo -e "*#0rY1pb#*"
+				echo -e "*#HNMQ1w#*"
 
-				echo "*#ISaWaa#*"
+				echo "*#UZMS6k#*"
 				linux_clean
-				echo -e "*#p4yrz3#*"
+				echo -e "*#FB9tXl#*"
 
-				echo "*#ISaWaa#*"
+				echo "*#UZMS6k#*"
 				add_swap 1024
-				echo -e "*#x2Gzpr#*"
+				echo -e "*#WHHHqi#*"
 
-				echo "*#ISaWaa#*"
+				echo "*#UZMS6k#*"
 				local new_port=5522
 				new_ssh_port
-				echo -e "*#iHFgQb#*"
-				echo "*#ISaWaa#*"
-				echo -e "*#7VPmBd#*"
+				echo -e "*#Z4Xsgr#*"
+				echo "*#UZMS6k#*"
+				echo -e "*#Hzamkx#*"
 
-				echo "*#ISaWaa#*"
+				echo "*#UZMS6k#*"
 				bbr_on
-				echo -e "*#MQLCI8#*"
+				echo -e "*#LRLsvD#*"
 
-				echo "*#ISaWaa#*"
+				echo "*#UZMS6k#*"
 				set_timedate Asia/Shanghai
-				echo -e "*#S2y1o4#*"
+				echo -e "*#1xBZZb#*"
 
-				echo "*#ISaWaa#*"
+				echo "*#UZMS6k#*"
 				local country=$(curl -s ipinfo.io/country)
 				if [ "$country" = "CN" ]; then
 					local dns1_ipv4="223.5.5.5"
@@ -11373,25 +11227,25 @@ EOF
 				fi
 
 				set_dns
-				echo -e "*#9YPp8F#*"
+				echo -e "*#zRuPzH#*"
 
-				echo "*#ISaWaa#*"
+				echo "*#UZMS6k#*"
 				install_docker
 				install wget sudo tar unzip socat btop nano vim
-				echo -e "*#KKJN6A#*"
-				echo "*#ISaWaa#*"
+				echo -e "*#OAtqRK#*"
+				echo "*#UZMS6k#*"
 
-				echo "*#ISaWaa#*"
+				echo "*#UZMS6k#*"
 				optimize_balanced
-				echo -e "*#Bc9TFe#*"
-				echo -e "*#TLdvKW#*"
+				echo -e "*#OZBBJe#*"
+				echo -e "*#PzW8Uk#*"
 
 				;;
 			[Nn])
-				echo "*#03i9Gh#*"
+				echo "*#yS8n2l#*"
 				;;
 			*)
-				echo "*#hTC3dG#*"
+				echo "*#gQOs0K#*"
 				;;
 			esac
 
@@ -11415,31 +11269,31 @@ EOF
 					local status_message="无法确定的状态"
 				fi
 
-				echo "*#UmRRr0#*"
-				echo "*#dfB2lz#*"
-				echo "*#3proE2#*"
-				echo "*#ISaWaa#*"
-				echo -e "*#NcYlMa#*"
-				echo "*#ZQ1oZm#*"
-				echo "*#sETEXf#*"
-				echo "*#M29hJj#*"
-				echo "*#ZQ1oZm#*"
-				echo "*#5ZHMg1#*"
-				echo "*#ZQ1oZm#*"
-				read -e -p "*#YDzc33#*" sub_choice
+				echo "*#w7wwig#*"
+				echo "*#RASiZp#*"
+				echo "*#BrG63K#*"
+				echo "*#UZMS6k#*"
+				echo -e "*#475HGD#*"
+				echo "*#iM3q4x#*"
+				echo "*#dkFz73#*"
+				echo "*#fm7Aui#*"
+				echo "*#iM3q4x#*"
+				echo "*#7DqCpu#*"
+				echo "*#iM3q4x#*"
+				Ask "*#9bDAbE#*" sub_choice
 				case $sub_choice in
 				1)
 					cd ~
 					sed -i 's/^ENABLE_STATS="false"/ENABLE_STATS="true"/' /usr/local/bin/k
 					sed -i 's/^ENABLE_STATS="false"/ENABLE_STATS="true"/' ~/kejilion.sh
-					echo "*#yXH1e4#*"
+					echo "*#HKWYP3#*"
 					send_stats "隐私与安全已开启采集"
 					;;
 				2)
 					cd ~
 					sed -i 's/^ENABLE_STATS="true"/ENABLE_STATS="false"/' /usr/local/bin/k
 					sed -i 's/^ENABLE_STATS="true"/ENABLE_STATS="false"/' ~/kejilion.sh
-					echo "*#PexdbA#*"
+					echo "*#iauY67#*"
 					send_stats "隐私与安全已关闭采集"
 					;;
 				*)
@@ -11457,10 +11311,10 @@ EOF
 		102)
 			clear
 			send_stats "卸载科技lion脚本"
-			echo "*#Shhf1m#*"
-			echo "*#ISaWaa#*"
-			echo "*#N0zIZx#*"
-			read -e -p "*#KISjSB#*" choice
+			echo "*#BGWvzM#*"
+			echo "*#UZMS6k#*"
+			echo "*#nl4tuj#*"
+			Ask "*#7sdrLr#*" choice
 
 			case "$choice" in
 			[Yy])
@@ -11468,16 +11322,16 @@ EOF
 				(crontab -l | grep -v "kejilion.sh") | crontab -
 				rm -f /usr/local/bin/k
 				rm ~/kejilion.sh
-				echo "*#W690F3#*"
+				echo "*#zNyYGV#*"
 				break_end
 				clear
 				exit
 				;;
 			[Nn])
-				echo "*#03i9Gh#*"
+				echo "*#yS8n2l#*"
 				;;
 			*)
-				echo "*#hTC3dG#*"
+				echo "*#gQOs0K#*"
 				;;
 			esac
 			;;
@@ -11487,7 +11341,7 @@ EOF
 
 			;;
 		*)
-			echo "*#SVFIXm#*"
+			echo "*#tbV75u#*"
 			;;
 		esac
 		break_end
@@ -11501,165 +11355,181 @@ linux_file() {
 	send_stats "文件管理器"
 	while true; do
 		clear
-		echo "*#tibJDf#*"
-		echo "*#d49Pki#*"
-		echo "*#TJrQM0#*"
+		echo "*#MhSj0X#*"
+		echo "*#u0O4YF#*"
+		echo "*#jIfavk#*"
 		pwd
-		echo "*#d49Pki#*"
+		echo "*#u0O4YF#*"
 		ls --color=auto -x
-		echo "*#d49Pki#*"
-		echo "*#v3KPp1#*"
-		echo "*#EheXPS#*"
-		echo "*#d49Pki#*"
-		echo "*#cK1XMc#*"
-		echo "*#2cs2S6#*"
-		echo "*#d49Pki#*"
-		echo "*#iqeQ3d#*"
-		echo "*#yNDi2W#*"
-		echo "*#d49Pki#*"
-		echo "*#LH9QCW#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#YDzc33#*" Limiting
+		echo "*#u0O4YF#*"
+		echo "*#ldKJ5D#*"
+		echo "*#5zopOD#*"
+		echo "*#u0O4YF#*"
+		echo "*#rTlBQf#*"
+		echo "*#NIeGqP#*"
+		echo "*#u0O4YF#*"
+		echo "*#rzmMIc#*"
+		echo "*#7HWtI9#*"
+		echo "*#u0O4YF#*"
+		echo "*#eD2t25#*"
+		echo "*#u0O4YF#*"
+		Ask "*#9bDAbE#*" Limiting
 
 		case "$Limiting" in
-		1) # 进入目录
-			read -e -p "*#210v0h#*" dirname
-			cd "$dirname" 2>/dev/null || echo "*#QkYc7R#*"
+		1)
+			# 进入目录
+			Ask "*#5Bldh2#*" dirname
+			cd "$dirname" 2>/dev/null || echo "*#tpqcHG#*"
 			send_stats "进入目录"
 			;;
-		2) # 创建目录
-			read -e -p "*#EQ7LJq#*" dirname
-			mkdir -p "$dirname" && echo "*#RhbTqU#*" || echo "*#H3jJCe#*"
+		2)
+			# 创建目录
+			Ask "*#OEamUh#*" dirname
+			mkdir -p "$dirname" && echo "*#H9FtF0#*" || echo "*#4xxJ8I#*"
 			send_stats "创建目录"
 			;;
-		3) # 修改目录权限
-			read -e -p "*#210v0h#*" dirname
-			read -e -p "*#ayDIEI#*" perm
-			chmod "$perm" "$dirname" && echo "*#hLvkQw#*" || echo "*#WU4MHO#*"
+		3)
+			# 修改目录权限
+			Ask "*#5Bldh2#*" dirname
+			Ask "*#06BtUW#*" perm
+			chmod "$perm" "$dirname" && echo "*#evXxGC#*" || echo "*#Fpik2H#*"
 			send_stats "修改目录权限"
 			;;
-		4) # 重命名目录
-			read -e -p "*#Opy67B#*" current_name
-			read -e -p "*#KZMm4t#*" new_name
-			mv "$current_name" "$new_name" && echo "*#ll2oIS#*" || echo "*#gb0mFT#*"
+		4)
+			# 重命名目录
+			Ask "*#9vJoaQ#*" current_name
+			Ask "*#WgHfcI#*" new_name
+			mv "$current_name" "$new_name" && echo "*#CO436y#*" || echo "*#g8WrEu#*"
 			send_stats "重命名目录"
 			;;
-		5) # 删除目录
-			read -e -p "*#Qsg30L#*" dirname
-			rm -rf "$dirname" && echo "*#nMGvrF#*" || echo "*#q6Somx#*"
+		5)
+			# 删除目录
+			Ask "*#el7guu#*" dirname
+			rm -rf "$dirname" && echo "*#n4nqNc#*" || echo "*#BRgcIZ#*"
 			send_stats "删除目录"
 			;;
-		6) # 返回上一级选单目录
+		6)
+			# 返回上一级选单目录
 			cd ..
 			send_stats "返回上一级选单目录"
 			;;
-		11) # 创建文件
-			read -e -p "*#jQibmE#*" filename
-			touch "$filename" && echo "*#nDRw5L#*" || echo "*#H3jJCe#*"
+		11)
+			# 创建文件
+			Ask "*#hekjVj#*" filename
+			touch "$filename" && echo "*#Z0D2eC#*" || echo "*#4xxJ8I#*"
 			send_stats "创建文件"
 			;;
-		12) # 编辑文件
-			read -e -p "*#j6pSbi#*" filename
+		12)
+			# 编辑文件
+			Ask "*#k3b1tM#*" filename
 			install nano
 			nano "$filename"
 			send_stats "编辑文件"
 			;;
-		13) # 修改文件权限
-			read -e -p "*#aAmIW3#*" filename
-			read -e -p "*#ayDIEI#*" perm
-			chmod "$perm" "$filename" && echo "*#hLvkQw#*" || echo "*#WU4MHO#*"
+		13)
+			# 修改文件权限
+			Ask "*#4XHjs8#*" filename
+			Ask "*#06BtUW#*" perm
+			chmod "$perm" "$filename" && echo "*#evXxGC#*" || echo "*#Fpik2H#*"
 			send_stats "修改文件权限"
 			;;
-		14) # 重命名文件
-			read -e -p "*#pbW8k6#*" current_name
-			read -e -p "*#MTUueP#*" new_name
-			mv "$current_name" "$new_name" && echo "*#SDNTtg#*" || echo "*#gb0mFT#*"
+		14)
+			# 重命名文件
+			Ask "*#AQH30Y#*" current_name
+			Ask "*#fuDAYk#*" new_name
+			mv "$current_name" "$new_name" && echo "*#hvKTQj#*" || echo "*#g8WrEu#*"
 			send_stats "重命名文件"
 			;;
-		15) # 删除文件
-			read -e -p "*#Bbq3JI#*" filename
-			rm -f "$filename" && echo "*#Pe6Tjl#*" || echo "*#q6Somx#*"
+		15)
+			# 删除文件
+			Ask "*#4sQQTy#*" filename
+			rm -f "$filename" && echo "*#ZlSkMe#*" || echo "*#BRgcIZ#*"
 			send_stats "删除文件"
 			;;
-		21) # 压缩文件/目录
-			read -e -p "*#JPEjH9#*" name
+		21)
+			# 压缩文件/目录
+			Ask "*#J3DDGR#*" name
 			install tar
-			tar -czvf "$name.tar.gz" "$name" && echo "*#gcwMNv#*" || echo "*#TmQNlq#*"
+			tar -czvf "$name.tar.gz" "$name" && echo "*#S1edaC#*" || echo "*#Tl2wfF#*"
 			send_stats "压缩文件/目录"
 			;;
-		22) # 解压文件/目录
-			read -e -p "*#m3M4JT#*" filename
+		22)
+			# 解压文件/目录
+			Ask "*#1TkTzd#*" filename
 			install tar
-			tar -xzvf "$filename" && echo "*#FETl04#*" || echo "*#CoaFGY#*"
+			tar -xzvf "$filename" && echo "*#3VRVcH#*" || echo "*#OCW7b4#*"
 			send_stats "解压文件/目录"
 			;;
 
-		23) # 移动文件或目录
-			read -e -p "*#KaaxMp#*" src_path
+		23)
+			# 移动文件或目录
+			Ask "*#xJqgw8#*" src_path
 			if [ ! -e "$src_path" ]; then
-				echo "*#9Rkip5#*"
+				echo "*#CGF3dh#*"
 				send_stats "移动文件或目录失败: 文件或目录不存在"
 				continue
 			fi
 
-			read -e -p "*#dEZFbT#*" dest_path
+			Ask "*#YmLnAK#*" dest_path
 			if [ -z "$dest_path" ]; then
-				echo "*#8DitDf#*"
+				echo "*#gFFQta#*"
 				send_stats "移动文件或目录失败: 目标路径未指定"
 				continue
 			fi
 
-			mv "$src_path" "$dest_path" && echo "*#THQM7H#*" || echo "*#CVe4SL#*"
+			mv "$src_path" "$dest_path" && echo "*#QbcWDv#*" || echo "*#QqolBz#*"
 			send_stats "移动文件或目录"
 			;;
 
-		24) # 复制文件目录
-			read -e -p "*#oAr29O#*" src_path
+		24)
+			# 复制文件目录
+			Ask "*#AYhRZd#*" src_path
 			if [ ! -e "$src_path" ]; then
-				echo "*#9Rkip5#*"
+				echo "*#CGF3dh#*"
 				send_stats "复制文件或目录失败: 文件或目录不存在"
 				continue
 			fi
 
-			read -e -p "*#dEZFbT#*" dest_path
+			Ask "*#YmLnAK#*" dest_path
 			if [ -z "$dest_path" ]; then
-				echo "*#8DitDf#*"
+				echo "*#gFFQta#*"
 				send_stats "复制文件或目录失败: 目标路径未指定"
 				continue
 			fi
 
 			# 使用 -r 选项以递归方式复制目录
-			cp -r "$src_path" "$dest_path" && echo "*#lglFoZ#*" || echo "*#bEjmIk#*"
+			cp -r "$src_path" "$dest_path" && echo "*#fFlqP2#*" || echo "*#u43YDs#*"
 			send_stats "复制文件或目录"
 			;;
 
-		25) # 传送文件至远端服务器
-			read -e -p "*#vOKOjR#*" file_to_transfer
+		25)
+			# 传送文件至远端服务器
+			Ask "*#S2D0z4#*" file_to_transfer
 			if [ ! -f "$file_to_transfer" ]; then
-				echo "*#hbBCJe#*"
+				echo "*#ary4ZP#*"
 				send_stats "传送文件失败: 文件不存在"
 				continue
 			fi
 
-			read -e -p "*#z5Nv8b#*" remote_ip
+			Ask "*#qvZipu#*" remote_ip
 			if [ -z "$remote_ip" ]; then
-				echo "*#RDWncB#*"
+				echo "*#iD112k#*"
 				send_stats "传送文件失败: 未输入远端服务器IP"
 				continue
 			fi
 
-			read -e -p "*#nOngZz#*" remote_user
+			Ask "*#xUoZqu#*" remote_user
 			remote_user=${remote_user:-root}
 
-			read -e -p "*#Wfcfvs#*" -s remote_password
+			Ask "*#fg1xWI#*" -s remote_password
 			echo
 			if [ -z "$remote_password" ]; then
-				echo "*#ynbub9#*"
+				echo "*#rEhBmi#*"
 				send_stats "传送文件失败: 未输入远端服务器密码"
 				continue
 			fi
 
-			read -e -p "*#PfTyub#*" remote_port
+			Ask "*#txXV1X#*" remote_port
 			remote_port=${remote_port:-22}
 
 			# 清除已知主机的旧条目
@@ -11667,27 +11537,28 @@ linux_file() {
 			sleep 2 # 等待时间
 
 			# 使用scp传输文件
-			scp -P "$remote_port" -o StrictHostKeyChecking=no "$file_to_transfer" "$remote_user@$remote_ip:/home/" <<EOF
-$remote_password
-EOF
+			NO_TRAN=$'echo "$remote_password" | scp -P "$remote_port" -o StrictHostKeyChecking=no "$file_to_transfer" "$remote_user@$remote_ip:/home/"'
+			eval "$NO_TRAN"
 
 			if [ $? -eq 0 ]; then
-				echo "*#8hZjKt#*"
+				echo "*#9sEODJ#*"
 				send_stats "文件传送成功"
 			else
-				echo "*#A7964o#*"
+				echo "*#vXgIc6#*"
 				send_stats "文件传送失败"
 			fi
 
 			break_end
 			;;
 
-		0) # 返回上一级选单
+		0)
+			# 返回上一级选单
 			send_stats "返回上一级选单菜单"
 			break
 			;;
-		*) # 处理无效输入
-			echo "*#peaBUb#*"
+		*)
+			# 处理无效输入
+			echo "*#dmb1VT#*"
 			send_stats "无效选择"
 			;;
 		esac
@@ -11719,7 +11590,7 @@ run_commands_on_servers() {
 		local username=${SERVER_ARRAY[i + 3]}
 		local password=${SERVER_ARRAY[i + 4]}
 		echo
-		echo -e "*#3lw1EG#*"
+		echo -e "*#B3I6Ni#*"
 		# sshpass -p "$password" ssh -o StrictHostKeyChecking=no "$username@$hostname" -p "$port" "$1"
 		sshpass -p "$password" ssh -t -o StrictHostKeyChecking=no "$username@$hostname" -p "$port" "$1"
 	done
@@ -11731,50 +11602,47 @@ run_commands_on_servers() {
 linux_cluster() {
 	mkdir cluster
 	if [ ! -f ~/cluster/servers.py ]; then
-		cat >~/cluster/servers.py <<EOF
-servers = [
-
-]
-EOF
+		NO_TRAN=$'servers = [\n\n]\n'
+		echo -e "$NO_TRAN" >~/cluster/servers.py
 	fi
 
 	while true; do
 		clear
 		send_stats "集群控制中心"
-		echo "*#D9sLZS#*"
+		echo "*#RVryOo#*"
 		cat ~/cluster/servers.py
 		echo
-		echo -e "*#wYoQzy#*"
-		echo -e "*#ij9LrB#*"
-		echo -e "*#OoTKKw#*"
-		echo -e "*#UO9ofR#*"
-		echo -e "*#wYoQzy#*"
-		echo -e "*#271xtn#*"
-		echo -e "*#xlegKs#*"
-		echo -e "*#2vHGes#*"
-		echo -e "*#6Ep2lB#*"
-		echo -e "*#wYoQzy#*"
-		echo -e "*#u4oLuC#*"
-		echo -e "*#wYoQzy#*"
-		read -e -p "*#YDzc33#*" sub_choice
+		echo -e "*#bPMjZg#*"
+		echo -e "*#rd0nIz#*"
+		echo -e "*#34GEyy#*"
+		echo -e "*#TmdExu#*"
+		echo -e "*#bPMjZg#*"
+		echo -e "*#QrxPlS#*"
+		echo -e "*#eqGXNq#*"
+		echo -e "*#cjQdUL#*"
+		echo -e "*#NJ3NUJ#*"
+		echo -e "*#bPMjZg#*"
+		echo -e "*#Hm0Osc#*"
+		echo -e "*#bPMjZg#*"
+		Ask "*#9bDAbE#*" sub_choice
 
 		case $sub_choice in
 		1)
 			send_stats "添加集群服务器"
-			read -e -p "*#1lMOvD#*" server_name
-			read -e -p "*#T8cVzI#*" server_ip
-			read -e -p "*#GSXrCY#*" server_port
+			Ask "*#XCUn7i#*" server_name
+			Ask "*#C56pyh#*" server_ip
+			Ask "*#iI9igp#*" server_port
 			local server_port=${server_port:-22}
-			read -e -p "*#tIFpkQ#*" server_username
+			Ask "*#n8jn7o#*" server_username
 			local server_username=${server_username:-root}
-			read -e -p "*#m2aajR#*" server_password
+			Ask "*#c8dz37#*" server_password
 
 			sed -i "/servers = \[/a\    {\"name\": \"$server_name\", \"hostname\": \"$server_ip\", \"port\": $server_port, \"username\": \"$server_username\", \"password\": \"$server_password\", \"remote_path\": \"/home/\"}," ~/cluster/servers.py
 
 			;;
 		2)
 			send_stats "删除集群服务器"
-			read -e -p "*#eGIxwu#*" rmserver
+			Ask "*#tmR4u3#*" rmserver
 			sed -i "/$rmserver/d" ~/cluster/servers.py
 			;;
 		3)
@@ -11786,15 +11654,15 @@ EOF
 		4)
 			clear
 			send_stats "备份集群"
-			echo -e "*#tH4YEI#*"
+			echo -e "*#4d5rm6#*"
 			break_end
 			;;
 
 		5)
 			clear
 			send_stats "还原集群"
-			echo "*#cbkGqT#*"
-			echo -e "*#tKwuup#*"
+			echo "*#XK3usS#*"
+			echo -e "*#cpGtmO#*"
 			break_end
 			;;
 
@@ -11826,7 +11694,7 @@ EOF
 
 		51)
 			send_stats "自定义执行命令"
-			read -e -p "*#npx9Il#*" mingling
+			Ask "*#XsFJLZ#*" mingling
 			run_commands_on_servers "${mingling}"
 			;;
 
@@ -11842,49 +11710,49 @@ kejilion_Affiliates() {
 
 	clear
 	send_stats "广告专栏"
-	echo "*#QOzU84#*"
-	echo "*#d49Pki#*"
-	echo "*#urEbSj#*"
-	echo "*#KUeEyM#*"
-	echo -e "*#MQb42B#*"
-	echo "*#d49Pki#*"
-	echo -e "*#75MAj0#*"
-	echo -e "*#LxA032#*"
-	echo "*#d49Pki#*"
-	echo -e "*#7oKuaP#*"
-	echo -e "*#YrQ4Td#*"
-	echo "*#d49Pki#*"
-	echo -e "*#m23rY8#*"
-	echo -e "*#Li7q27#*"
-	echo "*#d49Pki#*"
-	echo -e "*#6EhGi4#*"
-	echo -e "*#4h7xAl#*"
-	echo "*#d49Pki#*"
-	echo -e "*#LDM03t#*"
-	echo -e "*#97WcNO#*"
-	echo "*#d49Pki#*"
-	echo -e "*#kSzZhy#*"
-	echo -e "*#r3K77B#*"
-	echo "*#d49Pki#*"
-	echo -e "*#cTweWn#*"
-	echo -e "*#souRqZ#*"
-	echo "*#d49Pki#*"
-	echo "*#KUeEyM#*"
-	echo -e "*#3lvwVJ#*"
-	echo "*#d49Pki#*"
-	echo -e "*#HSQqaq#*"
-	echo -e "*#0a9DWc#*"
-	echo "*#d49Pki#*"
-	echo "*#KUeEyM#*"
-	echo -e "*#7nfwvo#*"
-	echo "*#d49Pki#*"
-	echo -e "*#440rGR#*"
-	echo -e "*#8lwxCb#*"
-	echo -e "*#zaMLn9#*"
-	echo "*#d49Pki#*"
-	echo -e "*#Xattfw#*"
-	echo "*#d49Pki#*"
-	echo "*#KUeEyM#*"
+	echo "*#ilXNcE#*"
+	echo "*#u0O4YF#*"
+	echo "*#DgPPwh#*"
+	echo
+	echo -e "*#hMhxcC#*"
+	echo "*#u0O4YF#*"
+	echo -e "*#v0CMfI#*"
+	echo -e "*#OFnsil#*"
+	echo "*#u0O4YF#*"
+	echo -e "*#FgG2Wr#*"
+	echo -e "*#Vl2qo3#*"
+	echo "*#u0O4YF#*"
+	echo -e "*#1xfkyR#*"
+	echo -e "*#yavGsl#*"
+	echo "*#u0O4YF#*"
+	echo -e "*#bzdOni#*"
+	echo -e "*#9ivbJ2#*"
+	echo "*#u0O4YF#*"
+	echo -e "*#IxyxDr#*"
+	echo -e "*#qydkTi#*"
+	echo "*#u0O4YF#*"
+	echo -e "*#JgBSn0#*"
+	echo -e "*#0Liicj#*"
+	echo "*#u0O4YF#*"
+	echo -e "*#hEUSTW#*"
+	echo -e "*#9X20rZ#*"
+	echo "*#u0O4YF#*"
+	echo
+	echo -e "*#XyZUkI#*"
+	echo "*#u0O4YF#*"
+	echo -e "*#jkhYXF#*"
+	echo -e "*#WGyLHV#*"
+	echo "*#u0O4YF#*"
+	echo
+	echo -e "*#YRjJFi#*"
+	echo "*#u0O4YF#*"
+	echo -e "*#Q5TYru#*"
+	echo -e "*#FddFhX#*"
+	echo -e "*#Q6Lt8p#*"
+	echo "*#u0O4YF#*"
+	echo -e "*#YYMxFH#*"
+	echo "*#u0O4YF#*"
+	echo
 }
 
 kejilion_update() {
@@ -11893,36 +11761,36 @@ kejilion_update() {
 	cd ~
 	while true; do
 		clear
-		echo "*#fRRmOi#*"
-		echo "*#d49Pki#*"
-		echo "*#cGqr94#*"
-		echo "*#d49Pki#*"
+		echo "*#dFUTvS#*"
+		echo "*#u0O4YF#*"
+		echo "*#LLjmcf#*"
+		echo "*#u0O4YF#*"
 
 		curl -s ${gh_proxy}raw.githubusercontent.com/kejilion/sh/main/kejilion_sh_log.txt | tail -n 30
 		local sh_v_new=$(curl -s ${gh_proxy}raw.githubusercontent.com/kejilion/sh/main/kejilion.sh | grep -o 'sh_v="[0-9.]*"' | cut -d '"' -f 2)
 
 		if [ "$sh_v" = "$sh_v_new" ]; then
-			echo -e "*#OCjsby#*"
+			echo -e "*#ohzR7r#*"
 			send_stats "脚本已经最新了，无需更新"
 		else
-			echo "*#cz0OMp#*"
-			echo -e "*#FFNDPI#*"
+			echo "*#B2Qilr#*"
+			echo -e "*#zRqfiD#*"
 		fi
 
 		local cron_job="kejilion.sh"
 		local existing_cron=$(crontab -l 2>/dev/null | grep -F "$cron_job")
 
 		if [ -n "$existing_cron" ]; then
-			echo "*#d49Pki#*"
-			echo -e "*#FGCiSF#*"
+			echo "*#u0O4YF#*"
+			echo -e "*#K2rkGp#*"
 		fi
 
-		echo "*#d49Pki#*"
-		echo "*#X9IvTU#*"
-		echo "*#d49Pki#*"
-		echo "*#wZ9n2T#*"
-		echo "*#d49Pki#*"
-		read -e -p "*#YDzc33#*" choice
+		echo "*#u0O4YF#*"
+		echo "*#hB2N15#*"
+		echo "*#u0O4YF#*"
+		echo "*#J8vA6e#*"
+		echo "*#u0O4YF#*"
+		Ask "*#9bDAbE#*" choice
 		case "$choice" in
 		1)
 			clear
@@ -11936,7 +11804,7 @@ kejilion_update() {
 			CheckFirstRun_true
 			yinsiyuanquan2
 			cp -f ~/kejilion.sh /usr/local/bin/k >/dev/null 2>&1
-			echo -e "*#ysELS5#*"
+			echo -e "*#Xn24jS#*"
 			send_stats "脚本已经最新$sh_v_new"
 			break_end
 			~/kejilion.sh
@@ -11955,19 +11823,20 @@ kejilion_update() {
 			fi
 			check_crontab_installed
 			(crontab -l | grep -v "kejilion.sh") | crontab -
-			# (crontab -l 2>/dev/null; echo "*#RYv9wg#*"$SH_Update_task\"") | crontab -
+			# (crontab -l 2>/dev/null; echo "*#4zZpKf#*"$SH_Update_task\"") | crontab -
 			(
 				crontab -l 2>/dev/null
-				echo "*#2mYFCs#*"$SH_Update_task\""
+				NO_TRAN="$(shuf -i 0-59 -n 1) 2 * * * bash -c \"\$SH_Update_task\""
+				echo "$NO_TRAN"
 			) | crontab -
-			echo -e "*#FGCiSF#*"
+			echo -e "*#K2rkGp#*"
 			send_stats "开启脚本自动更新"
 			break_end
 			;;
 		3)
 			clear
 			(crontab -l | grep -v "kejilion.sh") | crontab -
-			echo -e "*#V8IbL8#*"
+			echo -e "*#lOGH3w#*"
 			send_stats "关闭脚本自动更新"
 			break_end
 			;;
@@ -11982,36 +11851,36 @@ kejilion_update() {
 kejilion_sh() {
 	while true; do
 		clear
-		echo -e "*#f7vmet#*"
-		echo "*#3eyiK6#*"
-		echo "*#DtwXKX#*"
-		echo "*#1wIxrY#*"
-		echo -e "*#PcgEQy#*"
-		echo -e "*#c2XVcA#*"
-		echo -e "*#wYoQzy#*"
-		echo -e "*#eEwfB0#*"
-		echo -e "*#tdBTLa#*"
-		echo -e "*#x5prwT#*"
-		echo -e "*#dQlbsG#*"
-		echo -e "*#7wzTIV#*"
-		echo -e "*#sK4SSE#*"
-		echo -e "*#i5SrqY#*"
-		echo -e "*#I4X4Lp#*"
-		echo -e "*#Ods8KY#*"
-		echo -e "*#JDlKe0#*"
-		echo -e "*#ByVutd#*"
-		echo -e "*#S5aJut#*"
-		echo -e "*#LmdV1Z#*"
-		echo -e "*#gVB2Ry#*"
-		echo -e "*#Hv6XT1#*"
-		echo -e "*#wYoQzy#*"
-		echo -e "*#wBBiSM#*"
-		echo -e "*#wYoQzy#*"
-		echo -e "*#Vbnia5#*"
-		echo -e "*#wYoQzy#*"
-		echo -e "*#6ymjAZ#*"
-		echo -e "*#wYoQzy#*"
-		read -e -p "*#YDzc33#*" choice
+		echo -e "${gl_kjlan}"
+		echo "*#X7xPhQ#*"
+		echo "*#ydV6KR#*"
+		echo "*#DS1OA8#*"
+		echo -e "*#s3eWmX#*"
+		echo -e "*#8sIKL0#*"
+		echo -e "*#bPMjZg#*"
+		echo -e "*#tq2TOQ#*"
+		echo -e "*#IELIMT#*"
+		echo -e "*#xZro5l#*"
+		echo -e "*#6MYbi1#*"
+		echo -e "*#aWDGFZ#*"
+		echo -e "*#E6K6vc#*"
+		echo -e "*#AilIMj#*"
+		echo -e "*#NMwBjC#*"
+		echo -e "*#rI4VDh#*"
+		echo -e "*#6a2CeM#*"
+		echo -e "*#WHqBM1#*"
+		echo -e "*#XiAvHo#*"
+		echo -e "*#U0CFbH#*"
+		echo -e "*#H1GMNN#*"
+		echo -e "*#gC1PxA#*"
+		echo -e "*#bPMjZg#*"
+		echo -e "*#XB8iJG#*"
+		echo -e "*#bPMjZg#*"
+		echo -e "*#vhbLDe#*"
+		echo -e "*#bPMjZg#*"
+		echo -e "*#wvHfMk#*"
+		echo -e "*#bPMjZg#*"
+		Ask "*#9bDAbE#*" choice
 
 		case $choice in
 		1) linux_ps ;;
@@ -12056,7 +11925,7 @@ kejilion_sh() {
 			clear
 			exit
 			;;
-		*) echo "*#SVFIXm#*" ;;
+		*) echo "*#tbV75u#*" ;;
 		esac
 		break_end
 	done
@@ -12064,47 +11933,46 @@ kejilion_sh() {
 
 k_info() {
 	send_stats "k命令参考用例"
-	echo "*#149W79#*"
-	echo "*#dLfBZQ#*"
-	echo "*#kAoPtN#*"
-	echo "*#uDjJIT#*"
-	echo "*#K9CAgV#*"
-	echo "*#HchrNm#*"
-	echo "*#sL8mPM#*"
-	echo "*#FyVbZl#*"
-	echo "*#Ajmns7#*"
-	echo "*#o1U79t#*"
-	echo "*#pC5ocn#*"
-	echo "*#nkbyQZ#*"
-	echo "*#ZnFttt#*"
-	echo "*#YMYKFu#*"
-	echo "*#G1YaoY#*"
-	echo "*#EHSIVG#*"
-	echo "*#4maAIc#*"
-	echo "*#7lqnmt#*"
-	echo "*#nNiwbo#*"
-	echo "*#tqOWJd#*"
-	echo "*#PlJBmB#*"
-	echo "*#lyAkc6#*"
-	echo "*#0P5m7u#*"
-	echo "*#9YMaoZ#*"
-	echo "*#p7hNUn#*"
-	echo "*#DCpqeg#*"
-	echo "*#QkxKHL#*"
-	echo "*#danhgy#*"
-	echo "*#C8T4XD#*"
-	echo "*#AA1xkh#*"
-	echo "*#TxlgjS#*"
-	echo "*#y2S03U#*"
-	echo "*#icjCIU#*"
-	echo "*#DGlvan#*"
-	echo "*#oaTqt0#*"
-	echo "*#AydECX#*"
-	echo "*#IudOHy#*"
-	echo "*#jQTWHy#*"
-	echo "*#Eb5Gro#*"
-	echo "*#JlW3rD#*"
-
+	echo "*#tAb3HF#*"
+	echo "*#sQD7ND#*"
+	echo "*#2iNCcE#*"
+	echo "*#BZhdtS#*"
+	echo "*#otZMau#*"
+	echo "*#ucGKsW#*"
+	echo "*#H5KvT6#*"
+	echo "*#ChOZ9h#*"
+	echo "*#GRLdza#*"
+	echo "*#WSmelE#*"
+	echo "*#9Jye1V#*"
+	echo "*#707WsO#*"
+	echo "*#O559r3#*"
+	echo "*#JVR5se#*"
+	echo "*#j9beR4#*"
+	echo "*#agaXwb#*"
+	echo "*#PmP9jm#*"
+	echo "*#dEr5RM#*"
+	echo "*#TK5MZY#*"
+	echo "*#uZHU3L#*"
+	echo "*#GFlFdR#*"
+	echo "*#57avF3#*"
+	echo "*#CP13FJ#*"
+	echo "*#H49ZWm#*"
+	echo "*#jYC6fG#*"
+	echo "*#Eq7eG6#*"
+	echo "*#OVzoYC#*"
+	echo "*#80lUdR#*"
+	echo "*#pzHqQn#*"
+	echo "*#pJZhbt#*"
+	echo "*#0eZnPe#*"
+	echo "*#XMKw3Y#*"
+	echo "*#JFfjgS#*"
+	echo "*#iV4m7F#*"
+	echo "*#5UkhRI#*"
+	echo "*#GWTH1R#*"
+	echo "*#wYSoGJ#*"
+	echo "*#gwUYw4#*"
+	echo "*#HValhj#*"
+	echo "*#iwwa6N#*"
 }
 
 if [ "$#" -eq 0 ]; then

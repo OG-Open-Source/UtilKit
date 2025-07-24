@@ -2,7 +2,7 @@
 
 ANTHORS="OG-Open-Source"
 SCRIPTS="UtilKit.sh"
-VERSION="7.046.004"
+VERSION="7.046.005"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -16,44 +16,45 @@ CLR9="\033[0;97m"
 CLR0="\033[0m"
 
 PKG_MGR=""
+UNIT_PREF="iB"
 
 function Txt() { echo -e "$1" "$2"; }
 function Err() {
 	[ -z "$1" ] && {
-		Txt "${CLR1}Unknown error ${CLR0}"
+		Txt "${CLR1}Unknown error${CLR0}"
 		return 1
 	}
 	Txt "${CLR1}$1${CLR0}"
 	if [ -w "/var/log" ]; then
 		log_file_Err="/var/log/utilkit.sh.log"
-		timestamp_Err="$(date '+%Y-%m-%d %H:%M:%S')"
+		timestamp_Err="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 		log_entry_Err="${timestamp_Err} | ${SCRIPTS} - ${VERSION} - $(Txt "$1" | tr -d '\n')"
 		Txt "${log_entry_Err}" >>"${log_file_Err}" 2>/dev/null
 	fi
 }
 function Add() {
 	[ $# -eq 0 ] && {
-		Err "No new items to be added were specified. Please provide at least one new project to be added"
+		Err "No items specified to add. Please provide at least one item to add"
 		return 2
 	}
 	[ "$1" = "-f" -o "$1" = "-d" ] && [ $# -eq 1 ] && {
-		Err "No archive or directory path was specified after -f or -d"
+		Err "No file or directory path specified after -f or -d"
 		return 2
 	}
 	[ "$1" = "-f" -o "$1" = "-d" ] && [ "$2" = "" ] && {
-		Err "No archive or directory path was specified after -f or -d"
+		Err "No file or directory path specified after -f or -d"
 		return 2
 	}
 	mod_Add="pkg"
 	err_code_Add=0
 	while [ $# -gt 0 ]; do
 		case "$1" in
-		-f)
+		-f | --file)
 			mod_Add="file"
 			shift
 			continue
 			;;
-		-d)
+		-d | --directory)
 			mod_Add="dir"
 			shift
 			continue
@@ -61,28 +62,28 @@ function Add() {
 		*.deb)
 			ChkRoot
 			deb_file_Add=$(basename "$1")
-			Txt "${CLR3}install DEB kit [${deb_file_Add}]${CLR0}\\n"
+			Txt "${CLR3}Installing DEB package [${deb_file_Add}]${CLR0}\n"
 			Get "$1"
 			if [ -f "${deb_file_Add}" ]; then
 				dpkg -i "${deb_file_Add}" || {
-					Err "Installation of ${deb_file_Add} failed. Please check the kit compatibility and dependency\\n"
+					Err "Failed to install ${deb_file_Add}. Please check package compatibility and dependencies\n"
 					rm -f "${deb_file_Add}"
 					err_code_Add=1
 					shift
 					continue
 				}
 				apt --fix-broken install -y || {
-					Err "Failed to fix dependency"
+					Err "Failed to fix dependencies"
 					rm -f "${deb_file_Add}"
 					err_code_Add=1
 					shift
 					continue
 				}
-				Txt "* DEB suite ${deb_file_Add} installed successfully"
+				Txt "* DEB package ${deb_file_Add} installed successfully"
 				rm -f "${deb_file_Add}"
-				Txt "${CLR2}Complete ${CLR0}\\n"
+				Txt "${CLR2}Done${CLR0}\n"
 			else
-				Err "DEB suite ${deb_file_Add} not found or download failed\\n"
+				Err "DEB package ${deb_file_Add} not found or download failed\n"
 				err_code_Add=1
 				shift
 				continue
@@ -92,53 +93,53 @@ function Add() {
 		*)
 			case "${mod_Add}" in
 			"file")
-				Txt "${CLR3}New File [$1]${CLR0}"
+				Txt "${CLR3}Adding file [$1]${CLR0}"
 				[ -d "$1" ] && {
-					Err "Directory $1 already exists. Unable to create file of the same name\\n"
+					Err "Directory $1 already exists. Cannot create file with the same name\n"
 					err_code_Add=1
 					shift
 					continue
 				}
 				[ -f "$1" ] && {
-					Err "File $1 already exists\\n"
+					Err "File $1 already exists\n"
 					err_code_Add=1
 					shift
 					continue
 				}
 				touch "$1" || {
-					Err "File creation $1 failed. Please check permissions and disk space\\n"
+					Err "Failed to create file $1. Please check permissions and disk space\n"
 					err_code_Add=1
 					shift
 					continue
 				}
-				Txt "* File $1 Created successfully"
-				Txt "${CLR2}Complete ${CLR0}\\n"
+				Txt "* File $1 created successfully"
+				Txt "${CLR2}Done${CLR0}\n"
 				;;
 			"dir")
-				Txt "${CLR3}New directory [$1]${CLR0}"
+				Txt "${CLR3}Adding directory [$1]${CLR0}"
 				[ -f "$1" ] && {
-					Err "File $1 already exists. Unable to create directory with the same name\\n"
+					Err "File $1 already exists. Cannot create directory with the same name\n"
 					err_code_Add=1
 					shift
 					continue
 				}
 				[ -d "$1" ] && {
-					Err "Directory $1 already exists\\n"
+					Err "Directory $1 already exists\n"
 					err_code_Add=1
 					shift
 					continue
 				}
 				mkdir -p "$1" || {
-					Err "Creating directory $1 failed. Please check permissions and path validity\\n"
+					Err "Failed to create directory $1. Please check permissions and path validity\n"
 					err_code_Add=1
 					shift
 					continue
 				}
-				Txt "* Table of Contents $1 Created successfully"
-				Txt "${CLR2}Complete ${CLR0}\\n"
+				Txt "* Directory $1 created successfully"
+				Txt "${CLR2}Done${CLR0}\n"
 				;;
 			"pkg")
-				Txt "${CLR3}Installation Kit [$1]${CLR0}"
+				Txt "${CLR3}Installing package [$1]${CLR0}"
 				ChkRoot
 				case ${PKG_MGR} in
 				apk | apt | opkg | pacman | yum | zypper | dnf)
@@ -163,30 +164,30 @@ function Add() {
 						esac
 					}
 					if ! is_instd_Add "$1"; then
-						Txt "* Kit $1 Not installed yet"
+						Txt "* Package $1 is not installed"
 						if inst_pkg_Add "$1"; then
 							if is_instd_Add "$1"; then
-								Txt "* Kit $1 Installed successfully"
-								Txt "${CLR2}Complete ${CLR0}\\n"
+								Txt "* Package $1 installed successfully"
+								Txt "${CLR2}Done${CLR0}\n"
 							else
-								Err "Installing $1 using ${PKG_MGR} failed\\n"
+								Err "Failed to install $1 using ${PKG_MGR}\n"
 								err_code_Add=1
 								shift
 								continue
 							fi
 						else
-							Err "Installing $1 using ${PKG_MGR} failed\\n"
+							Err "Failed to install $1 using ${PKG_MGR}\n"
 							err_code_Add=1
 							shift
 							continue
 						fi
 					else
-						Txt "* Kit $1 installed"
-						Txt "${CLR2}Complete ${CLR0}\\n"
+						Txt "* Package $1 is already installed"
+						Txt "${CLR2}Done${CLR0}\n"
 					fi
 					;;
 				*)
-					Err "Unsupported suite manager\\n"
+					Err "Unsupported package manager\n"
 					err_code_Add=1
 					shift
 					continue
@@ -205,8 +206,8 @@ function ChkDeps() {
 	missg_deps_ChkDeps=()
 	while [[ $1 == -* ]]; do
 		case "$1" in
-		-i) mod_ChkDeps="interactive" ;;
-		-a) mod_ChkDeps="auto" ;;
+		-i | --interactive) mod_ChkDeps="interactive" ;;
+		-a | --automatic) mod_ChkDeps="automatic" ;;
 		*)
 			Err "Invalid option: $1"
 			return 1
@@ -216,22 +217,22 @@ function ChkDeps() {
 	done
 	for dep_ChkDeps in "${deps[@]}"; do
 		if command -v "${dep_ChkDeps}" &>/dev/null; then
-			status="${CLR2}［可用］${CLR0}"
+			status_ChkDeps="${CLR2}[Available]${CLR0}"
 		else
-			status="${CLR1}［缺失］${CLR0}"
+			status_ChkDeps="${CLR1}[Missing]${CLR0}"
 			missg_deps_ChkDeps+=("${dep_ChkDeps}")
 		fi
-		Txt "${status}\\t${dep_ChkDeps}"
+		Txt "${status_ChkDeps}\t${dep_ChkDeps}"
 	done
 	[[ ${#missg_deps_ChkDeps[@]} -eq 0 ]] && return 0
 	case "${mod_ChkDeps}" in
 	"interactive")
-		Txt "\\n${CLR3} Missing suite: ${CLR0} ${missg_deps_ChkDeps[*]}"
-		Ask "Do you want to install the missing kit? (y/N)" -n 1 cont_inst_ChkDeps
+		Txt "\n${CLR3}Missing packages:${CLR0} ${missg_deps_ChkDeps[*]}"
+		Ask "Install missing packages? (y/N) " -n 1 cont_inst_ChkDeps
 		Txt
 		[[ ${cont_inst_ChkDeps} =~ ^[Yy]$ ]] && Add "${missg_deps_ChkDeps[@]}"
 		;;
-	"auto")
+	"automatic")
 		Txt
 		Add "${missg_deps_ChkDeps[@]}"
 		;;
@@ -253,7 +254,7 @@ function ChkOs() {
 			cat /etc/alpine-release
 		else
 			{
-				Err "Unknown release version"
+				Err "Unknown distribution"
 				return 1
 			}
 		fi
@@ -266,7 +267,7 @@ function ChkOs() {
 			grep -i "DISTRO_NAME" /etc/DISTRO_SPECS | cut -d'=' -f2 | awk '{print $1}'
 		else
 			{
-				Err "Unknown releases"
+				Err "Unknown distribution"
 				return 1
 			}
 		fi
@@ -279,7 +280,7 @@ function ChkOs() {
 			grep -i "DISTRO_NAME" /etc/DISTRO_SPECS | cut -d'=' -f2
 		else
 			{
-				Err "Unknown releases"
+				Err "Unknown distribution"
 				return 1
 			}
 		fi
@@ -288,7 +289,7 @@ function ChkOs() {
 }
 function ChkRoot() {
 	if [ "${EUID}" -ne 0 ] || [ "$(id -u)" -ne 0 ]; then
-		Err "Please execute this script as root user"
+		Err "Please run this script as root user"
 		exit 1
 	fi
 }
@@ -296,7 +297,7 @@ function ChkVirt() {
 	if command -v systemd-detect-virt >/dev/null 2>&1; then
 		virt_typ_ChkVirt=$(systemd-detect-virt 2>/dev/null)
 		[ -z "${virt_typ_ChkVirt}" ] && {
-			Err "Unable to detect virtualized environments"
+			Err "Could not detect virtualization environment"
 			return 1
 		}
 		case "${virt_typ_ChkVirt}" in
@@ -308,45 +309,45 @@ function ChkVirt() {
 			elif grep -qi "hypervisor" /proc/cpuinfo 2>/dev/null; then
 				Txt "Virtual Machine (Unknown Type)"
 			else
-				Txt "Not detected (possibly physical machine)"
+				Txt "Not detected (likely physical machine)"
 			fi
 			;;
-		*) Txt "${virt_typ_ChkVirt:-Not detected (possibly physical machine)}" ;;
+		*) Txt "${virt_typ_ChkVirt:-Not detected (likely physical machine)}" ;;
 		esac
 	elif [ -f /proc/cpuinfo ]; then
-		virt_typ_ChkVirt=$(grep -i "hypervisor" /proc/cpuinfo >/dev/null && Txt "Virtual Machine" || Txt "none")
+		virt_typ_ChkVirt=$(grep -i "hypervisor" /proc/cpuinfo >/dev/null && Txt "Virtual Machine" || Txt "None")
 	else
-		virt_typ_ChkVirt="未知"
+		virt_typ_ChkVirt="Unknown"
 	fi
 }
 function Clear() {
 	targ_dir_Clear="${1:-${HOME}}"
 	cd "${targ_dir_Clear}" || {
-		Err "Failed to switch directory"
+		Err "Failed to change directory"
 		return 1
 	}
 	clear
 }
 function CpuCache() {
 	[ ! -f /proc/cpuinfo ] && {
-		Err "CPU information cannot be accessed. /proc/cpuinfo is not available"
+		Err "Could not access CPU information. /proc/cpuinfo is unavailable"
 		return 1
 	}
 	cpu_cache_CpuCache=$(awk '/^cache size/ {sum+=$4; count++} END {print (count>0) ? sum/count : "N/A"}' /proc/cpuinfo)
 	[ "${cpu_cache_CpuCache}" = "N/A" ] && {
-		Err "Unable to determine CPU cache size"
+		Err "Could not determine CPU cache size"
 		return 1
 	}
 	Txt "${cpu_cache_CpuCache} KB"
 }
 function CpuFreq() {
 	[ ! -f /proc/cpuinfo ] && {
-		Err "CPU information cannot be accessed. /proc/cpuinfo is not available"
+		Err "Could not access CPU information. /proc/cpuinfo is unavailable"
 		return 1
 	}
 	cpu_freq_CpuFreq=$(awk '/^cpu MHz/ {sum+=$4; count++} END {print (count>0) ? sprintf("%.2f", sum/count/1000) : "N/A"}' /proc/cpuinfo)
 	[ "${cpu_freq_CpuFreq}" = "N/A" ] && {
-		Err "Unable to determine the CPU frequency"
+		Err "Could not determine CPU frequency"
 		return 1
 	}
 	Txt "${cpu_freq_CpuFreq} GHz"
@@ -367,14 +368,14 @@ function CpuModel() {
 }
 function CpuUsage() {
 	read -r cpu_CpuUsage usr_CpuUsage nice_CpuUsage sys_CpuUsage idle_CpuUsage iowait_CpuUsage irq_CpuUsage softirq_CpuUsage <<<$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8}' /proc/stat) || {
-		Err "Read CPU statistics from /proc/stat failed"
+		Err "Failed to read CPU statistics from /proc/stat"
 		return 1
 	}
 	prev_total_CpuUsage=$((usr_CpuUsage + nice_CpuUsage + sys_CpuUsage + idle_CpuUsage + iowait_CpuUsage + irq_CpuUsage + softirq_CpuUsage))
 	prev_idle_CpuUsage=${idle_CpuUsage}
 	sleep 0.3
 	read -r cpu_CpuUsage usr_CpuUsage nice_CpuUsage sys_CpuUsage idle_CpuUsage iowait_CpuUsage irq_CpuUsage softirq_CpuUsage <<<$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8}' /proc/stat) || {
-		Err "Read CPU statistics from /proc/stat failed"
+		Err "Failed to read CPU statistics from /proc/stat"
 		return 1
 	}
 	curr_tot_CpuUsage=$((usr_CpuUsage + nice_CpuUsage + sys_CpuUsage + idle_CpuUsage + iowait_CpuUsage + irq_CpuUsage + softirq_CpuUsage))
@@ -386,16 +387,16 @@ function CpuUsage() {
 }
 function ConvSz() {
 	[ -z "$1" ] && {
-		Err "The size value to be converted is not provided"
+		Err "No size value provided for conversion"
 		return 2
 	}
 	size_ConvSz=$1
-	unit_ConvSz=${2:-iB}
+	unit_ConvSz=${2:-$UNIT_PREF}
 	if ! [[ ${size_ConvSz} =~ ^[+-]?[0-9]*\.?[0-9]+$ ]]; then
-		Err "Invalid size value. Must be numerical"
+		Err "Invalid size value. Must be a number"
 		return 2
 	elif [[ ${size_ConvSz} =~ ^[-].*$ ]]; then
-		Err "The size value cannot be negative"
+		Err "Size value cannot be negative"
 		return 2
 	elif [[ ${size_ConvSz} =~ ^[+].*$ ]]; then
 		size_ConvSz=${size_ConvSz#+}
@@ -453,7 +454,7 @@ function ConvSz() {
 		}
 	'
 	if [ $? -eq 1 ]; then
-		Err "Unsupported units: ${unit_ConvSz}"
+		Err "Unsupported unit: ${unit_ConvSz}"
 		return 2
 	fi
 }
@@ -463,27 +464,27 @@ function Copyright() {
 }
 function Del() {
 	[ $# -eq 0 ] && {
-		Err "The item to be deleted is not specified. Please provide at least one item to delete"
+		Err "No items specified to delete. Please provide at least one item to delete"
 		return 2
 	}
 	[ "$1" = "-f" -o "$1" = "-d" ] && [ $# -eq 1 ] && {
-		Err "No archive or directory path was specified after -f or -d"
+		Err "No file or directory path specified after -f or -d"
 		return 2
 	}
 	[ "$1" = "-f" -o "$1" = "-d" ] && [ "$2" = "" ] && {
-		Err "No archive or directory path was specified after -f or -d"
+		Err "No file or directory path specified after -f or -d"
 		return 2
 	}
 	mod_Del="pkg"
 	err_code_Del=0
 	while [ $# -gt 0 ]; do
 		case "$1" in
-		-f)
+		-f | --file)
 			mod_Del="file"
 			shift
 			continue
 			;;
-		-d)
+		-d | --directory)
 			mod_Del="dir"
 			shift
 			continue
@@ -491,43 +492,43 @@ function Del() {
 		*)
 			case "${mod_Del}" in
 			"file")
-				Txt "${CLR3}Delete file [$1]${CLR0}"
+				Txt "${CLR3}Deleting file [$1]${CLR0}"
 				[ ! -f "$1" ] && {
-					Err "File $1 does not exist\\n"
+					Err "File $1 does not exist\n"
 					err_code_Del=1
 					shift
 					continue
 				}
 				Txt "* File $1 exists"
 				rm -f "$1" || {
-					Err "Delete file $1 failed\\n"
+					Err "Failed to delete file $1\n"
 					err_code_Del=1
 					shift
 					continue
 				}
-				Txt "* File $1 Delete successfully"
-				Txt "${CLR2}Complete ${CLR0}\\n"
+				Txt "* File $1 deleted successfully"
+				Txt "${CLR2}Done${CLR0}\n"
 				;;
 			"dir")
-				Txt "${CLR3}Delete directory [$1]${CLR0}"
+				Txt "${CLR3}Deleting directory [$1]${CLR0}"
 				[ ! -d "$1" ] && {
-					Err "Directory $1 does not exist\\n"
+					Err "Directory $1 does not exist\n"
 					err_code_Del=1
 					shift
 					continue
 				}
 				Txt "* Directory $1 exists"
 				rm -rf "$1" || {
-					Err "Delete directory $1 failed\\n"
+					Err "Failed to delete directory $1\n"
 					err_code_Del=1
 					shift
 					continue
 				}
-				Txt "* Directory $1 Delete successfully"
-				Txt "${CLR2}Complete ${CLR0}\\n"
+				Txt "* Directory $1 deleted successfully"
+				Txt "${CLR2}Done${CLR0}\n"
 				;;
 			"pkg")
-				Txt "${CLR3}Remove Kit [$1]${CLR0}"
+				Txt "${CLR3}Removing package [$1]${CLR0}"
 				ChkRoot
 				case ${PKG_MGR} in
 				apk | apt | opkg | pacman | yum | zypper | dnf)
@@ -552,21 +553,21 @@ function Del() {
 						esac
 					}
 					if ! is_instd_Del "$1"; then
-						Txt "* Kit $1 does not exist"
-						Txt "${CLR2}Complete ${CLR0}\\n"
+						Txt "* Package $1 does not exist"
+						Txt "${CLR2}Done${CLR0}\n"
 					else
 						if rm_pkg_Del "$1"; then
 							if ! is_instd_Del "$1"; then
-								Txt "* Kit $1 Removal successfully"
-								Txt "${CLR2}Complete ${CLR0}\\n"
+								Txt "* Package $1 removed successfully"
+								Txt "${CLR2}Done${CLR0}\n"
 							else
-								Err "Removing $1 failed with ${PKG_MGR}\\n"
+								Err "Failed to remove $1 using ${PKG_MGR}\n"
 								err_code_Del=1
 								shift
 								continue
 							fi
 						else
-							Err "Removing $1 failed with ${PKG_MGR}\\n"
+							Err "Failed to remove $1 using ${PKG_MGR}\n"
 							err_code_Del=1
 							shift
 							continue
@@ -574,7 +575,7 @@ function Del() {
 					fi
 					;;
 				*)
-					Err "Unsupported suite manager\\n"
+					Err "Unsupported package manager\n"
 					err_code_Del=1
 					shift
 					continue
@@ -590,24 +591,24 @@ function Del() {
 }
 function DiskUsage() {
 	usd_DiskUsage=$(df -B1 / | awk '/^\/dev/ {print $3}') || {
-		Err "Failed to obtain disk usage statistics"
+		Err "Failed to get disk usage statistics"
 		return 1
 	}
 	tot_DiskUsage=$(df -B1 / | awk '/^\/dev/ {print $2}') || {
-		Err "Failed to obtain total disk space"
+		Err "Failed to get total disk space"
 		return 1
 	}
 	pct_DiskUsage=$(df / | awk '/^\/dev/ {printf("%.2f"), $3/$2 * 100.0}')
 	case "$1" in
-	-u) Txt "${usd_DiskUsage}" ;;
-	-t) Txt "${tot_DiskUsage}" ;;
-	-p) Txt "${pct_DiskUsage}" ;;
+	-u | --used) Txt "${usd_DiskUsage}" ;;
+	-t | --total) Txt "${tot_DiskUsage}" ;;
+	-p | --percentage) Txt "${pct_DiskUsage}" ;;
 	*) Txt "$(ConvSz ${usd_DiskUsage}) / $(ConvSz ${tot_DiskUsage}) (${pct_DiskUsage}%)" ;;
 	esac
 }
 function DnsAddr() {
 	[ ! -f /etc/resolv.conf ] && {
-		Err "DNS settings not found /etc/resolv.conf"
+		Err "DNS configuration file /etc/resolv.conf not found"
 		return 1
 	}
 	ipv4_servers_DnsAddr=()
@@ -620,30 +621,30 @@ function DnsAddr() {
 		fi
 	done < <(grep -E '^nameserver' /etc/resolv.conf | awk '{print $2}')
 	[[ ${#ipv4_servers_DnsAddr[@]} -eq 0 && ${#ipv6_servers_DnsAddr[@]} -eq 0 ]] && {
-		Err "DNS server is not set in /etc/resolv.conf"
+		Err "No DNS servers configured in /etc/resolv.conf"
 		return 1
 	}
 	case "$1" in
-	-4)
+	-4 | --ipv4)
 		[ ${#ipv4_servers_DnsAddr[@]} -eq 0 ] && {
-			Err "IPv4 DNS server not found"
+			Err "No IPv4 DNS servers found"
 			return 1
 		}
 		Txt "${ipv4_servers_DnsAddr[*]}"
 		;;
-	-6)
+	-6 | --ipv6)
 		[ ${#ipv6_servers_DnsAddr[@]} -eq 0 ] && {
-			Err "IPv6 DNS server not found"
+			Err "No IPv6 DNS servers found"
 			return 1
 		}
 		Txt "${ipv6_servers_DnsAddr[*]}"
 		;;
 	*)
 		[ ${#ipv4_servers_DnsAddr[@]} -eq 0 -a ${#ipv6_servers_DnsAddr[@]} -eq 0 ] && {
-			Err "DNS server not found"
+			Err "No DNS servers found"
 			return 1
 		}
-		Txt "${ipv4_servers_DnsAddr[*]} ${ipv6_servers_DnsAddr[*]}"
+		Txt "${ipv4_servers_DnsAddr[*]}   ${ipv6_servers_DnsAddr[*]}"
 		;;
 	esac
 }
@@ -661,17 +662,17 @@ function Find() {
 	zypper) srch_cmd_Find="zypper search" ;;
 	dnf) srch_cmd_Find="dnf search" ;;
 	*) {
-		Err "Suite Manager Not Found or Not Supported"
+		Err "Package manager not found or unsupported"
 		return 1
 	} ;;
 	esac
 	for targ_Find in "$@"; do
-		Txt "${CLR3}Search [${targ_Find}]${CLR0}"
+		Txt "${CLR3}Searching for [${targ_Find}]${CLR0}"
 		${srch_cmd_Find} "${targ_Find}" || {
-			Err "The result of ${targ_Find} cannot be found\\n"
+			Err "No results found for ${targ_Find}\n"
 			return 1
 		}
-		Txt "${CLR2}Complete ${CLR0}\\n"
+		Txt "${CLR2}Done${CLR0}\n"
 	done
 }
 function Font() {
@@ -708,11 +709,11 @@ function Format() {
 	val_Format="$2"
 	res_Format=""
 	[ -z "${val_Format}" ] && {
-		Err "The value to be formatted is not provided"
+		Err "No value provided for formatting"
 		return 2
 	}
 	[ -z "${flg_Format}" ] && {
-		Err "No formatting options provided"
+		Err "No formatting option provided"
 		return 2
 	}
 	case "${flg_Format}" in
@@ -730,13 +731,13 @@ function Get() {
 	url_Get=""
 	while [ $# -gt 0 ]; do
 		case "$1" in
-		-x)
+		-x | --unzip)
 			unzip_Get=true
 			shift
 			;;
-		-r)
+		-r | --rename)
 			[ -z "$2" ] || [[ $2 == -* ]] && {
-				Err "The file name is not specified after the -r option"
+				Err "No filename specified after -r option"
 				return 2
 			}
 			rnm_file_Get="$2"
@@ -760,69 +761,69 @@ function Get() {
 	oup_file_Get="${url_Get##*/}"
 	[ -z "${oup_file_Get}" ] && oup_file_Get="index.html"
 	[ "${targ_dir_Get}" != "." ] && { mkdir -p "${targ_dir_Get}" || {
-		Err "Create directory ${targ_dir_Get} failed"
+		Err "Failed to create directory ${targ_dir_Get}"
 		return 1
 	}; }
 	[ -n "${rnm_file_Get}" ] && oup_file_Get="${rnm_file_Get}"
 	oup_path_Get="${targ_dir_Get}/${oup_file_Get}"
 	url_Get=$(Txt "${url_Get}" | sed -E 's#([^:])/+#\1/#g; s#^(https?|ftp):/+#\1://#')
-	Txt "${CLR3}Download [${url_Get}]${CLR0}"
+	Txt "${CLR3}Downloading [${url_Get}]${CLR0}"
 	file_sz_Get=$(curl -sI "${url_Get}" | grep -i content-length | awk '{print $2}' | tr -d '\r')
 	if [ -n "${file_sz_Get}" ] && [ "${file_sz_Get}" -gt 26214400 ]; then
 		wget --no-check-certificate --timeout=5 --tries=2 "${url_Get}" -O "${oup_path_Get}" || {
-			Err "Failed to download archives using Wget"
+			Err "Failed to download file using Wget"
 			return 1
 		}
 	else
 		curl --location --insecure --connect-timeout 5 --retry 2 "${url_Get}" -o "${oup_path_Get}" || {
-			Err "Failed to download archives using cUrl"
+			Err "Failed to download file using cUrl"
 			return 1
 		}
 	fi
 	if [ -f "${oup_path_Get}" ]; then
-		Txt "* The file was successfully downloaded to ${oup_path_Get}"
+		Txt "* File successfully downloaded to ${oup_path_Get}"
 		if [ "${unzip_Get}" = true ]; then
 			case "${oup_file_Get}" in
 			*.tar.gz | *.tgz) tar -xzf "${oup_path_Get}" -C "${targ_dir_Get}" || {
-				Err "Decompressing tar.gz file failed"
+				Err "Failed to decompress tar.gz file"
 				return 1
 			} ;;
 			*.tar) tar -xf "${oup_path_Get}" -C "${targ_dir_Get}" || {
-				Err "Decompressing tar files failed"
+				Err "Failed to decompress tar file"
 				return 1
 			} ;;
 			*.tar.bz2 | *.tbz2) tar -xjf "${oup_path_Get}" -C "${targ_dir_Get}" || {
-				Err "Decompressing tar.bz2 file failed"
+				Err "Failed to decompress tar.bz2 file"
 				return 1
 			} ;;
 			*.tar.xz | *.txz) tar -xJf "${oup_path_Get}" -C "${targ_dir_Get}" || {
-				Err "Decompressing tar.xz file failed"
+				Err "Failed to decompress tar.xz file"
 				return 1
 			} ;;
 			*.zip) unzip "${oup_path_Get}" -d "${targ_dir_Get}" || {
-				Err "Unzip zip file failed"
+				Err "Failed to decompress zip file"
 				return 1
 			} ;;
 			*.7z) 7z x "${oup_path_Get}" -o"${targ_dir_Get}" || {
-				Err "Unzip 7z file failed"
+				Err "Failed to decompress 7z file"
 				return 1
 			} ;;
 			*.rar) unrar x "${oup_path_Get}" "${targ_dir_Get}" || {
-				Err "Decompressing rar file failed"
+				Err "Failed to decompress rar file"
 				return 1
 			} ;;
 			*.zst) zstd -d "${oup_path_Get}" -o "${targ_dir_Get}" || {
-				Err "Unzip zst file failed"
+				Err "Failed to decompress zst file"
 				return 1
 			} ;;
-			*) Txt "* Unrecognized file format, no automatic decompression" ;;
+			*) Txt "* Unrecognized file format, automatic decompression skipped" ;;
 			esac
-			[ $? -eq 0 ] && Txt "* The file was successfully decompressed to ${targ_dir_Get}"
+			[ $? -eq 0 ] && Txt "* File successfully decompressed to ${targ_dir_Get}"
 		fi
-		Txt "${CLR2}Complete ${CLR0}\\n"
+		Txt "${CLR2}Done${CLR0}\n"
 	else
 		{
-			Err "Download failed. Please check the validity of network connections and URLs"
+			Err "Download failed. Please check network connection and URL validity"
 			return 1
 		}
 	fi
@@ -830,7 +831,7 @@ function Get() {
 function Ask() {
 	prompt_msg_Ask="$1"
 	shift
-	read -e -p "$prompt_msg_Ask" -r "$@" || {
+	read -e -p "$(Txt "${prompt_msg_Ask}")" -r "$@" || {
 		Err "Failed to read user input"
 		return 1
 	}
@@ -846,7 +847,7 @@ function Iface() {
 			grep -iv '^lo\|^sit\|^stf\|^gif\|^dummy\|^vmnet\|^vir\|^gre\|^ipip\|^ppp\|^bond\|^tun\|^tap\|^ip6gre\|^ip6tnl\|^teql\|^ocserv\|^vpn\|^warp\|^wgcf\|^wg\|^docker\|^br-\|^veth' |
 			sort -n
 	) || {
-		Err "Failed to get the network interface from /proc/net/dev"
+		Err "Failed to get network interface from /proc/net/dev"
 		return 1
 	}
 	i=1
@@ -944,11 +945,11 @@ function Iface() {
 			fi
 		done
 		;;
-	-i)
+	-i | --information)
 		for iface_Iface in ${interface_Iface}; do
 			if stats_Iface=$(awk -v iface="${iface_Iface}" '$1 ~ iface":" {print $2, $3, $5, $10, $11, $13}' /proc/net/dev 2>/dev/null); then
 				read rx_bytes_Iface rx_packets_Iface rx_drop_Iface tx_bytes_Iface tx_packets_Iface tx_drop_Iface <<<"${stats_Iface}"
-				Txt "${iface_Iface}: Input: $(ConvSz ${rx_bytes_Iface}), Output: $(ConvSz ${tx_bytes_Iface})"
+				Txt "${iface_Iface}: In: $(ConvSz ${rx_bytes_Iface}), Out: $(ConvSz ${tx_bytes_Iface})"
 			fi
 		done
 		;;
@@ -963,7 +964,7 @@ function IpAddr() {
 			ipv4_addr_IpAddr=$(timeout 1s curl -sL ipv4.ip.sb 2>/dev/null) ||
 			ipv4_addr_IpAddr=$(timeout 1s wget -qO- -4 ifconfig.me 2>/dev/null) ||
 			[ -n "${ipv4_addr_IpAddr}" ] && Txt "${ipv4_addr_IpAddr}" || {
-			Err "Failed to obtain the IPv4 address. Please check the network connection"
+			Err "Failed to get IPv4 address. Please check network connection"
 			return 1
 		}
 		;;
@@ -971,7 +972,7 @@ function IpAddr() {
 		ipv6_addr_IpAddr=$(timeout 1s curl -sL ipv6.ip.sb 2>/dev/null) ||
 			ipv6_addr_IpAddr=$(timeout 1s wget -qO- -6 ifconfig.me 2>/dev/null) ||
 			[ -n "${ipv6_addr_IpAddr}" ] && Txt "${ipv6_addr_IpAddr}" || {
-			Err "Failed to obtain the IPv6 address. Please check the network connection"
+			Err "Failed to get IPv6 address. Please check network connection"
 			return 1
 		}
 		;;
@@ -979,7 +980,7 @@ function IpAddr() {
 		ipv4_addr_IpAddr=$(IpAddr --ipv4)
 		ipv6_addr_IpAddr=$(IpAddr --ipv6)
 		[ -z "${ipv4_addr_IpAddr}${ipv6_addr_IpAddr}" ] && {
-			Err "Failed to obtain IP address"
+			Err "Failed to get IP address"
 			return 1
 		}
 		[ -n "${ipv4_addr_IpAddr}" ] && Txt "IPv4: ${ipv4_addr_IpAddr}"
@@ -997,7 +998,7 @@ function LastUpd() {
 		data_LastUpd=$(rpm -qa --last | head -n 1 | awk '{print $3, $4, $5, $6, $7}')
 	fi
 	[ -z "${data_LastUpd}" ] && {
-		Err "The last system update time cannot be determined. The update log cannot be found"
+		Err "Could not determine last system update time. Update log not found"
 		return 1
 	} || Txt "${data_LastUpd}"
 }
@@ -1005,20 +1006,20 @@ function Linet() {
 	chr_Linet="${1:--}"
 	len_Linet="${2:-80}"
 	printf '%*s\n' "${len_Linet}" | tr ' ' "${chr_Linet}" || {
-		Err "Failed to print lines"
+		Err "Failed to print line"
 		return 1
 	}
 }
 function LoadAvg() {
 	if [ ! -f /proc/loadavg ]; then
 		data_LoadAvg=$(uptime | sed 's/.*load average: //' | sed 's/,//g') || {
-			Err "Failed to get load average from uptime instruction"
+			Err "Failed to get load average from uptime command"
 			return 1
 		}
 		read -r zo_mi_LoadAvg zv_mi_LoadAvg ov_mi_LoadAvg <<<"${data_LoadAvg}"
 	else
 		read -r zo_mi_LoadAvg zv_mi_LoadAvg ov_mi_LoadAvg _ _ </proc/loadavg || {
-			Err "Reading load average from /proc/loadavg failed"
+			Err "Failed to read load average from /proc/loadavg"
 			return 1
 		}
 	fi
@@ -1028,30 +1029,37 @@ function LoadAvg() {
 	LC_ALL=C printf "%.2f, %.2f, %.2f (%d cores)" "${zo_mi_LoadAvg}" "${zv_mi_LoadAvg}" "${ov_mi_LoadAvg}" "$(nproc)"
 }
 function Loc() {
-	data_Loc=$(curl -s "https://developers.cloudflare.com/cdn-cgi/trace" | grep "^loc=" | cut -d= -f2)
+	case "$1" in
+	--city)
+		data_Loc=$(curl -s "ipinfo.io/city")
+		;;
+	--country | *)
+		data_Loc=$(curl -s "ipinfo.io/country")
+		;;
+	esac
 	[ -n "${data_Loc}" ] && Txt "${data_Loc}" || {
-		Err "Unable to detect geographic location. Please check the network connection"
+		Err "Could not detect geolocation. Please check network connection"
 		return 1
 	}
 }
 function MacAddr() {
 	data_MacAddr=$(ip link show | awk '/ether/ {print $2; exit}')
 	[[ -n ${data_MacAddr} ]] && Txt "${data_MacAddr}" || {
-		Err "The MAC address cannot be obtained. The Internet interface cannot be found"
+		Err "Could not get MAC address. Network interface not found"
 		return 1
 	}
 }
 function MemUsage() {
 	usd_MemUsage=$(free -b | awk '/^Mem:/ {print $3}') || usd_MemUsage=$(vmstat -s | grep 'used memory' | awk '{print $1*1024}') || {
-		Err "Failed to obtain memory usage statistics"
+		Err "Failed to get memory usage statistics"
 		return 1
 	}
 	tot_MemUsage=$(free -b | awk '/^Mem:/ {print $2}') || tot_MemUsage=$(grep MemTotal /proc/meminfo | awk '{print $2*1024}')
 	pct_MemUsage=$(free | awk '/^Mem:/ {printf("%.2f"), $3/$2 * 100.0}') || pct_MemUsage=$(awk '/^MemTotal:/ {total=$2} /^MemAvailable:/ {available=$2} END {printf("%.2f", (total-available)/total * 100.0)}' /proc/meminfo)
 	case "$1" in
-	-u) Txt "${usd_MemUsage}" ;;
-	-t) Txt "${tot_MemUsage}" ;;
-	-p) Txt "${pct_MemUsage}" ;;
+	-u | --used) Txt "${usd_MemUsage}" ;;
+	-t | --total) Txt "${tot_MemUsage}" ;;
+	-p | --percentage) Txt "${pct_MemUsage}" ;;
 	*) Txt "$(ConvSz ${usd_MemUsage}) / $(ConvSz ${tot_MemUsage}) (${pct_MemUsage}%)" ;;
 	esac
 }
@@ -1060,7 +1068,7 @@ function NetProv() {
 		data_NetProv=$(timeout 1s curl -sL ipwhois.app/json | grep -oP '"org"\s*:\s*"\K[^"]+') ||
 		data_NetProv=$(timeout 1s curl -sL ip-api.com/json | grep -oP '"org"\s*:\s*"\K[^"]+') ||
 		[ -n "${data_NetProv}" ] && Txt "${data_NetProv}" || {
-		Err "Unable to detect network suppliers. Please check the network connection"
+		Err "Could not detect network provider. Please check network connection"
 		return 1
 	}
 }
@@ -1073,13 +1081,13 @@ function PkgCnt() {
 	yum | dnf) cnt_cmd_PkgCnt="rpm -qa" ;;
 	zypper) cnt_cmd_PkgCnt="zypper se --installed-only" ;;
 	*) {
-		Err "Installed kits cannot be calculated. The software package manager does not support it"
+		Err "Could not calculate installed packages. Package manager not supported"
 		return 1
 	} ;;
 	esac
 	if ! data_PkgCnt=$("${cnt_cmd_PkgCnt}" 2>/dev/null | wc -l) || [[ -z ${data_PkgCnt} || ${data_PkgCnt} -eq 0 ]]; then
 		{
-			Err "Failed to calculate the number of kits for ${PKG_MGR}"
+			Err "Failed to count packages for ${PKG_MGR}"
 			return 1
 		}
 	fi
@@ -1088,7 +1096,7 @@ function PkgCnt() {
 function Prog() {
 	num_cmds_Prog=${#cmds[@]}
 	term_wid_Prog=$(tput cols) || {
-		Err "Failed to obtain terminal width"
+		Err "Failed to get terminal width"
 		return 1
 	}
 	bar_wid_Prog=$((term_wid_Prog - 23))
@@ -1099,7 +1107,7 @@ function Prog() {
 		fild_wid_Prog=$((prog_Prog * bar_wid_Prog / 100))
 		printf "\r\033[30;42mProgress: [%3d%%]\033[0m [%s%s]" "${prog_Prog}" "$(printf "%${fild_wid_Prog}s" | tr ' ' '#')" "$(printf "%$((bar_wid_Prog - fild_wid_Prog))s" | tr ' ' '.')"
 		if ! cmd_oup_Prog=$(eval "${cmds[$i]}" 2>&1); then
-			Txt "\\n${cmd_oup_Prog}"
+			Txt "\n${cmd_oup_Prog}"
 			stty echo
 			trap - SIGINT SIGQUIT SIGTSTP
 			{
@@ -1116,7 +1124,7 @@ function Prog() {
 function PubIp() {
 	data_PubIp=$(curl -s "https://developers.cloudflare.com/cdn-cgi/trace" | grep "^ip=" | cut -d= -f2)
 	[ -n "${data_PubIp}" ] && Txt "${data_PubIp}" || {
-		Err "Public IP address cannot be detected. Please check the network connection"
+		Err "Could not detect public IP address. Please check network connection"
 		return 1
 	}
 }
@@ -1143,33 +1151,33 @@ function Run() {
 			shift
 			while [[ $# -gt 0 && $1 == -* ]]; do
 				case "$1" in
-				-d)
+				-d | --delete-after)
 					rm_aftr_Run=true
 					shift
 					;;
 				*) break ;;
 				esac
 			done
-			Txt "${CLR3} is downloading and executing script from the URL [${script_nm_Run}]${CLR0}"
-			Task "* Download script" "
-				curl -sSLf "${url_Run}" -o "${script_nm_Run}" || { Err "Download script ${script_nm_Run} failed"; return 1; }
-				chmod +x "${script_nm_Run}" || { Err "Setting script ${script_nm_Run} failed to execute permission"; return 1; }
+			Txt "${CLR3}Downloading and executing script from URL [${script_nm_Run}]${CLR0}"
+			Task "* Downloading script" "
+				curl -sSLf "${url_Run}" -o "${script_nm_Run}" || { Err "Failed to download script ${script_nm_Run}"; return 1; }
+				chmod +x "${script_nm_Run}" || { Err "Failed to set execute permission for script ${script_nm_Run}"; return 1; }
 			"
 			Txt "${CLR8}$(Linet = 24)${CLR0}"
 			if [[ $1 == "--" ]]; then
 				shift
 				./"${script_nm_Run}" "$@" || {
-					Err "Execution script ${script_nm_Run} failed"
+					Err "Failed to execute script ${script_nm_Run}"
 					return 1
 				}
 			else
 				./"${script_nm_Run}" || {
-					Err "Execution script ${script_nm_Run} failed"
+					Err "Failed to execute script ${script_nm_Run}"
 					return 1
 				}
 			fi
 			Txt "${CLR8}$(Linet = 24)${CLR0}"
-			Txt "${CLR2}Complete ${CLR0}\\n"
+			Txt "${CLR2}Done${CLR0}\n"
 			[[ ${rm_aftr_Run} == true ]] && rm -rf "${script_nm_Run}"
 		elif [[ $1 =~ ^[^/]+/[^/]+/.+ ]]; then
 			repo_owner_Run=$(Txt "$1" | cut -d'/' -f1)
@@ -1184,7 +1192,7 @@ function Run() {
 				case "$1" in
 				-b | --branch)
 					[[ -z $2 || $2 == -* ]] && {
-						Err "-b requires branch name"
+						Err "Branch name required after -b"
 						return 2
 					}
 					branch_Run="$2"
@@ -1202,69 +1210,69 @@ function Run() {
 				esac
 			done
 			if [[ $dnload_repo_Run == true ]]; then
-				Txt "${CLR3}Clone the repository ${repo_owner_Run}/${repo_name_Run}${CLR0}"
+				Txt "${CLR3}Cloning repository ${repo_owner_Run}/${repo_name_Run}${CLR0}"
 				[[ -d ${repo_name_Run} ]] && {
 					Err "Directory ${repo_name_Run} already exists"
 					return 1
 				}
 				tmp_dir_Run=$(mktemp -d)
 				if [[ ${branch_Run} != "main" ]]; then
-					Task "*Clone from branch ${branch_Run}" "git clone --branch ${branch_Run} https://github.com/${repo_owner_Run}/${repo_name_Run}.git ${tmp_dir_Run}"
+					Task "* Cloning from branch ${branch_Run}" "git clone --branch ${branch_Run} https://github.com/${repo_owner_Run}/${repo_name_Run}.git ${tmp_dir_Run}"
 					if [ $? -ne 0 ]; then
 						rm -rf "${tmp_dir_Run}"
 						{
-							Err "Cloning repository from branch ${branch_Run} failed"
+							Err "Failed to clone repository from branch ${branch_Run}"
 							return 1
 						}
 					fi
 				else
-					Task "* Check main branch" "git clone --branch main https://github.com/${repo_owner_Run}/${repo_name_Run}.git ${tmp_dir_Run}" true
+					Task "* Checking main branch" "git clone --branch main https://github.com/${repo_owner_Run}/${repo_name_Run}.git ${tmp_dir_Run}" true
 					if [ $? -ne 0 ]; then
-						Task "* Try the master branch" "git clone --branch master https://github.com/${repo_owner_Run}/${repo_name_Run}.git ${tmp_dir_Run}"
+						Task "* Trying master branch" "git clone --branch master https://github.com/${repo_owner_Run}/${repo_name_Run}.git ${tmp_dir_Run}"
 						if [ $? -ne 0 ]; then
 							rm -rf "${tmp_dir_Run}"
 							{
-								Err "Cloning repository from main or master branch failed"
+								Err "Failed to clone repository from main or master branch"
 								return 1
 							}
 						fi
 					fi
 				fi
-				Task "* Create a target directory" "Add -d "${repo_name_Run}" && cp -r "${tmp_dir_Run}"/* "${repo_name_Run}"/"
-				Task "* Clean up temporary archives" "rm -rf "${tmp_dir_Run}""
-				Txt "The repository has been cloned to the directory: ${CLR2}${repo_name_Run}"
+				Task "* Creating target directory" "Add -d "${repo_name_Run}" && cp -r "${tmp_dir_Run}"/* "${repo_name_Run}"/"
+				Task "* Cleaning up temporary files" "rm -rf "${tmp_dir_Run}""
+				Txt "Repository cloned to directory: ${CLR2}${repo_name_Run}"
 				if [[ -f "${repo_name_Run}/${script_path_Run}" ]]; then
-					Task "* Set execution permissions" "chmod +x "${repo_name_Run}/${script_path_Run}""
+					Task "* Setting execute permissions" "chmod +x "${repo_name_Run}/${script_path_Run}""
 					Txt "${CLR8}$(Linet = 24)${CLR0}"
 					if [[ $1 == "--" ]]; then
 						shift
 						./"${repo_name_Run}/${script_path_Run}" "$@" || {
-							Err "Execution script ${script_nm_Run} failed"
+							Err "Failed to execute script ${script_nm_Run}"
 							return 1
 						}
 					else
 						./"${repo_name_Run}/${script_path_Run}" || {
-							Err "Execution script ${script_nm_Run} failed"
+							Err "Failed to execute script ${script_nm_Run}"
 							return 1
 						}
 					fi
 					Txt "${CLR8}$(Linet = 24)${CLR0}"
-					Txt "${CLR2}Complete ${CLR0}\\n"
+					Txt "${CLR2}Done${CLR0}\n"
 					[[ ${rm_aftr_Run} == true ]] && rm -rf "${repo_name_Run}"
 				fi
 			else
-				Txt "${CLR3} is downloading and executing script from ${repo_owner_Run}/${repo_name_Run} [${script_nm_Run}]${CLR0}"
+				Txt "${CLR3}Downloading and executing script from ${repo_owner_Run}/${repo_name_Run} [${script_nm_Run}]${CLR0}"
 				github_url_Run="https://raw.githubusercontent.com/${repo_owner_Run}/${repo_name_Run}/${branch_Run}/${script_path_Run}"
 				if [[ ${branch_Run} != "main" ]]; then
-					Task "* Check branch ${branch_Run}" "curl -sLf "${github_url_Run}" >/dev/null"
+					Task "* Checking branch ${branch_Run}" "curl -sLf "${github_url_Run}" >/dev/null"
 					[ $? -ne 0 ] && {
 						Err "Script not found in branch ${branch_Run}"
 						return 1
 					}
 				else
-					Task "* Check main branch" "curl -sLf "${github_url_Run}" >/dev/null" true
+					Task "* Checking main branch" "curl -sLf "${github_url_Run}" >/dev/null" true
 					if [ $? -ne 0 ]; then
-						Task "* Check the master branch" "
+						Task "* Checking master branch" "
 							branch_Run="master"
 							github_url_Run="https://raw.githubusercontent.com/${repo_owner_Run}/${repo_name_Run}/master/${script_path_Run}"
 							curl -sLf "${github_url_Run}" >/dev/null
@@ -1275,28 +1283,28 @@ function Run() {
 						}
 					fi
 				fi
-				Task "* Download script" "
+				Task "* Downloading script" "
 					curl -sSLf "${github_url_Run}" -o "${script_nm_Run}" || {
-						Err "Download script ${script_nm_Run} failed"
-						Err "Download from ${github_url_Run} failed"
+						Err "Failed to download script ${script_nm_Run}"
+						Err "Failed to download from ${github_url_Run}"
 						return 1
 					}
 					if [[ ! -f "${script_nm_Run}" ]]; then
-						Err "Download failed: File not created"
+						Err "Download failed: file not created"
 						return 1
 					fi
 					if [[ ! -s "${script_nm_Run}" ]]; then
-						Err "The downloaded file is empty"
-						cat "${script_nm_Run}" 2>/dev/null || Txt "(The file content cannot be displayed)"
+						Err "Downloaded file is empty"
+						cat "${script_nm_Run}" 2>/dev/null || Txt "Could not display file content"
 						return 1
 					fi
 					if ! grep -q '[^[:space:]]' "${script_nm_Run}"; then
-						Err "The downloaded file contains only blank characters"
+						Err "Downloaded file contains only whitespace characters"
 						return 1
 					fi
 					chmod +x "${script_nm_Run}" || {
-						Err "Setting script ${script_nm_Run} failed to execute permission"
-						Err "Unable to set execution permissions for ${script_nm_Run}"
+						Err "Failed to set execute permission for script ${script_nm_Run}"
+						Err "Failed to set execute permission for ${script_nm_Run}"
 						ls -la "${script_nm_Run}"
 						return 1
 					}
@@ -1306,21 +1314,21 @@ function Run() {
 					if [[ $1 == "--" ]]; then
 						shift
 						./"${script_nm_Run}" "$@" || {
-							Err "Execution script ${script_nm_Run} failed"
+							Err "Failed to execute script ${script_nm_Run}"
 							return 1
 						}
 					else
 						./"${script_nm_Run}" || {
-							Err "Execution script ${script_nm_Run} failed"
+							Err "Failed to execute script ${script_nm_Run}"
 							return 1
 						}
 					fi
 				else
-					Err "Script Archive '${script_nm_Run}' was not successfully downloaded"
+					Err "Script file '${script_nm_Run}' not downloaded successfully"
 					return 1
 				fi
 				Txt "${CLR8}$(Linet = 24)${CLR0}"
-				Txt "${CLR2}Complete ${CLR0}\\n"
+				Txt "${CLR2}Done${CLR0}\n"
 				[[ ${rm_aftr_Run} == true ]] && rm -rf "${script_nm_Run}"
 			fi
 		else
@@ -1329,13 +1337,13 @@ function Run() {
 			if [[ $2 == "--" ]]; then
 				shift 2
 				"${script_path_Run}" "$@" || {
-					Err "Execution script ${script_nm_Run} failed"
+					Err "Failed to execute script ${script_nm_Run}"
 					return 1
 				}
 			else
 				shift
 				"${script_path_Run}" "$@" || {
-					Err "Execution script ${script_nm_Run} failed"
+					Err "Failed to execute script ${script_nm_Run}"
 					return 1
 				}
 			fi
@@ -1353,7 +1361,7 @@ function ShellVer() {
 		Txt "Zsh ${ZSH_VERSION}"
 	else
 		{
-			Err "Not supported shell"
+			Err "Unsupported shell"
 			return 1
 		}
 	fi
@@ -1363,238 +1371,238 @@ function SwapUsage() {
 	tot_SwapUsage=$(free -b | awk '/^Swap:/ {printf "%.0f", $2}')
 	pct_SwapUsage=$(free | awk '/^Swap:/ {if($2>0) printf("%.2f"), $3/$2 * 100.0; else print "0.00"}')
 	case "$1" in
-	-u) Txt "${usd_SwapUsage}" ;;
-	-t) Txt "${tot_SwapUsage}" ;;
-	-p) Txt "${pct_SwapUsage}" ;;
+	-u | --used) Txt "${usd_SwapUsage}" ;;
+	-t | --total) Txt "${tot_SwapUsage}" ;;
+	-p | --percentage) Txt "${pct_SwapUsage}" ;;
 	*) Txt "$(ConvSz ${usd_SwapUsage}) / $(ConvSz ${tot_SwapUsage}) (${pct_SwapUsage}%)" ;;
 	esac
 }
 function SysClean() {
 	ChkRoot
-	Txt "${CLR3}System cleaning is being performed...${CLR0}"
+	Txt "${CLR3}Performing system cleanup...${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 	case $(command -v apk apt opkg pacman yum zypper dnf | head -n1) in
 	*apk)
-		Txt "* Clean up APK cache"
+		Txt "* Cleaning APK cache"
 		apk cache clean || {
-			Err "Cleaning up APK cache failed"
+			Err "Failed to clean APK cache"
 			return 1
 		}
-		Txt "* Remove temporary archives"
+		Txt "* Removing temporary files"
 		rm -rf /tmp/* /var/cache/apk/* || {
-			Err "Failed to remove temporary archives"
+			Err "Failed to remove temporary files"
 			return 1
 		}
-		Txt "* Fix APK Suite"
+		Txt "* Repairing APK packages"
 		apk fix || {
-			Err "Fix APK suite failure"
+			Err "Failed to repair APK packages"
 			return 1
 		}
 		;;
 	*apt)
 		while fuser /var/lib/dpkg/lock-frontend &>/dev/null; do
-			Txt "* Wait for dpkg to lock"
+			Txt "* Waiting for dpkg lock"
 			sleep 1 || return 1
 			((wait_time_SysClean++))
 			[ "${wait_time_SysClean}" -gt 300 ] && {
-				Err "Wait for dpkg lock release timeout"
+				Err "Timeout waiting for dpkg lock to be released"
 				return 1
 			}
 		done
-		Txt "* Set up the pending kit"
+		Txt "* Setting pending packages"
 		DEBIAN_FRONTEND=noninteractive dpkg --configure -a || {
-			Err "Failed to set up pending suite"
+			Err "Failed to set pending packages"
 			return 1
 		}
-		Txt "* Automatic removal kit"
+		Txt "* Autoremoving packages"
 		apt autoremove --purge -y || {
-			Err "Automatic kit removal failed"
+			Err "Failed to autoremove packages"
 			return 1
 		}
-		Txt "* Clean APT cache"
+		Txt "* Cleaning APT cache"
 		apt clean -y || {
-			Err "Cleaning APT cache failed"
+			Err "Failed to clean APT cache"
 			return 1
 		}
-		Txt "* Automatically clean APT cache"
+		Txt "* Autocleaning APT cache"
 		apt autoclean -y || {
-			Err "Automatically clean up APT cache failed"
+			Err "Failed to autoclean APT cache"
 			return 1
 		}
 		;;
 	*opkg)
-		Txt "* Remove temporary archives"
+		Txt "* Removing temporary files"
 		rm -rf /tmp/* || {
-			Err "Failed to remove temporary archives"
+			Err "Failed to remove temporary files"
 			return 1
 		}
-		Txt "* Update OPKG"
+		Txt "* Updating OPKG"
 		opkg update || {
-			Err "Update OPKG failed"
+			Err "Failed to update OPKG"
 			return 1
 		}
-		Txt "* Clean OPKG cache"
+		Txt "* Cleaning OPKG cache"
 		opkg clean || {
-			Err "Cleaning up OPKG cache failed"
+			Err "Failed to clean OPKG cache"
 			return 1
 		}
 		;;
 	*pacman)
-		Txt "* Update and upgrade kit"
+		Txt "* Updating and upgrading packages"
 		pacman -Syu --noconfirm || {
-			Err "Update and upgrade suite using pacman failed"
+			Err "Failed to update and upgrade packages using pacman"
 			return 1
 		}
-		Txt "* Clean up pacman cache"
+		Txt "* Cleaning pacman cache"
 		pacman -Sc --noconfirm || {
-			Err "Cleaning pacman cache failed"
+			Err "Failed to clean pacman cache"
 			return 1
 		}
-		Txt "* Clean all pacman cache"
+		Txt "* Cleaning all pacman caches"
 		pacman -Scc --noconfirm || {
-			Err "Clean all pacman cache failed"
+			Err "Failed to clean all pacman caches"
 			return 1
 		}
 		;;
 	*yum)
-		Txt "* Automatic removal kit"
+		Txt "* Autoremoving packages"
 		yum autoremove -y || {
-			Err "Automatic kit removal failed"
+			Err "Failed to autoremove packages"
 			return 1
 		}
-		Txt "* Clean up YUM cache"
+		Txt "* Cleaning YUM cache"
 		yum clean all || {
-			Err "Cleaning YUM cache failed"
+			Err "Failed to clean YUM cache"
 			return 1
 		}
-		Txt "* Create YUM cache"
+		Txt "* Creating YUM cache"
 		yum makecache || {
 			Err "Failed to create YUM cache"
 			return 1
 		}
 		;;
 	*zypper)
-		Txt "* Clean up Zypper cache"
+		Txt "* Cleaning Zypper cache"
 		zypper clean --all || {
-			Err "Cleaning up Zypper cache failed"
+			Err "Failed to clean Zypper cache"
 			return 1
 		}
-		Txt "* Reorganize the Zypper suite library"
+		Txt "* Refreshing Zypper repositories"
 		zypper refresh || {
-			Err "Reorganizing the Zypper suite library failed"
+			Err "Failed to refresh Zypper repositories"
 			return 1
 		}
 		;;
 	*dnf)
-		Txt "* Automatic removal kit"
+		Txt "* Autoremoving packages"
 		dnf autoremove -y || {
-			Err "Automatic kit removal failed"
+			Err "Failed to autoremove packages"
 			return 1
 		}
-		Txt "* Clean up DNF cache"
+		Txt "* Cleaning DNF cache"
 		dnf clean all || {
-			Err "Cleaning DNF cache failed"
+			Err "Failed to clean DNF cache"
 			return 1
 		}
-		Txt "* Create DNF cache"
+		Txt "* Creating DNF cache"
 		dnf makecache || {
-			Err "DNF cache failed"
+			Err "Failed to create DNF cache"
 			return 1
 		}
 		;;
 	*) {
-		Err "Unsupported suite manager. Skip system-specific cleaning"
+		Err "Unsupported package manager. Skipping system-specific cleanup"
 		return 1
 	} ;;
 	esac
 	if command -v journalctl &>/dev/null; then
-		Task "* Rotate and clean journalctl logs" "journalctl --rotate --vacuum-time=1d --vacuum-size=500M" || {
-			Err "Rotate and clean up journalctl logs failed"
+		Task "* Rotating and cleaning journalctl logs" "journalctl --rotate --vacuum-time=1d --vacuum-size=500M" || {
+			Err "Failed to rotate and clean journalctl logs"
 			return 1
 		}
 	fi
-	Task "* Remove temporary archives" "rm -rf /tmp/*" || {
-		Err "Failed to remove temporary archives"
+	Task "* Removing temporary files" "rm -rf /tmp/*" || {
+		Err "Failed to remove temporary files"
 		return 1
 	}
 	for cmd_SysClean in docker npm pip; do
 		if command -v "${cmd_SysClean}" &>/dev/null; then
 			case "${cmd_SysClean}" in
-			docker) Task "* Clean up the Docker system" "docker system prune -af" || {
-				Err "Cleaning up Docker system failed"
+			docker) Task "* Cleaning Docker system" "docker system prune -af" || {
+				Err "Failed to clean Docker system"
 				return 1
 			} ;;
-			npm) Task "* Clean up NPM cache" "npm cache clean --force" || {
-				Err "Cleaning NPM cache failed"
+			npm) Task "* Cleaning NPM cache" "npm cache clean --force" || {
+				Err "Failed to clean NPM cache"
 				return 1
 			} ;;
-			pip) Task "* Clear PIP cache" "pip cache purge" || {
-				Err "Clear PIP cache failed"
+			pip) Task "* Clearing PIP cache" "pip cache purge" || {
+				Err "Failed to clear PIP cache"
 				return 1
 			} ;;
 			esac
 		fi
 	done
-	Task "* Remove user cache file" "rm -rf ~/.cache/*" || {
+	Task "* Removing user cache files" "rm -rf ~/.cache/*" || {
 		Err "Failed to remove user cache files"
 		return 1
 	}
-	Task "* Remove thumbnail file" "rm -rf ~/.thumbnails/*" || {
-		Err "Failed to remove the thumbnail file"
+	Task "* Removing thumbnail files" "rm -rf ~/.thumbnails/*" || {
+		Err "Failed to remove thumbnail files"
 		return 1
 	}
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
-	Txt "${CLR2}Complete ${CLR0}\\n"
+	Txt "${CLR2}Done${CLR0}\n"
 }
 function SysInfo() {
 	Txt "${CLR3}System Information${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
-	Txt "- Host name: ${CLR2}$(uname -n || hostname)${CLR0}"
-	Txt "- Operating system: ${CLR2}$(ChkOs)${CLR0}"
-	Txt "- Core version: ${CLR2}$(uname -r)${CLR0}"
-	Txt "- System language: ${CLR2}$LANG${CLR0}"
-	Txt "- Shell version: ${CLR2}$(ShellVer)${CLR0}"
-	Txt "- Last system update: ${CLR2}$(LastUpd)${CLR0}"
+	Txt "- Hostname:\t\t${CLR2}$(uname -n || hostname)${CLR0}"
+	Txt "- Operating System:\t\t${CLR2}$(ChkOs)${CLR0}"
+	Txt "- Kernel Version:\t\t${CLR2}$(uname -r)${CLR0}"
+	Txt "- System Language:\t\t${CLR2}$LANG${CLR0}"
+	Txt "- Shell Version:\t\t${CLR2}$(ShellVer)${CLR0}"
+	Txt "- Last System Update:\t${CLR2}$(LastUpd)${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
-	Txt "- Architecture: ${CLR2}$(uname -m)${CLR0}"
-	Txt "- CPU Model: ${CLR2}$(CpuModel)${CLR0}"
-	Txt "- Number of CPU cores: ${CLR2}$(nproc)${CLR0}"
-	Txt "- CPU frequency: ${CLR2}$(CpuFreq)${CLR0}"
-	Txt "- CPU usage: ${CLR2}$(CpuUsage)%${CLR0}"
-	Txt "- CPU cache: ${CLR2}$(CpuCache)${CLR0}"
+	Txt "- Architecture:\t\t${CLR2}$(uname -m)${CLR0}"
+	Txt "- CPU Model:\t\t${CLR2}$(CpuModel)${CLR0}"
+	Txt "- CPU Cores:\t\t${CLR2}$(nproc)${CLR0}"
+	Txt "- CPU Frequency:\t\t${CLR2}$(CpuFreq)${CLR0}"
+	Txt "- CPU Usage:\t\t${CLR2}$(CpuUsage)%${CLR0}"
+	Txt "- CPU Cache:\t\t${CLR2}$(CpuCache)${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
-	Txt "- Memory usage: ${CLR2}$(MemUsage)${CLR0}"
-	Txt "- SWAP usage: ${CLR2}$(SwapUsage)${CLR0}"
-	Txt "- Disk Usage: ${CLR2}$(DiskUsage)${CLR0}"
-	Txt "- Archive system type: ${CLR2}$(df -T / | awk 'NR==2 {print $2}')${CLR0}"
+	Txt "- Memory Usage:\t\t${CLR2}$(MemUsage)${CLR0}"
+	Txt "- SWAP Usage:\t\t${CLR2}$(SwapUsage)${CLR0}"
+	Txt "- Disk Usage:\t\t${CLR2}$(DiskUsage)${CLR0}"
+	Txt "- File System Type:\t${CLR2}$(df -T / | awk 'NR==2 {print $2}')${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
-	Txt "- IPv4 address: ${CLR2}$(IpAddr --ipv4)${CLR0}"
-	Txt "- IPv6 address: ${CLR2}$(IpAddr --ipv6)${CLR0}"
-	Txt "- MAC address: ${CLR2}$(MacAddr)${CLR0}"
-	Txt "- Network supplier: ${CLR2}$(NetProv)${CLR0}"
-	Txt "- DNS server: ${CLR2}$(DnsAddr)${CLR0}"
-	Txt "- Public IP: ${CLR2}$(PubIp)${CLR0}"
-	Txt "- Network interface: ${CLR2}$(Iface -i)${CLR0}"
-	Txt "- Internal time zone: ${CLR2}$(TimeZn --internal)${CLR0}"
-	Txt "- External time zone: ${CLR2}$(TimeZn --external)${CLR0}"
+	Txt "- IPv4 Address:\t\t${CLR2}$(IpAddr --ipv4)${CLR0}"
+	Txt "- IPv6 Address:\t\t${CLR2}$(IpAddr --ipv6)${CLR0}"
+	Txt "- MAC Address:\t\t${CLR2}$(MacAddr)${CLR0}"
+	Txt "- Network Provider:\t\t${CLR2}$(NetProv)${CLR0}"
+	Txt "- DNS Servers:\t\t${CLR2}$(DnsAddr)${CLR0}"
+	Txt "- Public IP:\t\t${CLR2}$(PubIp)${CLR0}"
+	Txt "- Network Interface:\t\t${CLR2}$(Iface -i)${CLR0}"
+	Txt "- Internal Timezone:\t\t${CLR2}$(TimeZn --internal)${CLR0}"
+	Txt "- External Timezone:\t\t${CLR2}$(TimeZn --external)${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
-	Txt "- Load Average: ${CLR2}$(LoadAvg)${CLR0}"
-	Txt "- Number of programs: ${CLR2}$(ps aux | wc -l)${CLR0}"
-	Txt "- Installed kit: ${CLR2}$(PkgCnt)${CLR0}"
+	Txt "- Load Average:\t\t${CLR2}$(LoadAvg)${CLR0}"
+	Txt "- Process Count:\t\t${CLR2}$(ps aux | wc -l)${CLR0}"
+	Txt "- Installed Packages:\t\t${CLR2}$(PkgCnt)${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
-	Txt "- Runtime: ${CLR2}$(uptime -p | sed 's/up //')${CLR0}"
-	Txt "- Start time: ${CLR2}$(who -b | awk '{print $3, $4}')${CLR0}"
+	Txt "- Uptime:\t\t${CLR2}$(uptime -p | sed 's/up //')${CLR0}"
+	Txt "- Boot Time:\t\t${CLR2}$(who -b | awk '{print $3, $4}')${CLR0}"
 	Txt "${CLR8}$(Linet - 32)${CLR0}"
-	Txt "- Virtualization: ${CLR2}$(ChkVirt)${CLR0}"
+	Txt "- Virtualization:\t\t${CLR2}$(ChkVirt)${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 }
 function SysOptz() {
 	ChkRoot
-	Txt "${CLR3} is optimizing system settings for long-term servers...${CLR0}"
+	Txt "${CLR3}Optimizing system settings for long-running servers...${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 	sysctl_conf_SysOptimize="/etc/sysctl.d/99-server-optimizations.conf"
-	Txt "# Server optimization for long-term running systems" >"${sysctl_conf_SysOptimize}"
-	Task "* Memory management is being optimized" "
+	Txt "# Server optimizations for long-running systems" >"${sysctl_conf_SysOptimize}"
+	Task "* Optimizing memory management" "
 		Txt 'vm.swappiness = 1' >> ${sysctl_conf_SysOptimize}
 		Txt 'vm.vfs_cache_pressure = 50' >> ${sysctl_conf_SysOptimize}
 		Txt 'vm.dirty_ratio = 15' >> ${sysctl_conf_SysOptimize}
@@ -1618,121 +1626,121 @@ function SysOptz() {
 		Err "Failed to optimize network settings"
 		return 1
 	}
-	Task "* TCP buffer is being optimized" "
+	Task "* Optimizing TCP buffers" "
 		Txt 'net.core.rmem_max = 16777216' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.core.wmem_max = 16777216' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.ipv4.tcp_rmem = 4096 87380 16777216' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.ipv4.tcp_wmem = 4096 65536 16777216' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.ipv4.tcp_mtu_probing = 1' >> ${sysctl_conf_SysOptimize}
 	" || {
-		Err "Optimizing TCP buffer failed"
+		Err "Failed to optimize TCP buffers"
 		return 1
 	}
-	Task "* Optimizing the file system settings" "
+	Task "* Optimizing filesystem settings" "
 		Txt 'fs.file-max = 2097152' >> ${sysctl_conf_SysOptimize}
 		Txt 'fs.nr_open = 2097152' >> ${sysctl_conf_SysOptimize}
 		Txt 'fs.inotify.max_user_watches = 524288' >> ${sysctl_conf_SysOptimize}
 	" || {
-		Err "Failed to optimize the file system settings"
+		Err "Failed to optimize filesystem settings"
 		return 1
 	}
-	Task "* Optimizing system restrictions" "
+	Task "* Optimizing system limits" "
 		Txt '* soft nofile 1048576' >> /etc/security/limits.conf
 		Txt '* hard nofile 1048576' >> /etc/security/limits.conf
 		Txt '* soft nproc 65535' >> /etc/security/limits.conf
 		Txt '* hard nproc 65535' >> /etc/security/limits.conf
 	" || {
-		Err "Optimization system restrictions failed"
+		Err "Failed to optimize system limits"
 		return 1
 	}
-	Task "* I/O Scheduler Is Optimizing" "
+	Task "* Optimizing I/O scheduler" "
 		for disk in /sys/block/[sv]d*; do
 			Txt 'none' > \$disk/queue/scheduler 2>/dev/null || true
 			Txt '256' > \$disk/queue/nr_requests 2>/dev/null || true
 		done
 	" || {
-		Err "Optimization of I/O Scheduler Failed"
+		Err "Failed to optimize I/O scheduler"
 		return 1
 	}
-	Task "* Disable non-essential services" "
+	Task "* Disabling unnecessary services" "
 		for service_SysOptz in bluetooth cups avahi-daemon postfix nfs-server rpcbind autofs; do
 			systemctl disable --now $service_SysOptz 2>/dev/null || true
 		done
 	" || {
-		Err "Failed to deactivate service"
+		Err "Failed to disable services"
 		return 1
 	}
-	Task "* Apply system parameters" "sysctl -p ${sysctl_conf_SysOptimize}" || {
+	Task "* Applying system parameters" "sysctl -p ${sysctl_conf_SysOptimize}" || {
 		Err "Failed to apply system parameters"
 		return 1
 	}
-	Task "* Clear system cache" "
+	Task "* Clearing system cache" "
 		sync
 		Txt 3 > /proc/sys/vm/drop_caches
 		ip -s -s neigh flush all
 	" || {
-		Err "Clear system cache failed"
+		Err "Failed to clear system cache"
 		return 1
 	}
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
-	Txt "${CLR2}Complete ${CLR0}\\n"
+	Txt "${CLR2}Done${CLR0}\n"
 }
 function SysRboot() {
 	ChkRoot
-	Txt "${CLR3} is preparing to restart the system...${CLR0}"
+	Txt "${CLR3}Preparing to restart the system...${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 	active_usrs_SysRboot=$(who | wc -l) || {
-		Err "Failed to obtain the number of users of the event"
+		Err "Failed to get active user count"
 		return 1
 	}
 	if [ "${active_usrs_SysRboot}" -gt 1 ]; then
-		Txt "${CLR1}Warning: Currently the system has ${active_usrs_SysRboot} active users ${CLR0}\\n"
-		Txt "Activity User:"
+		Txt "${CLR1}Warning: There are ${active_usrs_SysRboot} active users on the system${CLR0}\n"
+		Txt "Active users: "
 		who | awk '{print $1 " since " $3 " " $4}'
 		Txt
 	fi
 	important_procs_SysRboot=$(ps aux --no-headers | awk '$3 > 1.0 || $4 > 1.0' | wc -l) || {
-		Err "Checking for execution of programs failed"
+		Err "Failed to check running processes"
 		return 1
 	}
 	if [ "${important_procs_SysRboot}" -gt 0 ]; then
-		Txt "${CLR1}Warning: There are ${important_procs_SysRboot} important programs that are executing ${CLR0}\\n"
-		Txt "${CLR8}The 5 programs with the highest CPU usage: ${CLR0}"
+		Txt "${CLR1}Warning: ${important_procs_SysRboot} important processes are running${CLR0}\n"
+		Txt "${CLR8}Top 5 CPU consuming processes:${CLR0}"
 		ps aux --sort=-%cpu | head -n 6
 		Txt
 	fi
-	Ask "Are you sure you want to restart the system immediately? (y/N)" -n 1 cont_SysRboot
+	Ask "Are you sure you want to restart the system immediately? (y/N) " -n 1 cont_SysRboot
 	Txt
 	[[ ! ${cont_SysRboot} =~ ^[Yy]$ ]] && {
-		Txt "${CLR2}Restarted ${CLR0}\\n"
+		Txt "${CLR2}Restart cancelled${CLR0}\n"
 		return 0
 	}
-	Task "* Perform a final check" "sync" || {
-		Err "Synchronization of archive system failed"
+	Task "* Performing final checks" "sync" || {
+		Err "Failed to sync file systems"
 		return 1
 	}
-	Task "* Start restarting" "reboot || sudo reboot" || {
-		Err "Starting and restarting failed"
+	Task "* Initiating restart" "reboot || sudo reboot" || {
+		Err "Failed to start restart"
 		return 1
 	}
-	Txt "${CLR2} has successfully issued a restart command. The system will restart ${CLR0} immediately"
+	Txt "${CLR2}Restart command issued successfully. The system will restart immediately${CLR0}"
 }
 function SysUpd() {
 	ChkRoot
-	Txt "${CLR3} is updating the system software...${CLR0}"
+	Txt "${CLR3}Updating system software...${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 	UpdPkg() {
 		cmd_SysUpd_UpdPkg="$1"
 		upd_cmd_SysUpd_UpdPkg="$2"
 		upg_cmd_SysUpd_UpdPkg="$3"
-		Txt "* Updated kit list"
+		Txt "* Updating package list"
 		${upd_cmd_SysUpd_UpdPkg} || {
-			Err "Updated suite inventory using ${cmd_SysUpd_UpdPkg} failed"
+			Err "Failed to update package list using ${cmd_SysUpd_UpdPkg}"
 			return 1
 		}
-		Txt "* Upgrading the kit"
+		Txt "* Upgrading packages"
 		${upg_cmd_SysUpd_UpdPkg} || {
-			Err "Upgrading the suite failed with ${cmd_SysUpd_UpdPkg}"
+			Err "Failed to upgrade packages using ${cmd_SysUpd_UpdPkg}"
 			return 1
 		}
 	}
@@ -1740,110 +1748,110 @@ function SysUpd() {
 	*apk) UpdPkg "apk" "apk update" "apk upgrade" ;;
 	*apt)
 		while fuser /var/lib/dpkg/lock-frontend &>/dev/null; do
-			Task "* Wait for dpkg to lock" "sleep 1" || return 1
+			Task "* Waiting for dpkg lock" "sleep 1" || return 1
 			((wait_time_SysUpd++))
 			[ "${wait_time_SysUpd}" -gt 10 ] && {
-				Err "Wait for dpkg lock release timeout"
+				Err "Timeout waiting for dpkg lock to be released"
 				return 1
 			}
 		done
-		Task "* Set up the pending kit" "DEBIAN_FRONTEND=noninteractive dpkg --configure -a" || {
-			Err "Failed to set up pending kits"
+		Task "* Setting pending packages" "DEBIAN_FRONTEND=noninteractive dpkg --configure -a" || {
+			Err "Failed to set pending packages"
 			return 1
 		}
 		UpdPkg "apt" "apt update -y" "apt full-upgrade -y"
 		;;
 	*opkg) UpdPkg "opkg" "opkg update" "opkg upgrade" ;;
-	*pacman) Task "* Update and upgrade kit" "pacman -Syu --noconfirm" || {
-		Err "Update and upgrade suite using pacman failed"
+	*pacman) Task "* Updating and upgrading packages" "pacman -Syu --noconfirm" || {
+		Err "Failed to update and upgrade packages using pacman"
 		return 1
 	} ;;
 	*yum) UpdPkg "yum" "yum check-update" "yum -y update" ;;
 	*zypper) UpdPkg "zypper" "zypper refresh" "zypper update -y" ;;
 	*dnf) UpdPkg "dnf" "dnf check-update" "dnf -y update" ;;
 	*) {
-		Err "Unsupported suite manager"
+		Err "Unsupported package manager"
 		return 1
 	} ;;
 	esac
-	Txt "* Updated ${SCRIPTS}"
+	Txt "* Updating ${SCRIPTS}"
 	bash <(curl -L https://raw.githubusercontent.com/OG-Open-Source/UtilKit/main/sh/get_utilkit.sh) || {
-		Err "Update ${SCRIPTS} failed"
+		Err "Failed to update ${SCRIPTS}"
 		return 1
 	}
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
-	Txt "${CLR2}Complete ${CLR0}\\n"
+	Txt "${CLR2}Done${CLR0}\n"
 }
 function SysUpg() {
 	ChkRoot
-	Txt "${CLR3} is upgrading the system to the next major version...${CLR0}"
+	Txt "${CLR3}Upgrading system to the next major release...${CLR0}"
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
 	os_nm_SysUpg=$(ChkOs --name)
 	case "${os_nm_SysUpg}" in
 	Debian)
-		Txt "* 'Debian' system detected"
-		Txt "* Updated kit list"
+		Txt "* Detected 'Debian' system"
+		Txt "* Updating package list"
 		apt update -y || {
-			Err "Failed to update the suite manifest using apt"
+			Err "Failed to update package list using apt"
 			return 1
 		}
-		Txt "* Upgrading the current kit"
+		Txt "* Upgrading current packages"
 		apt full-upgrade -y || {
-			Err "Upgrading the current suite failed"
+			Err "Failed to upgrade current packages"
 			return 1
 		}
-		Txt "* Start the 'Debian' distribution upgrade..."
+		Txt "* Starting 'Debian' distribution upgrade..."
 		curr_codenm_SysUpg=$(lsb_release -cs)
 		targ_codenm_SysUpg=$(curl -s http://ftp.debian.org/debian/dists/stable/Release | grep "^Codename:" | awk '{print $2}')
 		[ "${cur}rent_codename" = "${targ_codenm_SysUpg}" ] && {
-			Err "The system is already the latest stable version (${targ_codenm_SysUpg})"
+			Err "System is already on the latest stable release (${targ_codenm_SysUpg})"
 			return 1
 		}
 		Txt "* Upgrading from ${CLR2}${curr_codenm_SysUpg}${CLR0} to ${CLR3}${targ_codenm_SysUpg}${CLR0}"
-		Task "* Backup sources.list" "cp /etc/apt/sources.list /etc/apt/sources.list.backup" || {
-			Err "Backup sources.list failed"
+		Task "* Backing up sources.list" "cp /etc/apt/sources.list /etc/apt/sources.list.backup" || {
+			Err "Failed to back up sources.list"
 			return 1
 		}
-		Task "* Update sources.list" "sed -i 's/${curr_codenm_SysUpg}/${targ_codenm_SysUpg}/g' /etc/apt/sources.list" || {
-			Err "Update sources.list failed"
+		Task "* Updating sources.list" "sed -i 's/${curr_codenm_SysUpg}/${targ_codenm_SysUpg}/g' /etc/apt/sources.list" || {
+			Err "Failed to update sources.list"
 			return 1
 		}
-		Task "* Updated new version of the suite list" "apt update -y" || {
-			Err "Updated new version of the suite list failed"
+		Task "* Updating package list for new release" "apt update -y" || {
+			Err "Failed to update package list for new release"
 			return 1
 		}
-		Task "* Upgrade to a new Debian version" "apt full-upgrade -y" || {
-			Err "Upgrading to a new Debian version failed"
+		Task "* Upgrading to new Debian release" "apt full-upgrade -y" || {
+			Err "Failed to upgrade to new Debian release"
 			return 1
 		}
 		;;
 	Ubuntu)
-		Txt "* 'Ubuntu' system detected"
-		Task "* Updated kit list" "apt update -y" || {
-			Err "Failed to update the suite manifest using apt"
+		Txt "* Detected 'Ubuntu' system"
+		Task "* Updating package list" "apt update -y" || {
+			Err "Failed to update package list using apt"
 			return 1
 		}
-		Task "* Upgrading the current kit" "apt full-upgrade -y" || {
-			Err "Upgrading the current suite failed"
+		Task "* Upgrading current packages" "apt full-upgrade -y" || {
+			Err "Failed to upgrade current packages"
 			return 1
 		}
-		Task "* Install update-manager-core" "apt install -y update-manager-core" || {
-			Err "Install update-manager-core failed"
+		Task "* Installing update-manager-core" "apt install -y update-manager-core" || {
+			Err "Failed to install update-manager-core"
 			return 1
 		}
-		Task "* Upgrade Ubuntu version" "do-release-upgrade -f DistUpgradeViewNonInteractive" || {
-			Err "Ubuntu version upgrade failed"
+		Task "* Upgrading Ubuntu release" "do-release-upgrade -f DistUpgradeViewNonInteractive" || {
+			Err "Failed to upgrade Ubuntu release"
 			return 1
 		}
 		SysRboot
 		;;
 	*) {
-		Err "Your system does not support major version upgrades"
+		Err "Your system does not support major version upgrades yet"
 		return 1
 	} ;;
 	esac
 	Txt "${CLR8}$(Linet = 24)${CLR0}"
-	Txt "${CLR2} system upgrade completed ${CLR0}\\n"
+	Txt "${CLR2}System upgrade completed${CLR0}\n"
 }
 function Task() {
 	msg_Task="$1"
@@ -1852,11 +1860,11 @@ function Task() {
 	tmp_file_Task=$(mktemp)
 	Txt -n "${msg_Task}..."
 	if eval "${cmd_Task}" >"${tmp_file_Task}" 2>&1; then
-		Txt "${CLR2}Complete ${CLR0}"
+		Txt "${CLR2}Done${CLR0}"
 		ret_Task=0
 	else
 		ret_Task=$?
-		Txt "${CLR1} failed ${CLR0} (${ret_Task})"
+		Txt "${CLR1}Failed${CLR0} (${ret_Task})"
 		[[ -s ${tmp_file_Task} ]] && Txt "${CLR1}$(cat ${tmp_file_Task})${CLR0}"
 		[[ ${ign_err_Task} != "true" ]] && return "${ret_Task}"
 	fi
@@ -1870,7 +1878,7 @@ function TimeZn() {
 			data_TimeZn=$(timeout 1s curl -sL worldtimeapi.org/api/ip | grep -oP '"timezone":"\K[^"]+') ||
 			data_TimeZn=$(timeout 1s curl -sL ip-api.com/json | grep -oP '"timezone":"\K[^"]+') ||
 			[ -n "${data_TimeZn}" ] && Txt "${data_TimeZn}" || {
-			Err "Detecting time zone from external service failed"
+			Err "Failed to detect timezone from external service"
 			return 1
 		}
 		;;
@@ -1879,7 +1887,7 @@ function TimeZn() {
 			data_TimeZn=$(command -v timedatectl &>/dev/null && timedatectl status | awk '/Time zone:/ {print $3}') ||
 			data_TimeZn=$(cat /etc/timezone 2>/dev/null | uniq) ||
 			[ -n "${data_TimeZn}" ] && Txt "${data_TimeZn}" || {
-			Err "Detecting system time zone failed"
+			Err "Failed to detect system timezone"
 			return 1
 		}
 		;;

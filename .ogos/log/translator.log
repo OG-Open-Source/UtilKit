@@ -1,0 +1,14 @@
+2025-07-24 16:25:34,787 - INFO - --- Starting Localization Pipeline ---
+2025-07-24 16:25:34,815 - DEBUG - --- [DEBUG] Auto Batch Size Calculation ---
+  - provider: gemini
+  - tpm: 250000
+  - rpm: 15
+  - avg_tokens_per_text: 50
+  - formula: max(1, int((tpm / avg_tokens_per_text) / rpm))
+  - calculated_batch_size: 333
+-------------------------
+2025-07-24 16:25:34,901 - DEBUG - # Translation Report for: utilkit.src.sh
+**Source Language:** zh-Hant
+**Target Languages:** en, zh-Hans
+
+
