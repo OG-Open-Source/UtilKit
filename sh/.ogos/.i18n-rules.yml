@@ -23,7 +23,7 @@ file_rules:
 
     translator:
       provider: "gemini"
-      api_key: "AIzaSyChv7y0xDP0LLnWz-EUSTaFwC1bDMHrR4w"
+      api_key: ""
       model: "gemini-2.5-flash-lite"
       rpm: 15
       tpm: 250000
