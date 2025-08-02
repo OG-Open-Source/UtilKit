@@ -3,7 +3,7 @@ name: generate-localized-scripts
 on:
   push:
     paths:
-      - "**/utilkit.src.*"
+      - "sh/utilkit.sh"
   workflow_dispatch:
 
 jobs:
@@ -22,27 +22,30 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Install dependencies
+      - name: Install GlocalText from source
         run: |
           python -m pip install --upgrade pip
-          if [ -f scripts/translator/requirements.txt ]; then pip install -r scripts/translator/requirements.txt; fi
+          # Install dependencies, assuming they are in requirements.txt
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # Install the glocaltext package in editable mode from local source
+          pip install -e .
 
       - name: Get changed source files
         id: changed-files
         if: github.event_name == 'push'
         uses: tj-actions/changed-files@v46
         with:
-          files: "**/utilkit.src.*"
+          files: "sh/utilkit.sh"
 
-      - name: Run Localization Engine
-        run: python scripts/translator/localization_engine.py
+      - name: Run GlocalText Localization
+        run: glocaltext run sh
 
       - name: Commit and push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add -A
-          
+
           # Check if there are any changes to commit
           if ! git diff-index --quiet HEAD; then
             COMMIT_MSG_TITLE="chore: Auto-generate and translate localized scripts"
