@@ -2,7 +2,12 @@
   "source_hashes": {
     "utilkit.sh": "8f486fc9cfbd5d32"
   },
-  "localized_hashes": {},
+  "localized_hashes": {
+    "get_utilkit.sh": "e9b8f650a6d4cae5",
+    "index.html": "3aaa88c0fce2abba",
+    "README.md": "b746b6b1abd8fca4",
+    "utilkit.sh": "2a2be45c28303e6e"
+  },
   "extracted_strings": {
     "e308ff5e9daf6c2c": {
       "hash_id": "e308ff5e9daf6c2c",

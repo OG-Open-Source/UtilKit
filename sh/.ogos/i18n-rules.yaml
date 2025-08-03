@@ -1,7 +1,7 @@
 source:
   include:
   - '../utilkit.sh'
-rules:
+capture_rules:
 - pattern: Txt "(.*?)"
   capture_group: 1
 - pattern: Err "(.*?)"
@@ -10,3 +10,4 @@ rules:
   capture_group: 1
 - pattern: Task "(.*?)"
   capture_group: 1
+ignore_rules: []
