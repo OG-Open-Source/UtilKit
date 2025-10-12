@@ -11,20 +11,8 @@ CLR8="\033[0;96m"
 CLR9="\033[0;97m"
 CLR0="\033[0m"
 
-function Txt() { echo -e "$1" "$2"; }
-function Err() {
-	[ -z "$1" ] && {
-		Txt "${CLR1}Unknown error${CLR0}"
-		return 1
-	}
-	Txt "${CLR1}$1${CLR0}"
-	if [ -w "/var/log" ]; then
-		log_file_Err="/var/log/utilkit.sh.log"
-		timestamp_Err="$(date '+%Y-%m-%d %H:%M:%S')"
-		log_entry_Err="${timestamp_Err} | ${SCRIPTS} - ${VERSION} - $(Txt "$1" | tr -d '\n')"
-		Txt "${log_entry_Err}" >>"${log_file_Err}" 2>/dev/null
-	fi
-}
+function Txt() { echo -e "$@"; }
+function Err() { echo -e "${CLR1}$1${CLR0}"; }
 function DetectLang() {
 	loc=$(curl -s "https://developers.cloudflare.com/cdn-cgi/trace" | grep "^loc=" | cut -d= -f2)
 	case "${loc}" in
@@ -39,7 +27,7 @@ DetectPkgMgr() {
 }
 lang="${1:-$(DetectLang)}"
 pkg_mgr=$(DetectPkgMgr)
-if [ -f "${HOME}/utilkit.sh" ]; then
+if [[ -f "${HOME}/utilkit.sh" ]]; then
 	Txt "${CLR2}Updating UtilKit.sh...${CLR0}"
 	if curl -sSL "https://raw.githubusercontent.com/OG-Open-Source/UtilKit/main/sh/.ogos/localized/${lang}/utilkit.sh" -o "${HOME}/utilkit.sh" 2>/dev/null; then
 		Txt "${CLR2}Downloaded pre-localized version for ${lang}${CLR0}"
@@ -50,7 +38,10 @@ if [ -f "${HOME}/utilkit.sh" ]; then
 			exit 1
 		fi
 	fi
-	if [ -n "${pkg_mgr}" ]; then
+	if [[ -w "/var/log" ]] && mkdir -p /var/log/ogos/utilkit/sh; then
+		sed -i "s/^LOG_ENABLED=false/LOG_ENABLED=true/" "${HOME}/utilkit.sh"
+	fi
+	if [[ -n "${pkg_mgr}" ]]; then
 		sed -i "s/^PKG_MGR=\"\"/PKG_MGR=\"${pkg_mgr}\"/" "${HOME}/utilkit.sh"
 	fi
 	Txt "${CLR2}UtilKit.sh has been updated successfully${CLR0}"
@@ -72,7 +63,10 @@ else
 			exit 1
 		fi
 	fi
-	if [ -n "${pkg_mgr}" ]; then
+	if [[ -w "/var/log" ]] && mkdir -p /var/log/ogos/utilkit/sh; then
+		sed -i "s/^LOG_ENABLED=false/LOG_ENABLED=true/" "${HOME}/utilkit.sh"
+	fi
+	if [[ -n "${pkg_mgr}" ]]; then
 		sed -i "s/^PKG_MGR=\"\"/PKG_MGR=\"${pkg_mgr}\"/" "${HOME}/utilkit.sh"
 	fi
 	if ! grep -q "source ~/utilkit.sh" ~/.bashrc; then

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-ANTHORS="OG-Open-Source"
+AUTHORS="OG-Open-Source"
 SCRIPTS="UtilKit.sh"
-VERSION="7.046.006"
+VERSION="7.046.007"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -15,22 +15,19 @@ CLR8="\033[0;96m"
 CLR9="\033[0;97m"
 CLR0="\033[0m"
 
+DLINE="========================"
+SLINE="--------------------------------"
+
+LOG_ENABLED=false
 PKG_MGR=""
 UNIT_PREF="iB"
 
 function Txt() { echo -e "$@"; }
 function Err() {
-	[ -z "$1" ] && {
-		Txt "${CLR1}未知錯誤${CLR0}"
-		return 1
-	}
-	Txt "${CLR1}$1${CLR0}"
-	if [ -w "/var/log" ]; then
-		log_file_Err="/var/log/utilkit.sh.log"
-		timestamp_Err="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-		log_entry_Err="${timestamp_Err} | ${SCRIPTS} - ${VERSION} - $(Txt "$1" | tr -d '\n')"
-		Txt "${log_entry_Err}" >>"${log_file_Err}" 2>/dev/null
+	if [[ "${LOG_ENABLED}" = true ]]; then
+		Txt "$(date -u '+%Y-%m-%dT%H:%M:%SZ') | ${SCRIPTS} - ${VERSION} | $(Txt "$1" | tr -d '\n')" >>"/var/log/ogos/utilkit/sh/error.log" 2>/dev/null
 	fi
+	Txt "${CLR1}$1${CLR0}"
 }
 function Add() {
 	[ $# -eq 0 ] && {
@@ -303,6 +300,7 @@ function ChkVirt() {
 		case "${virt_typ_ChkVirt}" in
 		kvm) grep -qi "proxmox" /sys/class/dmi/id/product_name 2>/dev/null && Txt "Proxmox VE (KVM)" || Txt "KVM" ;;
 		microsoft) Txt "Microsoft Hyper-V" ;;
+		wsl) Txt "適用於 Linux 的 Windows 子系統" ;;
 		none)
 			if grep -q "container=lxc" /proc/1/environ 2>/dev/null; then
 				Txt "LXC 容器"
@@ -391,7 +389,7 @@ function ConvSz() {
 		return 2
 	}
 	size_ConvSz=$1
-	unit_ConvSz=${2:-$UNIT_PREF}
+	unit_ConvSz=${2:-${UNIT_PREF}}
 	if ! [[ ${size_ConvSz} =~ ^[+-]?[0-9]*\.?[0-9]+$ ]]; then
 		Err "無效的大小值。必須為數值"
 		return 2
@@ -460,7 +458,7 @@ function ConvSz() {
 }
 function Copyright() {
 	Txt "${SCRIPTS} ${VERSION}"
-	Txt "Copyright (C) $(date +%Y) ${ANTHORS}."
+	Txt "Copyright (C) $(date +%Y) ${AUTHORS}."
 }
 function Del() {
 	[ $# -eq 0 ] && {
@@ -852,7 +850,7 @@ function Iface() {
 	}
 	i=1
 	while read -r interface_item_Iface; do
-		[ -n "${interface_item_Iface}" ] && interfaces_Iface[$i]="${interface_item_Iface}"
+		[ -n "${interface_item_Iface}" ] && interfaces_Iface[${i}]="${interface_item_Iface}"
 		((i++))
 	done <<<"${all_interfaces_Iface}"
 	interfaces_num_Iface="${#interfaces_Iface[*]}"
@@ -863,8 +861,8 @@ function Iface() {
 		shift
 		arr_Iface=("$@")
 		for ((i = 1; i <= ${#arr_Iface[@]}; i++)); do
-			if [ "${item_Iface}" = "${arr_Iface[$i]}" ]; then
-				Txt "$i"
+			if [ "${item_Iface}" = "${arr_Iface[${i}]}" ]; then
+				Txt "${i}"
 				return 0
 			fi
 		done
@@ -873,13 +871,13 @@ function Iface() {
 	interface4_Iface=""
 	interface6_Iface=""
 	for ((i = 1; i <= ${#interfaces_Iface[@]}; i++)); do
-		item_Iface="${interfaces_Iface[$i]}"
+		item_Iface="${interfaces_Iface[${i}]}"
 		[ -z "${item_Iface}" ] && continue
-		if [[ -n $default4_route_Iface && $default4_route_Iface == *"${item_Iface}"* ]] && [ -z "${interface4_Iface}" ]; then
+		if [[ -n ${default4_route_Iface} && ${default4_route_Iface} == *"${item_Iface}"* ]] && [ -z "${interface4_Iface}" ]; then
 			interface4_Iface="${item_Iface}"
 			interface4_device_order_Iface=$(get_arr_item_idx_Iface "${item_Iface}" "${interfaces_Iface[@]}")
 		fi
-		if [[ -n $default6_route_Iface && $default6_route_Iface == *"${item_Iface}"* ]] && [ -z "${interface6_Iface}" ]; then
+		if [[ -n ${default6_route_Iface} && ${default6_route_Iface} == *"${item_Iface}"* ]] && [ -z "${interface6_Iface}" ]; then
 			interface6_Iface="${item_Iface}"
 			interface6_device_order_Iface=$(get_arr_item_idx_Iface "${item_Iface}" "${interfaces_Iface[@]}")
 		fi
@@ -887,7 +885,7 @@ function Iface() {
 	done
 	if [ -z "${interface4_Iface}" ] && [ -z "${interface6_Iface}" ]; then
 		for ((i = 1; i <= ${#interfaces_Iface[@]}; i++)); do
-			item_Iface="${interfaces_Iface[$i]}"
+			item_Iface="${interfaces_Iface[${i}]}"
 			if [[ ${item_Iface} =~ ^en ]]; then
 				interface4_Iface="${item_Iface}"
 				interface6_Iface="${item_Iface}"
@@ -1106,12 +1104,12 @@ function Prog() {
 		prog_Prog=$((i * 100 / num_cmds_Prog))
 		fild_wid_Prog=$((prog_Prog * bar_wid_Prog / 100))
 		printf "\r\033[30;42mProgress: [%3d%%]\033[0m [%s%s]" "${prog_Prog}" "$(printf "%${fild_wid_Prog}s" | tr ' ' '#')" "$(printf "%$((bar_wid_Prog - fild_wid_Prog))s" | tr ' ' '.')"
-		if ! cmd_oup_Prog=$(eval "${cmds[$i]}" 2>&1); then
+		if ! cmd_oup_Prog=$(eval "${cmds[${i}]}" 2>&1); then
 			Txt "\n${cmd_oup_Prog}"
 			stty echo
 			trap - SIGINT SIGQUIT SIGTSTP
 			{
-				Err "命令執行失敗：${cmds[$i]}"
+				Err "命令執行失敗：${cmds[${i}]}"
 				return 1
 			}
 		fi
@@ -1163,7 +1161,7 @@ function Run() {
 				curl -sSLf "${url_Run}" -o "${script_nm_Run}" || { Err "下載腳本 ${script_nm_Run} 失敗"; return 1; }
 				chmod +x "${script_nm_Run}" || { Err "設定腳本 ${script_nm_Run} 執行權限失敗"; return 1; }
 			"
-			Txt "${CLR8}$(Linet = 24)${CLR0}"
+			Txt "${CLR8}${DLINE}${CLR0}"
 			if [[ $1 == "--" ]]; then
 				shift
 				./"${script_nm_Run}" "$@" || {
@@ -1176,7 +1174,7 @@ function Run() {
 					return 1
 				}
 			fi
-			Txt "${CLR8}$(Linet = 24)${CLR0}"
+			Txt "${CLR8}${DLINE}${CLR0}"
 			Txt "${CLR2}完成${CLR0}\n"
 			[[ ${rm_aftr_Run} == true ]] && rm -rf "${script_nm_Run}"
 		elif [[ $1 =~ ^[^/]+/[^/]+/.+ ]]; then
@@ -1209,7 +1207,7 @@ function Run() {
 				*) break ;;
 				esac
 			done
-			if [[ $dnload_repo_Run == true ]]; then
+			if [[ ${dnload_repo_Run} == true ]]; then
 				Txt "${CLR3}正在克隆儲存庫 ${repo_owner_Run}/${repo_name_Run}${CLR0}"
 				[[ -d ${repo_name_Run} ]] && {
 					Err "目錄 ${repo_name_Run} 已存在"
@@ -1243,7 +1241,7 @@ function Run() {
 				Txt "儲存庫已克隆到目錄：${CLR2}${repo_name_Run}"
 				if [[ -f "${repo_name_Run}/${script_path_Run}" ]]; then
 					Task "* 設定執行權限" "chmod +x "${repo_name_Run}/${script_path_Run}""
-					Txt "${CLR8}$(Linet = 24)${CLR0}"
+					Txt "${CLR8}${DLINE}${CLR0}"
 					if [[ $1 == "--" ]]; then
 						shift
 						./"${repo_name_Run}/${script_path_Run}" "$@" || {
@@ -1256,7 +1254,7 @@ function Run() {
 							return 1
 						}
 					fi
-					Txt "${CLR8}$(Linet = 24)${CLR0}"
+					Txt "${CLR8}${DLINE}${CLR0}"
 					Txt "${CLR2}完成${CLR0}\n"
 					[[ ${rm_aftr_Run} == true ]] && rm -rf "${repo_name_Run}"
 				fi
@@ -1309,7 +1307,7 @@ function Run() {
 						return 1
 					}
 				"
-				Txt "${CLR8}$(Linet = 24)${CLR0}"
+				Txt "${CLR8}${DLINE}${CLR0}"
 				if [[ -f ${script_nm_Run} ]]; then
 					if [[ $1 == "--" ]]; then
 						shift
@@ -1327,7 +1325,7 @@ function Run() {
 					Err "腳本檔案 '${script_nm_Run}' 未成功下載"
 					return 1
 				fi
-				Txt "${CLR8}$(Linet = 24)${CLR0}"
+				Txt "${CLR8}${DLINE}${CLR0}"
 				Txt "${CLR2}完成${CLR0}\n"
 				[[ ${rm_aftr_Run} == true ]] && rm -rf "${script_nm_Run}"
 			fi
@@ -1380,7 +1378,7 @@ function SwapUsage() {
 function SysClean() {
 	ChkRoot
 	Txt "${CLR3}正在執行系統清理...${CLR0}"
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
+	Txt "${CLR8}${DLINE}${CLR0}"
 	case $(command -v apk apt opkg pacman yum zypper dnf | head -n1) in
 	*apk)
 		Txt "* 清理 APK 快取"
@@ -1551,31 +1549,31 @@ function SysClean() {
 		Err "移除縮圖檔案失敗"
 		return 1
 	}
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
+	Txt "${CLR8}${DLINE}${CLR0}"
 	Txt "${CLR2}完成${CLR0}\n"
 }
 function SysInfo() {
 	Txt "${CLR3}系統資訊${CLR0}"
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
+	Txt "${CLR8}${DLINE}${CLR0}"
 	Txt "- 主機名稱：		${CLR2}$(uname -n || hostname)${CLR0}"
 	Txt "- 作業系統：		${CLR2}$(ChkOs)${CLR0}"
 	Txt "- 核心版本：		${CLR2}$(uname -r)${CLR0}"
-	Txt "- 系統語言：		${CLR2}$LANG${CLR0}"
+	Txt "- 系統語言：		${CLR2}${LANG}${CLR0}"
 	Txt "- Shell 版本：		${CLR2}$(ShellVer)${CLR0}"
 	Txt "- 最後系統更新：	${CLR2}$(LastUpd)${CLR0}"
-	Txt "${CLR8}$(Linet - 32)${CLR0}"
+	Txt "${CLR8}${SLINE}${CLR0}"
 	Txt "- 架構：		${CLR2}$(uname -m)${CLR0}"
 	Txt "- CPU 型號：		${CLR2}$(CpuModel)${CLR0}"
 	Txt "- CPU 核心數：		${CLR2}$(nproc)${CLR0}"
 	Txt "- CPU 頻率：		${CLR2}$(CpuFreq)${CLR0}"
 	Txt "- CPU 使用率：		${CLR2}$(CpuUsage)%${CLR0}"
 	Txt "- CPU 快取：		${CLR2}$(CpuCache)${CLR0}"
-	Txt "${CLR8}$(Linet - 32)${CLR0}"
+	Txt "${CLR8}${SLINE}${CLR0}"
 	Txt "- 記憶體使用率：	${CLR2}$(MemUsage)${CLR0}"
 	Txt "- SWAP 使用率：		${CLR2}$(SwapUsage)${CLR0}"
 	Txt "- 磁碟使用率：		${CLR2}$(DiskUsage)${CLR0}"
 	Txt "- 檔案系統類型：	${CLR2}$(df -T / | awk 'NR==2 {print $2}')${CLR0}"
-	Txt "${CLR8}$(Linet - 32)${CLR0}"
+	Txt "${CLR8}${SLINE}${CLR0}"
 	Txt "- IPv4 地址：		${CLR2}$(IpAddr --ipv4)${CLR0}"
 	Txt "- IPv6 地址：		${CLR2}$(IpAddr --ipv6)${CLR0}"
 	Txt "- MAC 位址：		${CLR2}$(MacAddr)${CLR0}"
@@ -1585,21 +1583,21 @@ function SysInfo() {
 	Txt "- 網路介面：		${CLR2}$(Iface -i)${CLR0}"
 	Txt "- 內部時區：		${CLR2}$(TimeZn --internal)${CLR0}"
 	Txt "- 外部時區：		${CLR2}$(TimeZn --external)${CLR0}"
-	Txt "${CLR8}$(Linet - 32)${CLR0}"
+	Txt "${CLR8}${SLINE}${CLR0}"
 	Txt "- 負載平均：		${CLR2}$(LoadAvg)${CLR0}"
 	Txt "- 程序數量：		${CLR2}$(ps aux | wc -l)${CLR0}"
 	Txt "- 已安裝套件：		${CLR2}$(PkgCnt)${CLR0}"
-	Txt "${CLR8}$(Linet - 32)${CLR0}"
+	Txt "${CLR8}${SLINE}${CLR0}"
 	Txt "- 運行時間：		${CLR2}$(uptime -p | sed 's/up //')${CLR0}"
 	Txt "- 啟動時間：		${CLR2}$(who -b | awk '{print $3, $4}')${CLR0}"
-	Txt "${CLR8}$(Linet - 32)${CLR0}"
+	Txt "${CLR8}${SLINE}${CLR0}"
 	Txt "- 虛擬化：		${CLR2}$(ChkVirt)${CLR0}"
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
+	Txt "${CLR8}${DLINE}${CLR0}"
 }
 function SysOptz() {
 	ChkRoot
 	Txt "${CLR3}正在優化長期運行伺服器的系統設定...${CLR0}"
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
+	Txt "${CLR8}${DLINE}${CLR0}"
 	sysctl_conf_SysOptimize="/etc/sysctl.d/99-server-optimizations.conf"
 	Txt "# 長期運行系統的伺服器優化" >"${sysctl_conf_SysOptimize}"
 	Task "* 正在優化記憶體管理" "
@@ -1654,9 +1652,9 @@ function SysOptz() {
 		return 1
 	}
 	Task "* 正在優化 I/O 排程器" "
-		for disk in /sys/block/[sv]d*; do
-			Txt 'none' > \$disk/queue/scheduler 2>/dev/null || true
-			Txt '256' > \$disk/queue/nr_requests 2>/dev/null || true
+		for disk_SysOptz in /sys/block/[sv]d*; do
+			Txt 'none' > ${disk_SysOptz}/queue/scheduler 2>/dev/null || true
+			Txt '256' > ${disk_SysOptz}/queue/nr_requests 2>/dev/null || true
 		done
 	" || {
 		Err "優化 I/O 排程器失敗"
@@ -1664,7 +1662,7 @@ function SysOptz() {
 	}
 	Task "* 停用非必要服務" "
 		for service_SysOptz in bluetooth cups avahi-daemon postfix nfs-server rpcbind autofs; do
-			systemctl disable --now $service_SysOptz 2>/dev/null || true
+			systemctl disable --now ${service_SysOptz} 2>/dev/null || true
 		done
 	" || {
 		Err "停用服務失敗"
@@ -1682,13 +1680,13 @@ function SysOptz() {
 		Err "清除系統快取失敗"
 		return 1
 	}
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
+	Txt "${CLR8}${DLINE}${CLR0}"
 	Txt "${CLR2}完成${CLR0}\n"
 }
 function SysRboot() {
 	ChkRoot
 	Txt "${CLR3}正在準備重新啟動系統...${CLR0}"
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
+	Txt "${CLR8}${DLINE}${CLR0}"
 	active_usrs_SysRboot=$(who | wc -l) || {
 		Err "取得活動使用者數量失敗"
 		return 1
@@ -1728,7 +1726,7 @@ function SysRboot() {
 function SysUpd() {
 	ChkRoot
 	Txt "${CLR3}正在更新系統軟體...${CLR0}"
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
+	Txt "${CLR8}${DLINE}${CLR0}"
 	UpdPkg() {
 		cmd_SysUpd_UpdPkg="$1"
 		upd_cmd_SysUpd_UpdPkg="$2"
@@ -1779,13 +1777,13 @@ function SysUpd() {
 		Err "更新 ${SCRIPTS} 失敗"
 		return 1
 	}
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
+	Txt "${CLR8}${DLINE}${CLR0}"
 	Txt "${CLR2}完成${CLR0}\n"
 }
 function SysUpg() {
 	ChkRoot
 	Txt "${CLR3}正在升級系統至下一個主要版本...${CLR0}"
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
+	Txt "${CLR8}${DLINE}${CLR0}"
 	os_nm_SysUpg=$(ChkOs --name)
 	case "${os_nm_SysUpg}" in
 	Debian)
@@ -1820,7 +1818,7 @@ function SysUpg() {
 			Err "更新新版本的套件清單失敗"
 			return 1
 		}
-		Task "* 升級到新的 Debian 版本" "apt full-upgrade -y" || {
+		apt full-upgrade -y || {
 			Err "升級到新的 Debian 版本失敗"
 			return 1
 		}
@@ -1839,7 +1837,7 @@ function SysUpg() {
 			Err "安裝 update-manager-core 失敗"
 			return 1
 		}
-		Task "* 升級 Ubuntu 版本" "do-release-upgrade -f DistUpgradeViewNonInteractive" || {
+		do-release-upgrade -f DistUpgradeViewNonInteractive || {
 			Err "升級 Ubuntu 版本失敗"
 			return 1
 		}
@@ -1850,7 +1848,7 @@ function SysUpg() {
 		return 1
 	} ;;
 	esac
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
+	Txt "${CLR8}${DLINE}${CLR0}"
 	Txt "${CLR2}系統升級完成${CLR0}\n"
 }
 function Task() {
