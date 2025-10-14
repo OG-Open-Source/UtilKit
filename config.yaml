@@ -1,0 +1,92 @@
+providers:
+  google: {}
+  # gemini:
+  #   api_key: "Google_API_Key_here"
+  #   model: "models/gemma-3n-e4b-it"
+  #   batch_options:
+  #     enabled: true
+  #     max_tokens_per_batch: 8000
+skip_translations:
+  - "${status_ChkDeps}\t${dep_ChkDeps}"
+  - "${VERSION_ID}"
+  - "${ID}"
+  - "${NAME} $(cat /etc/debian_version)"
+  - "${PRETTY_NAME}"
+  - "${cpu_freq_CpuFreq} GHz"
+  - "${cpu_usage_CpuUsage}"
+  - "${SCRIPTS} ${VERSION}"
+  - "Copyright (C) $(date +%Y) ${AUTHORS}."
+  - "${usd_DiskUsage}"
+  - "${tot_DiskUsage}"
+  - "${pct_DiskUsage}"
+  - "$(ConvSz ${usd_DiskUsage}) / $(ConvSz ${tot_DiskUsage}) (${pct_DiskUsage}%)"
+  - "${ipv4_servers_DnsAddr[*]}"
+  - "${ipv6_servers_DnsAddr[*]}"
+  - "${ipv4_servers_DnsAddr[*]}   ${ipv6_servers_DnsAddr[*]}"
+  - "${font_style_Font}${1}${CLR0}"
+  - "${val_Format}"
+  - "${res_Format}"
+  - "${url_Get}"
+  - "${prompt_msg_Ask}"
+  - "${i}"
+  - "${interface_Iface}"
+  - "${rx_bytes_Iface}"
+  - "${rx_packets_Iface}"
+  - "${rx_drop_Iface}"
+  - "${tx_bytes_Iface}"
+  - "${tx_packets_Iface}"
+  - "${tx_drop_Iface}"
+  - "${ipv4_addr_IpAddr}"
+  - "${ipv6_addr_IpAddr}"
+  - "IPv4: ${ipv4_addr_IpAddr}"
+  - "IPv6: ${ipv6_addr_IpAddr}"
+  - "${data_LastUpd}"
+  - "${data_Loc}"
+  - "${data_MacAddr}"
+  - "${usd_MemUsage}"
+  - "${tot_MemUsage}"
+  - "${pct_MemUsage}"
+  - "$(ConvSz ${usd_MemUsage}) / $(ConvSz ${tot_MemUsage}) (${pct_MemUsage}%)"
+  - "${data_NetProv}"
+  - "${data_PkgCnt}"
+  - "\n${cmd_oup_Prog}"
+  - "${data_PubIp}"
+  - "${CLR8}${DLINE}${CLR0}"
+  - "$1"
+  - "Bash ${BASH_VERSION}"
+  - "Zsh ${ZSH_VERSION}"
+  - "${usd_SwapUsage}"
+  - "${tot_SwapUsage}"
+  - "${pct_SwapUsage}"
+  - "$(ConvSz ${usd_SwapUsage}) / $(ConvSz ${tot_SwapUsage}) (${pct_SwapUsage}%)"
+  - "${data_TimeZn}"
+  - "${CLR1}$(cat ${tmp_file_Task})${CLR0}"
+tasks:
+- name: "UtilKit.sh - zh-CN"
+  enabled: true
+  source_lang: "zh-TW"
+  target_lang: "zh-CN"
+  targets:
+  - "sh/utilkit.sh"
+  extraction_rules:
+  - '(?:Txt|Err|Ask|Task)\s"(.*?)"'
+  - 'virt_typ_ChkVirt="(未知)"'
+  manual_translations:
+    "未知": "未知"
+  output:
+    in_place: false
+    path: "sh/localized/zh-CN/utilkit.sh"
+- name: "UtilKit.sh - en"
+  enabled: true
+  source_lang: "zh-TW"
+  target_lang: "en"
+  targets:
+  - "sh/utilkit.sh"
+  extraction_rules:
+  - '(?:Txt|Err|Ask|Task)\s"(.*?)"'
+  - 'virt_typ_ChkVirt="(未知)"'
+  manual_translations:
+    "未知": "Unknown"
+  output:
+    in_place: false
+    path: "sh/localized/en/utilkit.sh"

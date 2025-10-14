@@ -1,8 +1,8 @@
 #!/bin/bash
 
-ANTHORS="OG-Open-Source"
+AUTHORS="OG-Open-Source"
 SCRIPTS="UtilKit.sh"
-VERSION="7.046.006"
+VERSION="7.046.007"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -15,34 +15,31 @@ CLR8="\033[0;96m"
 CLR9="\033[0;97m"
 CLR0="\033[0m"
 
+DLINE="========================"
+SLINE="--------------------------------"
+
+LOG_ENABLED=false
 PKG_MGR=""
 UNIT_PREF="iB"
 
 function Txt() { echo -e "$@"; }
 function Err() {
-	[ -z "$1" ] && {
-		Txt "${CLR1}未知錯誤${CLR0}"
-		return 1
-	}
-	Txt "${CLR1}$1${CLR0}"
-	if [ -w "/var/log" ]; then
-		log_file_Err="/var/log/utilkit.sh.log"
-		timestamp_Err="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-		log_entry_Err="${timestamp_Err} | ${SCRIPTS} - ${VERSION} - $(Txt "$1" | tr -d '\n')"
-		Txt "${log_entry_Err}" >>"${log_file_Err}" 2>/dev/null
+	if [[ "${LOG_ENABLED}" = true ]]; then
+		Txt "$(date -u '+%Y-%m-%dT%H:%M:%SZ') | ${SCRIPTS} - ${VERSION} | $(Txt"$1" | tr -d '\n')" >>"/var/log/ogos/utilkit/sh/error.log" 2>/dev/null
 	fi
+	Txt "${CLR1}$1${CLR0}"
 }
 function Add() {
 	[ $# -eq 0 ] && {
-		Err "未指定要新增的項目。請提供至少一個要新增的項目"
+		Err "No items specified to be added. Please provide at least one item to add"
 		return 2
 	}
 	[ "$1" = "-f" -o "$1" = "-d" ] && [ $# -eq 1 ] && {
-		Err "-f 或 -d 後未指定檔案或目錄路徑"
+		Err "No file or directory path specified after -f or -d"
 		return 2
 	}
 	[ "$1" = "-f" -o "$1" = "-d" ] && [ "$2" = "" ] && {
-		Err "-f 或 -d 後未指定檔案或目錄路徑"
+		Err "No file or directory path specified after -f or -d"
 		return 2
 	}
 	mod_Add="pkg"
@@ -62,28 +59,28 @@ function Add() {
 		*.deb)
 			ChkRoot
 			deb_file_Add=$(basename "$1")
-			Txt "${CLR3}安裝 DEB 套件［${deb_file_Add}］${CLR0}\n"
+			Txt "${CLR3}Install DEB package [${deb_file_Add}] ${CLR0}\n"
 			Get "$1"
 			if [ -f "${deb_file_Add}" ]; then
 				dpkg -i "${deb_file_Add}" || {
-					Err "安裝 ${deb_file_Add} 失敗。請檢查套件相容性和相依性\n"
+					Err "Installation of ${deb_file_Add} failed. Please check package compatibility and dependencies\n"
 					rm -f "${deb_file_Add}"
 					err_code_Add=1
 					shift
 					continue
 				}
 				apt --fix-broken install -y || {
-					Err "修復相依性失敗"
+					Err "Repair dependency failed"
 					rm -f "${deb_file_Add}"
 					err_code_Add=1
 					shift
 					continue
 				}
-				Txt "* DEB 套件 ${deb_file_Add} 安裝成功"
+				Txt "* DEB package ${deb_file_Add} installed successfully"
 				rm -f "${deb_file_Add}"
-				Txt "${CLR2}完成${CLR0}\n"
+				Txt "${CLR2}Complete${CLR0}\n"
 			else
-				Err "找不到 DEB 套件 ${deb_file_Add} 或下載失敗\n"
+				Err "DEB package ${deb_file_Add} not found or download failed\n"
 				err_code_Add=1
 				shift
 				continue
@@ -93,53 +90,53 @@ function Add() {
 		*)
 			case "${mod_Add}" in
 			"file")
-				Txt "${CLR3}新增檔案［$1］${CLR0}"
+				Txt "${CLR3}New file [$1]${CLR0}"
 				[ -d "$1" ] && {
-					Err "目錄 $1 已存在。無法建立同名檔案\n"
+					Err "Directory $1 already exists. Unable to create file with the same name\n"
 					err_code_Add=1
 					shift
 					continue
 				}
 				[ -f "$1" ] && {
-					Err "檔案 $1 已存在\n"
+					Err "File $1 already exists\n"
 					err_code_Add=1
 					shift
 					continue
 				}
 				touch "$1" || {
-					Err "建立檔案 $1 失敗。請檢查權限和磁碟空間\n"
+					Err "Failed to create file $1. Please check permissions and disk space\n"
 					err_code_Add=1
 					shift
 					continue
 				}
-				Txt "* 檔案 $1 建立成功"
-				Txt "${CLR2}完成${CLR0}\n"
+				Txt "* File $1 created successfully"
+				Txt "${CLR2}Complete${CLR0}\n"
 				;;
 			"dir")
-				Txt "${CLR3}新增目錄［$1］${CLR0}"
+				Txt "${CLR3}New directory［$1］${CLR0}"
 				[ -f "$1" ] && {
-					Err "檔案 $1 已存在。無法建立同名目錄\n"
+					Err "File $1 already exists. Unable to create a directory with the same name\n"
 					err_code_Add=1
 					shift
 					continue
 				}
 				[ -d "$1" ] && {
-					Err "目錄 $1 已存在\n"
+					Err "Directory $1 already exists\n"
 					err_code_Add=1
 					shift
 					continue
 				}
 				mkdir -p "$1" || {
-					Err "建立目錄 $1 失敗。請檢查權限和路徑有效性\n"
+					Err "Failed to create directory $1. Please check permissions and path validity\n"
 					err_code_Add=1
 					shift
 					continue
 				}
-				Txt "* 目錄 $1 建立成功"
-				Txt "${CLR2}完成${CLR0}\n"
+				Txt "* Directory $1 created successfully"
+				Txt "${CLR2}Complete${CLR0}\n"
 				;;
 			"pkg")
-				Txt "${CLR3}安裝套件［$1］${CLR0}"
+				Txt "${CLR3} Installation Kit [$1] ${CLR0}"
 				ChkRoot
 				case ${PKG_MGR} in
 				apk | apt | opkg | pacman | yum | zypper | dnf)
@@ -164,30 +161,30 @@ function Add() {
 						esac
 					}
 					if ! is_instd_Add "$1"; then
-						Txt "* 套件 $1 尚未安裝"
+						Txt "* Package $1 not installed yet"
 						if inst_pkg_Add "$1"; then
 							if is_instd_Add "$1"; then
-								Txt "* 套件 $1 安裝成功"
-								Txt "${CLR2}完成${CLR0}\n"
+								Txt "* Package $1 installed successfully"
+								Txt "${CLR2}Complete${CLR0}\n"
 							else
-								Err "使用 ${PKG_MGR} 安裝 $1 失敗\n"
+								Err "Installation of $1 using ${PKG_MGR} failed\n"
 								err_code_Add=1
 								shift
 								continue
 							fi
 						else
-							Err "使用 ${PKG_MGR} 安裝 $1 失敗\n"
+							Err "Installation of $1 using ${PKG_MGR} failed\n"
 							err_code_Add=1
 							shift
 							continue
 						fi
 					else
-						Txt "* 套件 $1 已經安裝"
-						Txt "${CLR2}完成${CLR0}\n"
+						Txt "* Package $1 already installed"
+						Txt "${CLR2}Complete${CLR0}\n"
 					fi
 					;;
 				*)
-					Err "不支援的套件管理器\n"
+					Err "Unsupported package manager\n"
 					err_code_Add=1
 					shift
 					continue
@@ -209,7 +206,7 @@ function ChkDeps() {
 		-i | --interactive) mod_ChkDeps="interactive" ;;
 		-a | --automatic) mod_ChkDeps="automatic" ;;
 		*)
-			Err "無效的選項：$1"
+			Err "Invalid option: $1"
 			return 1
 			;;
 		esac
@@ -227,8 +224,8 @@ function ChkDeps() {
 	[[ ${#missg_deps_ChkDeps[@]} -eq 0 ]] && return 0
 	case "${mod_ChkDeps}" in
 	"interactive")
-		Txt "\n${CLR3}缺少的套件：${CLR0} ${missg_deps_ChkDeps[*]}"
-		Ask "是否要安裝缺少的套件？(y/N) " -n 1 cont_inst_ChkDeps
+		Txt "\n${CLR3} Missing packages: ${CLR0} ${missg_deps_ChkDeps[*]}"
+		Ask "Do you want to install missing packages? (y/N)" -n 1 cont_inst_ChkDeps
 		Txt
 		[[ ${cont_inst_ChkDeps} =~ ^[Yy]$ ]] && Add "${missg_deps_ChkDeps[@]}"
 		;;
@@ -254,7 +251,7 @@ function ChkOs() {
 			cat /etc/alpine-release
 		else
 			{
-				Err "未知的發行版本"
+				Err "Unknown release version"
 				return 1
 			}
 		fi
@@ -267,7 +264,7 @@ function ChkOs() {
 			grep -i "DISTRO_NAME" /etc/DISTRO_SPECS | cut -d'=' -f2 | awk '{print $1}'
 		else
 			{
-				Err "未知的發行版"
+				Err "Unknown distribution"
 				return 1
 			}
 		fi
@@ -280,7 +277,7 @@ function ChkOs() {
 			grep -i "DISTRO_NAME" /etc/DISTRO_SPECS | cut -d'=' -f2
 		else
 			{
-				Err "未知的發行版"
+				Err "Unknown distribution"
 				return 1
 			}
 		fi
@@ -289,7 +286,7 @@ function ChkOs() {
 }
 function ChkRoot() {
 	if [ "${EUID}" -ne 0 ] || [ "$(id -u)" -ne 0 ]; then
-		Err "請以 root 使用者執行此腳本"
+		Err "Please execute this script as root user"
 		exit 1
 	fi
 }
@@ -297,57 +294,58 @@ function ChkVirt() {
 	if command -v systemd-detect-virt >/dev/null 2>&1; then
 		virt_typ_ChkVirt=$(systemd-detect-virt 2>/dev/null)
 		[ -z "${virt_typ_ChkVirt}" ] && {
-			Err "無法偵測虛擬化環境"
+			Err "Unable to detect virtualized environment"
 			return 1
 		}
 		case "${virt_typ_ChkVirt}" in
 		kvm) grep -qi "proxmox" /sys/class/dmi/id/product_name 2>/dev/null && Txt "Proxmox VE (KVM)" || Txt "KVM" ;;
 		microsoft) Txt "Microsoft Hyper-V" ;;
+		wsl) Txt "Windows Subsystem for Linux" ;;
 		none)
 			if grep -q "container=lxc" /proc/1/environ 2>/dev/null; then
-				Txt "LXC 容器"
+				Txt "LXC container"
 			elif grep -qi "hypervisor" /proc/cpuinfo 2>/dev/null; then
-				Txt "虛擬機器（未知類型）"
+				Txt "Virtual machine (unknown type)"
 			else
-				Txt "未偵測到（可能為實體機器）"
+				Txt "Not detected (possibly a physical machine)"
 			fi
 			;;
-		*) Txt "${virt_typ_ChkVirt:-未偵測到（可能為實體機器）}" ;;
+		*) Txt "${virt_typ_ChkVirt:-not detected (possibly a physical machine)}" ;;
 		esac
 	elif [ -f /proc/cpuinfo ]; then
-		virt_typ_ChkVirt=$(grep -i "hypervisor" /proc/cpuinfo >/dev/null && Txt "虛擬機器" || Txt "無")
+		virt_typ_ChkVirt=$(grep -i "hypervisor" /proc/cpuinfo >/dev/null && Txt "virtual machine" || Txt "none")
 	else
-		virt_typ_ChkVirt="未知"
+		virt_typ_ChkVirt="Unknown"
 	fi
 }
 function Clear() {
 	targ_dir_Clear="${1:-${HOME}}"
 	cd "${targ_dir_Clear}" || {
-		Err "切換目錄失敗"
+		Err "Failed to switch directories"
 		return 1
 	}
 	clear
 }
 function CpuCache() {
 	[ ! -f /proc/cpuinfo ] && {
-		Err "無法存取 CPU 資訊。/proc/cpuinfo 不可用"
+		Err "Unable to access CPU information. /proc/cpuinfo is not available"
 		return 1
 	}
 	cpu_cache_CpuCache=$(awk '/^cache size/ {sum+=$4; count++} END {print (count>0) ? sum/count : "N/A"}' /proc/cpuinfo)
 	[ "${cpu_cache_CpuCache}" = "N/A" ] && {
-		Err "無法確定 CPU 快取大小"
+		Err "Unable to determine CPU cache size"
 		return 1
 	}
 	Txt "${cpu_cache_CpuCache} KB"
 }
 function CpuFreq() {
 	[ ! -f /proc/cpuinfo ] && {
-		Err "無法存取 CPU 資訊。/proc/cpuinfo 不可用"
+		Err "Unable to access CPU information. /proc/cpuinfo is not available"
 		return 1
 	}
 	cpu_freq_CpuFreq=$(awk '/^cpu MHz/ {sum+=$4; count++} END {print (count>0) ? sprintf("%.2f", sum/count/1000) : "N/A"}' /proc/cpuinfo)
 	[ "${cpu_freq_CpuFreq}" = "N/A" ] && {
-		Err "無法確定 CPU 頻率"
+		Err "Unable to determine CPU frequency"
 		return 1
 	}
 	Txt "${cpu_freq_CpuFreq} GHz"
@@ -361,21 +359,21 @@ function CpuModel() {
 		sysctl -n machdep.cpu.brand_string
 	else
 		{
-			Txt "${CLR1}未知${CLR0}"
+			Txt "${CLR1}Unknown${CLR0}"
 			return 1
 		}
 	fi
 }
 function CpuUsage() {
 	read -r cpu_CpuUsage usr_CpuUsage nice_CpuUsage sys_CpuUsage idle_CpuUsage iowait_CpuUsage irq_CpuUsage softirq_CpuUsage <<<$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8}' /proc/stat) || {
-		Err "從 /proc/stat 讀取 CPU 統計資料失敗"
+		Err "Failed to read CPU statistics from /proc/stat"
 		return 1
 	}
 	prev_total_CpuUsage=$((usr_CpuUsage + nice_CpuUsage + sys_CpuUsage + idle_CpuUsage + iowait_CpuUsage + irq_CpuUsage + softirq_CpuUsage))
 	prev_idle_CpuUsage=${idle_CpuUsage}
 	sleep 0.3
 	read -r cpu_CpuUsage usr_CpuUsage nice_CpuUsage sys_CpuUsage idle_CpuUsage iowait_CpuUsage irq_CpuUsage softirq_CpuUsage <<<$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8}' /proc/stat) || {
-		Err "從 /proc/stat 讀取 CPU 統計資料失敗"
+		Err "Failed to read CPU statistics from /proc/stat"
 		return 1
 	}
 	curr_tot_CpuUsage=$((usr_CpuUsage + nice_CpuUsage + sys_CpuUsage + idle_CpuUsage + iowait_CpuUsage + irq_CpuUsage + softirq_CpuUsage))
@@ -387,16 +385,16 @@ function CpuUsage() {
 }
 function ConvSz() {
 	[ -z "$1" ] && {
-		Err "未提供要轉換的大小值"
+		Err "No size value provided to convert"
 		return 2
 	}
 	size_ConvSz=$1
-	unit_ConvSz=${2:-$UNIT_PREF}
+	unit_ConvSz=${2:-${UNIT_PREF}}
 	if ! [[ ${size_ConvSz} =~ ^[+-]?[0-9]*\.?[0-9]+$ ]]; then
-		Err "無效的大小值。必須為數值"
+		Err "Invalid size value. Must be a numeric value"
 		return 2
 	elif [[ ${size_ConvSz} =~ ^[-].*$ ]]; then
-		Err "大小值不能為負數"
+		Err "Size value cannot be negative"
 		return 2
 	elif [[ ${size_ConvSz} =~ ^[+].*$ ]]; then
 		size_ConvSz=${size_ConvSz#+}
@@ -454,25 +452,25 @@ function ConvSz() {
 		}
 	'
 	if [ $? -eq 1 ]; then
-		Err "不支持的單位：${unit_ConvSz}"
+		Err "Unsupported unit: ${unit_ConvSz}"
 		return 2
 	fi
 }
 function Copyright() {
 	Txt "${SCRIPTS} ${VERSION}"
-	Txt "Copyright (C) $(date +%Y) ${ANTHORS}."
+	Txt "Copyright (C) $(date +%Y) ${AUTHORS}."
 }
 function Del() {
 	[ $# -eq 0 ] && {
-		Err "未指定要刪除的項目。請提供至少一個要刪除的項目"
+		Err "No items were specified to be deleted. Please provide at least one item to delete"
 		return 2
 	}
 	[ "$1" = "-f" -o "$1" = "-d" ] && [ $# -eq 1 ] && {
-		Err "-f 或 -d 後未指定檔案或目錄路徑"
+		Err "No file or directory path specified after -f or -d"
 		return 2
 	}
 	[ "$1" = "-f" -o "$1" = "-d" ] && [ "$2" = "" ] && {
-		Err "-f 或 -d 後未指定檔案或目錄路徑"
+		Err "No file or directory path specified after -f or -d"
 		return 2
 	}
 	mod_Del="pkg"
@@ -492,43 +490,43 @@ function Del() {
 		*)
 			case "${mod_Del}" in
 			"file")
-				Txt "${CLR3}刪除檔案［$1］${CLR0}"
+				Txt "${CLR3}Delete file [$1]${CLR0}"
 				[ ! -f "$1" ] && {
-					Err "檔案 $1 不存在\n"
+					Err "File $1 does not exist\n"
 					err_code_Del=1
 					shift
 					continue
 				}
-				Txt "* 檔案 $1 存在"
+				Txt "* File $1 exists"
 				rm -f "$1" || {
-					Err "刪除檔案 $1 失敗\n"
+					Err "Failed to delete file $1\n"
 					err_code_Del=1
 					shift
 					continue
 				}
-				Txt "* 檔案 $1 刪除成功"
-				Txt "${CLR2}完成${CLR0}\n"
+				Txt "* File $1 deleted successfully"
+				Txt "${CLR2}Complete${CLR0}\n"
 				;;
 			"dir")
-				Txt "${CLR3}刪除目錄［$1］${CLR0}"
+				Txt "${CLR3}Delete directory [$1]${CLR0}"
 				[ ! -d "$1" ] && {
-					Err "目錄 $1 不存在\n"
+					Err "Directory $1 does not exist\n"
 					err_code_Del=1
 					shift
 					continue
 				}
-				Txt "* 目錄 $1 存在"
+				Txt "* Directory $1 exists"
 				rm -rf "$1" || {
-					Err "刪除目錄 $1 失敗\n"
+					Err "Failed to delete directory $1\n"
 					err_code_Del=1
 					shift
 					continue
 				}
-				Txt "* 目錄 $1 刪除成功"
-				Txt "${CLR2}完成${CLR0}\n"
+				Txt "* Directory $1 deleted successfully"
+				Txt "${CLR2}Complete${CLR0}\n"
 				;;
 			"pkg")
-				Txt "${CLR3}移除套件［$1］${CLR0}"
+				Txt "${CLR3} Removal Kit [$1] ${CLR0}"
 				ChkRoot
 				case ${PKG_MGR} in
 				apk | apt | opkg | pacman | yum | zypper | dnf)
@@ -553,21 +551,21 @@ function Del() {
 						esac
 					}
 					if ! is_instd_Del "$1"; then
-						Txt "* 套件 $1 不存在"
-						Txt "${CLR2}完成${CLR0}\n"
+						Txt "* Kit $1 does not exist"
+						Txt "${CLR2}Complete${CLR0}\n"
 					else
 						if rm_pkg_Del "$1"; then
 							if ! is_instd_Del "$1"; then
-								Txt "* 套件 $1 移除成功"
-								Txt "${CLR2}完成${CLR0}\n"
+								Txt "* Package $1 removed successfully"
+								Txt "${CLR2}Complete${CLR0}\n"
 							else
-								Err "使用 ${PKG_MGR} 移除 $1 失敗\n"
+								Err "Removing $1 using ${PKG_MGR} failed\n"
 								err_code_Del=1
 								shift
 								continue
 							fi
 						else
-							Err "使用 ${PKG_MGR} 移除 $1 失敗\n"
+							Err "Removing $1 using ${PKG_MGR} failed\n"
 							err_code_Del=1
 							shift
 							continue
@@ -575,7 +573,7 @@ function Del() {
 					fi
 					;;
 				*)
-					Err "不支援的套件管理器\n"
+					Err "Unsupported package manager\n"
 					err_code_Del=1
 					shift
 					continue
@@ -591,11 +589,11 @@ function Del() {
 }
 function DiskUsage() {
 	usd_DiskUsage=$(df -B1 / | awk '/^\/dev/ {print $3}') || {
-		Err "取得磁碟使用統計資料失敗"
+		Err "Failed to obtain disk usage statistics"
 		return 1
 	}
 	tot_DiskUsage=$(df -B1 / | awk '/^\/dev/ {print $2}') || {
-		Err "取得總磁碟空間失敗"
+		Err "Failed to get total disk space"
 		return 1
 	}
 	pct_DiskUsage=$(df / | awk '/^\/dev/ {printf("%.2f"), $3/$2 * 100.0}')
@@ -608,7 +606,7 @@ function DiskUsage() {
 }
 function DnsAddr() {
 	[ ! -f /etc/resolv.conf ] && {
-		Err "找不到 DNS 設定檔 /etc/resolv.conf"
+		Err "DNS configuration file /etc/resolv.conf not found"
 		return 1
 	}
 	ipv4_servers_DnsAddr=()
@@ -621,27 +619,27 @@ function DnsAddr() {
 		fi
 	done < <(grep -E '^nameserver' /etc/resolv.conf | awk '{print $2}')
 	[[ ${#ipv4_servers_DnsAddr[@]} -eq 0 && ${#ipv6_servers_DnsAddr[@]} -eq 0 ]] && {
-		Err "/etc/resolv.conf 中未設定 DNS 伺服器"
+		Err "No DNS server configured in /etc/resolv.conf"
 		return 1
 	}
 	case "$1" in
 	-4 | --ipv4)
 		[ ${#ipv4_servers_DnsAddr[@]} -eq 0 ] && {
-			Err "找不到 IPv4 DNS 伺服器"
+			Err "IPv4 DNS server not found"
 			return 1
 		}
 		Txt "${ipv4_servers_DnsAddr[*]}"
 		;;
 	-6 | --ipv6)
 		[ ${#ipv6_servers_DnsAddr[@]} -eq 0 ] && {
-			Err "找不到 IPv6 DNS 伺服器"
+			Err "IPv6 DNS server not found"
 			return 1
 		}
 		Txt "${ipv6_servers_DnsAddr[*]}"
 		;;
 	*)
 		[ ${#ipv4_servers_DnsAddr[@]} -eq 0 -a ${#ipv6_servers_DnsAddr[@]} -eq 0 ] && {
-			Err "找不到 DNS 伺服器"
+			Err "DNS server not found"
 			return 1
 		}
 		Txt "${ipv4_servers_DnsAddr[*]}   ${ipv6_servers_DnsAddr[*]}"
@@ -650,7 +648,7 @@ function DnsAddr() {
 }
 function Find() {
 	[ $# -eq 0 ] && {
-		Err "未指定搜尋條件。請指定要搜尋的內容"
+		Err "No search criteria specified. Please specify what you are searching for"
 		return 2
 	}
 	case ${PKG_MGR} in
@@ -662,17 +660,17 @@ function Find() {
 	zypper) srch_cmd_Find="zypper search" ;;
 	dnf) srch_cmd_Find="dnf search" ;;
 	*) {
-		Err "找不到或不支援的套件管理器"
+		Err "Package manager not found or not supported"
 		return 1
 	} ;;
 	esac
 	for targ_Find in "$@"; do
-		Txt "${CLR3}搜尋［${targ_Find}］${CLR0}"
+		Txt "${CLR3}Search[${targ_Find}]${CLR0}"
 		${srch_cmd_Find} "${targ_Find}" || {
-			Err "找不到 ${targ_Find} 的結果\n"
+			Err "No results found for ${targ_Find}\n"
 			return 1
 		}
-		Txt "${CLR2}完成${CLR0}\n"
+		Txt "${CLR2}Complete${CLR0}\n"
 	done
 }
 function Font() {
@@ -709,11 +707,11 @@ function Format() {
 	val_Format="$2"
 	res_Format=""
 	[ -z "${val_Format}" ] && {
-		Err "未提供要格式化的值"
+		Err "No value provided to format"
 		return 2
 	}
 	[ -z "${flg_Format}" ] && {
-		Err "未提供格式化選項"
+		Err "No formatting options provided"
 		return 2
 	}
 	case "${flg_Format}" in
@@ -737,14 +735,14 @@ function Get() {
 			;;
 		-r | --rename)
 			[ -z "$2" ] || [[ $2 == -* ]] && {
-				Err "-r 選項後未指定檔案名稱"
+				Err "No file name specified after -r option"
 				return 2
 			}
 			rnm_file_Get="$2"
 			shift 2
 			;;
 		-*) {
-			Err "無效的選項：$1"
+			Err "Invalid option: $1"
 			return 2
 		} ;;
 		*)
@@ -754,76 +752,76 @@ function Get() {
 		esac
 	done
 	[ -z "${url_Get}" ] && {
-		Err "未指定 URL。請提供要下載的 URL"
+		Err "No URL specified. Please provide the URL to download"
 		return 2
 	}
 	[[ ${url_Get} =~ ^(http|https|ftp):// ]] || url_Get="https://${url_Get}"
 	oup_file_Get="${url_Get##*/}"
 	[ -z "${oup_file_Get}" ] && oup_file_Get="index.html"
 	[ "${targ_dir_Get}" != "." ] && { mkdir -p "${targ_dir_Get}" || {
-		Err "建立目錄 ${targ_dir_Get} 失敗"
+		Err "Failed to create directory ${targ_dir_Get}"
 		return 1
 	}; }
 	[ -n "${rnm_file_Get}" ] && oup_file_Get="${rnm_file_Get}"
 	oup_path_Get="${targ_dir_Get}/${oup_file_Get}"
 	url_Get=$(Txt "${url_Get}" | sed -E 's#([^:])/+#\1/#g; s#^(https?|ftp):/+#\1://#')
-	Txt "${CLR3}下載［${url_Get}］${CLR0}"
+	Txt "${CLR3}Download［${url_Get}]${CLR0}"
 	file_sz_Get=$(curl -sI "${url_Get}" | grep -i content-length | awk '{print $2}' | tr -d '\r')
 	if [ -n "${file_sz_Get}" ] && [ "${file_sz_Get}" -gt 26214400 ]; then
 		wget --no-check-certificate --timeout=5 --tries=2 "${url_Get}" -O "${oup_path_Get}" || {
-			Err "使用 Wget 下載檔案失敗"
+			Err "Failed to download file using Wget"
 			return 1
 		}
 	else
 		curl --location --insecure --connect-timeout 5 --retry 2 "${url_Get}" -o "${oup_path_Get}" || {
-			Err "使用 cUrl 下載檔案失敗"
+			Err "Failed to download file using cUrl"
 			return 1
 		}
 	fi
 	if [ -f "${oup_path_Get}" ]; then
-		Txt "* 檔案成功下載至 ${oup_path_Get}"
+		Txt "* File successfully downloaded to ${oup_path_Get}"
 		if [ "${unzip_Get}" = true ]; then
 			case "${oup_file_Get}" in
 			*.tar.gz | *.tgz) tar -xzf "${oup_path_Get}" -C "${targ_dir_Get}" || {
-				Err "解壓縮 tar.gz 檔案失敗"
+				Err "Failed to decompress tar.gz file"
 				return 1
 			} ;;
 			*.tar) tar -xf "${oup_path_Get}" -C "${targ_dir_Get}" || {
-				Err "解壓縮 tar 檔案失敗"
+				Err "Failed to decompress tar archive"
 				return 1
 			} ;;
 			*.tar.bz2 | *.tbz2) tar -xjf "${oup_path_Get}" -C "${targ_dir_Get}" || {
-				Err "解壓縮 tar.bz2 檔案失敗"
+				Err "Failed to decompress tar.bz2 archive"
 				return 1
 			} ;;
 			*.tar.xz | *.txz) tar -xJf "${oup_path_Get}" -C "${targ_dir_Get}" || {
-				Err "解壓縮 tar.xz 檔案失敗"
+				Err "Failed to decompress tar.xz file"
 				return 1
 			} ;;
 			*.zip) unzip "${oup_path_Get}" -d "${targ_dir_Get}" || {
-				Err "解壓縮 zip 檔案失敗"
+				Err "Failed to decompress zip file"
 				return 1
 			} ;;
 			*.7z) 7z x "${oup_path_Get}" -o"${targ_dir_Get}" || {
-				Err "解壓縮 7z 檔案失敗"
+				Err "Failed to decompress 7z archive"
 				return 1
 			} ;;
 			*.rar) unrar x "${oup_path_Get}" "${targ_dir_Get}" || {
-				Err "解壓縮 rar 檔案失敗"
+				Err "Failed to decompress rar archive"
 				return 1
 			} ;;
 			*.zst) zstd -d "${oup_path_Get}" -o "${targ_dir_Get}" || {
-				Err "解壓縮 zst 檔案失敗"
+				Err "Failed to decompress zst archive"
 				return 1
 			} ;;
-			*) Txt "* 無法識別的檔案格式，不進行自動解壓縮" ;;
+			*) Txt "* Unrecognized file format, no automatic decompression" ;;
 			esac
-			[ $? -eq 0 ] && Txt "* 檔案成功解壓縮至 ${targ_dir_Get}"
+			[ $? -eq 0 ] && Txt "* File successfully decompressed to ${targ_dir_Get}"
 		fi
-		Txt "${CLR2}完成${CLR0}\n"
+		Txt "${CLR2}Complete${CLR0}\n"
 	else
 		{
-			Err "下載失敗。請檢查網路連線和 URL 有效性"
+			Err "Download failed. Please check network connection and URL validity"
 			return 1
 		}
 	fi
@@ -832,7 +830,7 @@ function Ask() {
 	prompt_msg_Ask="$1"
 	shift
 	read -e -p "$(Txt "${prompt_msg_Ask}")" -r "$@" || {
-		Err "讀取使用者輸入失敗"
+		Err "Failed to read user input"
 		return 1
 	}
 }
@@ -847,12 +845,12 @@ function Iface() {
 			grep -iv '^lo\|^sit\|^stf\|^gif\|^dummy\|^vmnet\|^vir\|^gre\|^ipip\|^ppp\|^bond\|^tun\|^tap\|^ip6gre\|^ip6tnl\|^teql\|^ocserv\|^vpn\|^warp\|^wgcf\|^wg\|^docker\|^br-\|^veth' |
 			sort -n
 	) || {
-		Err "從 /proc/net/dev 取得網路介面失敗"
+		Err "Failed to get network interface from /proc/net/dev"
 		return 1
 	}
 	i=1
 	while read -r interface_item_Iface; do
-		[ -n "${interface_item_Iface}" ] && interfaces_Iface[$i]="${interface_item_Iface}"
+		[ -n "${interface_item_Iface}" ] && interfaces_Iface[${i}]="${interface_item_Iface}"
 		((i++))
 	done <<<"${all_interfaces_Iface}"
 	interfaces_num_Iface="${#interfaces_Iface[*]}"
@@ -863,8 +861,8 @@ function Iface() {
 		shift
 		arr_Iface=("$@")
 		for ((i = 1; i <= ${#arr_Iface[@]}; i++)); do
-			if [ "${item_Iface}" = "${arr_Iface[$i]}" ]; then
-				Txt "$i"
+			if [ "${item_Iface}" = "${arr_Iface[${i}]}" ]; then
+				Txt "${i}"
 				return 0
 			fi
 		done
@@ -873,13 +871,13 @@ function Iface() {
 	interface4_Iface=""
 	interface6_Iface=""
 	for ((i = 1; i <= ${#interfaces_Iface[@]}; i++)); do
-		item_Iface="${interfaces_Iface[$i]}"
+		item_Iface="${interfaces_Iface[${i}]}"
 		[ -z "${item_Iface}" ] && continue
-		if [[ -n $default4_route_Iface && $default4_route_Iface == *"${item_Iface}"* ]] && [ -z "${interface4_Iface}" ]; then
+		if [[ -n ${default4_route_Iface} && ${default4_route_Iface} == *"${item_Iface}"* ]] && [ -z "${interface4_Iface}" ]; then
 			interface4_Iface="${item_Iface}"
 			interface4_device_order_Iface=$(get_arr_item_idx_Iface "${item_Iface}" "${interfaces_Iface[@]}")
 		fi
-		if [[ -n $default6_route_Iface && $default6_route_Iface == *"${item_Iface}"* ]] && [ -z "${interface6_Iface}" ]; then
+		if [[ -n ${default6_route_Iface} && ${default6_route_Iface} == *"${item_Iface}"* ]] && [ -z "${interface6_Iface}" ]; then
 			interface6_Iface="${item_Iface}"
 			interface6_device_order_Iface=$(get_arr_item_idx_Iface "${item_Iface}" "${interfaces_Iface[@]}")
 		fi
@@ -887,7 +885,7 @@ function Iface() {
 	done
 	if [ -z "${interface4_Iface}" ] && [ -z "${interface6_Iface}" ]; then
 		for ((i = 1; i <= ${#interfaces_Iface[@]}; i++)); do
-			item_Iface="${interfaces_Iface[$i]}"
+			item_Iface="${interfaces_Iface[${i}]}"
 			if [[ ${item_Iface} =~ ^en ]]; then
 				interface4_Iface="${item_Iface}"
 				interface6_Iface="${item_Iface}"
@@ -949,7 +947,7 @@ function Iface() {
 		for iface_Iface in ${interface_Iface}; do
 			if stats_Iface=$(awk -v iface="${iface_Iface}" '$1 ~ iface":" {print $2, $3, $5, $10, $11, $13}' /proc/net/dev 2>/dev/null); then
 				read rx_bytes_Iface rx_packets_Iface rx_drop_Iface tx_bytes_Iface tx_packets_Iface tx_drop_Iface <<<"${stats_Iface}"
-				Txt "${iface_Iface}: 輸入: $(ConvSz ${rx_bytes_Iface}), 輸出: $(ConvSz ${tx_bytes_Iface})"
+				Txt "${iface_Iface}: input: $(ConvSz ${rx_bytes_Iface}), output: $(ConvSz ${tx_bytes_Iface})"
 			fi
 		done
 		;;
@@ -964,7 +962,7 @@ function IpAddr() {
 			ipv4_addr_IpAddr=$(timeout 1s curl -sL ipv4.ip.sb 2>/dev/null) ||
 			ipv4_addr_IpAddr=$(timeout 1s wget -qO- -4 ifconfig.me 2>/dev/null) ||
 			[ -n "${ipv4_addr_IpAddr}" ] && Txt "${ipv4_addr_IpAddr}" || {
-			Err "取得 IPv4 位址失敗。請檢查網路連線"
+			Err "Failed to obtain IPv4 address. Please check network connection"
 			return 1
 		}
 		;;
@@ -972,7 +970,7 @@ function IpAddr() {
 		ipv6_addr_IpAddr=$(timeout 1s curl -sL ipv6.ip.sb 2>/dev/null) ||
 			ipv6_addr_IpAddr=$(timeout 1s wget -qO- -6 ifconfig.me 2>/dev/null) ||
 			[ -n "${ipv6_addr_IpAddr}" ] && Txt "${ipv6_addr_IpAddr}" || {
-			Err "取得 IPv6 位址失敗。請檢查網路連線"
+			Err "Failed to obtain IPv6 address. Please check network connection"
 			return 1
 		}
 		;;
@@ -980,7 +978,7 @@ function IpAddr() {
 		ipv4_addr_IpAddr=$(IpAddr --ipv4)
 		ipv6_addr_IpAddr=$(IpAddr --ipv6)
 		[ -z "${ipv4_addr_IpAddr}${ipv6_addr_IpAddr}" ] && {
-			Err "取得 IP 位址失敗"
+			Err "Failed to obtain IP address"
 			return 1
 		}
 		[ -n "${ipv4_addr_IpAddr}" ] && Txt "IPv4: ${ipv4_addr_IpAddr}"
@@ -998,7 +996,7 @@ function LastUpd() {
 		data_LastUpd=$(rpm -qa --last | head -n 1 | awk '{print $3, $4, $5, $6, $7}')
 	fi
 	[ -z "${data_LastUpd}" ] && {
-		Err "無法確定最後系統更新時間。找不到更新日誌"
+		Err "Unable to determine the last system update time. Update log not found"
 		return 1
 	} || Txt "${data_LastUpd}"
 }
@@ -1006,20 +1004,20 @@ function Linet() {
 	chr_Linet="${1:--}"
 	len_Linet="${2:-80}"
 	printf '%*s\n' "${len_Linet}" | tr ' ' "${chr_Linet}" || {
-		Err "打印線條失敗"
+		Err "Failed to print lines"
 		return 1
 	}
 }
 function LoadAvg() {
 	if [ ! -f /proc/loadavg ]; then
 		data_LoadAvg=$(uptime | sed 's/.*load average: //' | sed 's/,//g') || {
-			Err "從 uptime 指令取得負載平均值失敗"
+			Err "Failed to get load average from uptime command"
 			return 1
 		}
 		read -r zo_mi_LoadAvg zv_mi_LoadAvg ov_mi_LoadAvg <<<"${data_LoadAvg}"
 	else
 		read -r zo_mi_LoadAvg zv_mi_LoadAvg ov_mi_LoadAvg _ _ </proc/loadavg || {
-			Err "從 /proc/loadavg 讀取負載平均值失敗"
+			Err "Failed to read load average from /proc/loadavg"
 			return 1
 		}
 	fi
@@ -1038,20 +1036,20 @@ function Loc() {
 		;;
 	esac
 	[ -n "${data_Loc}" ] && Txt "${data_Loc}" || {
-		Err "無法偵測地理位置。請檢查網路連線"
+		Err "Unable to detect geolocation. Please check network connection"
 		return 1
 	}
 }
 function MacAddr() {
 	data_MacAddr=$(ip link show | awk '/ether/ {print $2; exit}')
 	[[ -n ${data_MacAddr} ]] && Txt "${data_MacAddr}" || {
-		Err "無法取得 MAC 位址。找不到網路介面"
+		Err "Unable to obtain MAC address. Network interface not found"
 		return 1
 	}
 }
 function MemUsage() {
 	usd_MemUsage=$(free -b | awk '/^Mem:/ {print $3}') || usd_MemUsage=$(vmstat -s | grep 'used memory' | awk '{print $1*1024}') || {
-		Err "取得記憶體使用統計資料失敗"
+		Err "Failed to obtain memory usage statistics"
 		return 1
 	}
 	tot_MemUsage=$(free -b | awk '/^Mem:/ {print $2}') || tot_MemUsage=$(grep MemTotal /proc/meminfo | awk '{print $2*1024}')
@@ -1068,7 +1066,7 @@ function NetProv() {
 		data_NetProv=$(timeout 1s curl -sL ipwhois.app/json | grep -oP '"org"\s*:\s*"\K[^"]+') ||
 		data_NetProv=$(timeout 1s curl -sL ip-api.com/json | grep -oP '"org"\s*:\s*"\K[^"]+') ||
 		[ -n "${data_NetProv}" ] && Txt "${data_NetProv}" || {
-		Err "無法偵測網路供應商。請檢查網路連線"
+		Err "Unable to detect network provider. Please check network connection"
 		return 1
 	}
 }
@@ -1081,13 +1079,13 @@ function PkgCnt() {
 	yum | dnf) cnt_cmd_PkgCnt="rpm -qa" ;;
 	zypper) cnt_cmd_PkgCnt="zypper se --installed-only" ;;
 	*) {
-		Err "無法計算已安裝的套件。軟體包管理器不支援"
+		Err "Unable to count installed packages. Package manager does not support"
 		return 1
 	} ;;
 	esac
 	if ! data_PkgCnt=$("${cnt_cmd_PkgCnt}" 2>/dev/null | wc -l) || [[ -z ${data_PkgCnt} || ${data_PkgCnt} -eq 0 ]]; then
 		{
-			Err "計算 ${PKG_MGR} 的套件數量失敗"
+			Err "Calculating kit quantity for ${PKG_MGR} failed"
 			return 1
 		}
 	fi
@@ -1096,7 +1094,7 @@ function PkgCnt() {
 function Prog() {
 	num_cmds_Prog=${#cmds[@]}
 	term_wid_Prog=$(tput cols) || {
-		Err "取得終端機寬度失敗"
+		Err "Failed to get terminal width"
 		return 1
 	}
 	bar_wid_Prog=$((term_wid_Prog - 23))
@@ -1106,12 +1104,12 @@ function Prog() {
 		prog_Prog=$((i * 100 / num_cmds_Prog))
 		fild_wid_Prog=$((prog_Prog * bar_wid_Prog / 100))
 		printf "\r\033[30;42mProgress: [%3d%%]\033[0m [%s%s]" "${prog_Prog}" "$(printf "%${fild_wid_Prog}s" | tr ' ' '#')" "$(printf "%$((bar_wid_Prog - fild_wid_Prog))s" | tr ' ' '.')"
-		if ! cmd_oup_Prog=$(eval "${cmds[$i]}" 2>&1); then
+		if ! cmd_oup_Prog=$(eval "${cmds[${i}]}" 2>&1); then
 			Txt "\n${cmd_oup_Prog}"
 			stty echo
 			trap - SIGINT SIGQUIT SIGTSTP
 			{
-				Err "命令執行失敗：${cmds[$i]}"
+				Err "Command execution failed: ${cmds[${i}]}"
 				return 1
 			}
 		fi
@@ -1124,7 +1122,7 @@ function Prog() {
 function PubIp() {
 	data_PubIp=$(curl -s "https://developers.cloudflare.com/cdn-cgi/trace" | grep "^ip=" | cut -d= -f2)
 	[ -n "${data_PubIp}" ] && Txt "${data_PubIp}" || {
-		Err "無法偵測公開 IP 位址。請檢查網路連線"
+		Err "Unable to detect public IP address. Please check network connection"
 		return 1
 	}
 }
@@ -1140,7 +1138,7 @@ function Run() {
 	}
 	complete -F _run_completions RUN
 	[ $# -eq 0 ] && {
-		Err "未指定命令"
+		Err "No command specified"
 		return 2
 	}
 	if [[ $1 == *"/"* ]]; then
@@ -1158,26 +1156,26 @@ function Run() {
 				*) break ;;
 				esac
 			done
-			Txt "${CLR3}正在從 URL 下載並執行腳本 [${script_nm_Run}]${CLR0}"
-			Task "* 下載腳本" "
-				curl -sSLf "${url_Run}" -o "${script_nm_Run}" || { Err "下載腳本 ${script_nm_Run} 失敗"; return 1; }
-				chmod +x "${script_nm_Run}" || { Err "設定腳本 ${script_nm_Run} 執行權限失敗"; return 1; }
+			Txt "${CLR3} is downloading and executing script [${script_nm_Run}]${CLR0} from URL"
+			Task "* Download script" "
+				curl -sSLf "${url_Run}" -o "${script_nm_Run}" || { Err "Download script ${script_nm_Run} failed"; return 1; }
+				chmod +x "${script_nm_Run}" || { Err "Failed to set execution permission for script ${script_nm_Run}"; return 1; }
 			"
-			Txt "${CLR8}$(Linet = 24)${CLR0}"
+			Txt "${CLR8}${DLINE}${CLR0}"
 			if [[ $1 == "--" ]]; then
 				shift
 				./"${script_nm_Run}" "$@" || {
-					Err "執行腳本 ${script_nm_Run} 失敗"
+					Err "Executing script ${script_nm_Run} failed"
 					return 1
 				}
 			else
 				./"${script_nm_Run}" || {
-					Err "執行腳本 ${script_nm_Run} 失敗"
+					Err "Executing script ${script_nm_Run} failed"
 					return 1
 				}
 			fi
-			Txt "${CLR8}$(Linet = 24)${CLR0}"
-			Txt "${CLR2}完成${CLR0}\n"
+			Txt "${CLR8}${DLINE}${CLR0}"
+			Txt "${CLR2}Complete${CLR0}\n"
 			[[ ${rm_aftr_Run} == true ]] && rm -rf "${script_nm_Run}"
 		elif [[ $1 =~ ^[^/]+/[^/]+/.+ ]]; then
 			repo_owner_Run=$(Txt "$1" | cut -d'/' -f1)
@@ -1192,7 +1190,7 @@ function Run() {
 				case "$1" in
 				-b | --branch)
 					[[ -z $2 || $2 == -* ]] && {
-						Err "-b 後需要分支名稱"
+						Err "Branch name is required after -b"
 						return 2
 					}
 					branch_Run="$2"
@@ -1209,70 +1207,70 @@ function Run() {
 				*) break ;;
 				esac
 			done
-			if [[ $dnload_repo_Run == true ]]; then
-				Txt "${CLR3}正在克隆儲存庫 ${repo_owner_Run}/${repo_name_Run}${CLR0}"
+			if [[ ${dnload_repo_Run} == true ]]; then
+				Txt "${CLR3} is cloning repository ${repo_owner_Run}/${repo_name_Run}${CLR0}"
 				[[ -d ${repo_name_Run} ]] && {
-					Err "目錄 ${repo_name_Run} 已存在"
+					Err "Directory ${repo_name_Run} already exists"
 					return 1
 				}
 				tmp_dir_Run=$(mktemp -d)
 				if [[ ${branch_Run} != "main" ]]; then
-					Task "* 正在從分支 ${branch_Run} 克隆" "git clone --branch ${branch_Run} https://github.com/${repo_owner_Run}/${repo_name_Run}.git ${tmp_dir_Run}"
+					Task "* Cloning from branch ${branch_Run}" "git clone --branch ${branch_Run} https://github.com/${repo_owner_Run}/${repo_name_Run}.git ${tmp_dir_Run}"
 					if [ $? -ne 0 ]; then
 						rm -rf "${tmp_dir_Run}"
 						{
-							Err "從分支 ${branch_Run} 克隆儲存庫失敗"
+							Err "Failed to clone repository from branch ${branch_Run}"
 							return 1
 						}
 					fi
 				else
-					Task "* 檢查 main 分支" "git clone --branch main https://github.com/${repo_owner_Run}/${repo_name_Run}.git ${tmp_dir_Run}" true
+					Task "* Check main branch" "git clone --branch main https://github.com/${repo_owner_Run}/${repo_name_Run}.git ${tmp_dir_Run}" true
 					if [ $? -ne 0 ]; then
-						Task "* 嘗試 master 分支" "git clone --branch master https://github.com/${repo_owner_Run}/${repo_name_Run}.git ${tmp_dir_Run}"
+						Task "* Try master branch" "git clone --branch master https://github.com/${repo_owner_Run}/${repo_name_Run}.git ${tmp_dir_Run}"
 						if [ $? -ne 0 ]; then
 							rm -rf "${tmp_dir_Run}"
 							{
-								Err "從 main 或 master 分支克隆儲存庫失敗"
+								Err "Cloning repository from main or master branch fails"
 								return 1
 							}
 						fi
 					fi
 				fi
-				Task "* 建立目標目錄" "Add -d "${repo_name_Run}" && cp -r "${tmp_dir_Run}"/* "${repo_name_Run}"/"
-				Task "* 清理暫存檔案" "rm -rf "${tmp_dir_Run}""
-				Txt "儲存庫已克隆到目錄：${CLR2}${repo_name_Run}"
+				Task "* Create target directory" "Add -d "${repo_name_Run}" && cp -r "${tmp_dir_Run}"/* "${repo_name_Run}"/"
+				Task "* Clean up temporary files" "rm -rf "${tmp_dir_Run}""
+				Txt "The repository has been cloned into directory: ${CLR2}${repo_name_Run}"
 				if [[ -f "${repo_name_Run}/${script_path_Run}" ]]; then
-					Task "* 設定執行權限" "chmod +x "${repo_name_Run}/${script_path_Run}""
-					Txt "${CLR8}$(Linet = 24)${CLR0}"
+					Task "* Set execution permissions" "chmod +x "${repo_name_Run}/${script_path_Run}""
+					Txt "${CLR8}${DLINE}${CLR0}"
 					if [[ $1 == "--" ]]; then
 						shift
 						./"${repo_name_Run}/${script_path_Run}" "$@" || {
-							Err "執行腳本 ${script_nm_Run} 失敗"
+							Err "Executing script ${script_nm_Run} failed"
 							return 1
 						}
 					else
 						./"${repo_name_Run}/${script_path_Run}" || {
-							Err "執行腳本 ${script_nm_Run} 失敗"
+							Err "Executing script ${script_nm_Run} failed"
 							return 1
 						}
 					fi
-					Txt "${CLR8}$(Linet = 24)${CLR0}"
-					Txt "${CLR2}完成${CLR0}\n"
+					Txt "${CLR8}${DLINE}${CLR0}"
+					Txt "${CLR2}Complete${CLR0}\n"
 					[[ ${rm_aftr_Run} == true ]] && rm -rf "${repo_name_Run}"
 				fi
 			else
-				Txt "${CLR3}正在從 ${repo_owner_Run}/${repo_name_Run} 下載並執行腳本 [${script_nm_Run}]${CLR0}"
+				Txt "${CLR3} is downloading and executing script [${script_nm_Run}]${CLR0} from ${repo_owner_Run}/${repo_name_Run}"
 				github_url_Run="https://raw.githubusercontent.com/${repo_owner_Run}/${repo_name_Run}/${branch_Run}/${script_path_Run}"
 				if [[ ${branch_Run} != "main" ]]; then
-					Task "* 檢查分支 ${branch_Run}" "curl -sLf "${github_url_Run}" >/dev/null"
+					Task "* Check branch ${branch_Run}" "curl -sLf "${github_url_Run}" >/dev/null"
 					[ $? -ne 0 ] && {
-						Err "在分支 ${branch_Run} 中找不到腳本"
+						Err "Script not found in branch ${branch_Run}"
 						return 1
 					}
 				else
-					Task "* 檢查 main 分支" "curl -sLf "${github_url_Run}" >/dev/null" true
+					Task "* Check main branch" "curl -sLf "${github_url_Run}" >/dev/null" true
 					if [ $? -ne 0 ]; then
-						Task "* 檢查 master 分支" "
+						Task "* Check master branch" "
 							branch_Run="master"
 							github_url_Run="https://raw.githubusercontent.com/${repo_owner_Run}/${repo_name_Run}/master/${script_path_Run}"
 							curl -sLf "${github_url_Run}" >/dev/null
@@ -1283,52 +1281,52 @@ function Run() {
 						}
 					fi
 				fi
-				Task "* 下載腳本" "
+				Task "* Download script" "
 					curl -sSLf "${github_url_Run}" -o "${script_nm_Run}" || {
-						Err "下載腳本 ${script_nm_Run} 失敗"
-						Err "從 ${github_url_Run} 下載失敗"
+						Err "Download script ${script_nm_Run} failed"
+						Err "Download from ${github_url_Run} failed"
 						return 1
 					}
 					if [[ ! -f "${script_nm_Run}" ]]; then
-						Err "下載失敗：未建立檔案"
+						Err "Download failed: File not created"
 						return 1
 					fi
 					if [[ ! -s "${script_nm_Run}" ]]; then
-						Err "下載的檔案為空"
-						cat "${script_nm_Run}" 2>/dev/null || Txt "無法顯示檔案內容"
+						Err "The downloaded file is empty"
+						cat "${script_nm_Run}" 2>/dev/null || Txt "Unable to display file contents"
 						return 1
 					fi
 					if ! grep -q '[^[:space:]]' "${script_nm_Run}"; then
-						Err "下載的檔案僅包含空白字元"
+						Err "The downloaded file contains only whitespace characters"
 						return 1
 					fi
 					chmod +x "${script_nm_Run}" || {
-						Err "設定腳本 ${script_nm_Run} 執行權限失敗"
-						Err "無法設定 ${script_nm_Run} 的執行權限"
+						Err "Failed to set execution permission for script ${script_nm_Run}"
+						Err "Unable to set execution permission for ${script_nm_Run}"
 						ls -la "${script_nm_Run}"
 						return 1
 					}
 				"
-				Txt "${CLR8}$(Linet = 24)${CLR0}"
+				Txt "${CLR8}${DLINE}${CLR0}"
 				if [[ -f ${script_nm_Run} ]]; then
 					if [[ $1 == "--" ]]; then
 						shift
 						./"${script_nm_Run}" "$@" || {
-							Err "執行腳本 ${script_nm_Run} 失敗"
+							Err "Executing script ${script_nm_Run} failed"
 							return 1
 						}
 					else
 						./"${script_nm_Run}" || {
-							Err "執行腳本 ${script_nm_Run} 失敗"
+							Err "Executing script ${script_nm_Run} failed"
 							return 1
 						}
 					fi
 				else
-					Err "腳本檔案 '${script_nm_Run}' 未成功下載"
+					Err "Script file '${script_nm_Run}' failed to download"
 					return 1
 				fi
-				Txt "${CLR8}$(Linet = 24)${CLR0}"
-				Txt "${CLR2}完成${CLR0}\n"
+				Txt "${CLR8}${DLINE}${CLR0}"
+				Txt "${CLR2}Complete${CLR0}\n"
 				[[ ${rm_aftr_Run} == true ]] && rm -rf "${script_nm_Run}"
 			fi
 		else
@@ -1337,13 +1335,13 @@ function Run() {
 			if [[ $2 == "--" ]]; then
 				shift 2
 				"${script_path_Run}" "$@" || {
-					Err "執行腳本 ${script_nm_Run} 失敗"
+					Err "Executing script ${script_nm_Run} failed"
 					return 1
 				}
 			else
 				shift
 				"${script_path_Run}" "$@" || {
-					Err "執行腳本 ${script_nm_Run} 失敗"
+					Err "Executing script ${script_nm_Run} failed"
 					return 1
 				}
 			fi
@@ -1361,7 +1359,7 @@ function ShellVer() {
 		Txt "Zsh ${ZSH_VERSION}"
 	else
 		{
-			Err "不支援的 shell"
+			Err "Unsupported shell"
 			return 1
 		}
 	fi
@@ -1379,240 +1377,240 @@ function SwapUsage() {
 }
 function SysClean() {
 	ChkRoot
-	Txt "${CLR3}正在執行系統清理...${CLR0}"
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
+	Txt "${CLR3} is performing system cleanup...${CLR0}"
+	Txt "${CLR8}${DLINE}${CLR0}"
 	case $(command -v apk apt opkg pacman yum zypper dnf | head -n1) in
 	*apk)
-		Txt "* 清理 APK 快取"
+		Txt "* Clean APK cache"
 		apk cache clean || {
-			Err "清理 APK 快取失敗"
+			Err "Cleaning APK cache failed"
 			return 1
 		}
-		Txt "* 移除暫存檔案"
+		Txt "* Remove temporary files"
 		rm -rf /tmp/* /var/cache/apk/* || {
-			Err "移除暫存檔案失敗"
+			Err "Failed to remove temporary files"
 			return 1
 		}
-		Txt "* 修復 APK 套件"
+		Txt "* Repair APK package"
 		apk fix || {
-			Err "修復 APK 套件失敗"
+			Err "Repair APK package failed"
 			return 1
 		}
 		;;
 	*apt)
 		while fuser /var/lib/dpkg/lock-frontend &>/dev/null; do
-			Txt "* 等待 dpkg 鎖定"
+			Txt "* Wait for dpkg to lock"
 			sleep 1 || return 1
 			((wait_time_SysClean++))
 			[ "${wait_time_SysClean}" -gt 300 ] && {
-				Err "等待 dpkg 鎖定釋放超時"
+				Err "Timeout waiting for dpkg lock release"
 				return 1
 			}
 		done
-		Txt "* 設定待處理的套件"
+		Txt "* Set pending packages"
 		DEBIAN_FRONTEND=noninteractive dpkg --configure -a || {
-			Err "設定待處理套件失敗"
+			Err "Failed to set pending package"
 			return 1
 		}
-		Txt "* 自動移除套件"
+		Txt "* Automatic removal kit"
 		apt autoremove --purge -y || {
-			Err "自動移除套件失敗"
+			Err "Automatic package removal failed"
 			return 1
 		}
-		Txt "* 清理 APT 快取"
+		Txt "* Clean APT cache"
 		apt clean -y || {
-			Err "清理 APT 快取失敗"
+			Err "Cleaning APT cache failed"
 			return 1
 		}
-		Txt "* 自動清理 APT 快取"
+		Txt "* Automatically clean APT cache"
 		apt autoclean -y || {
-			Err "自動清理 APT 快取失敗"
+			Err "Automatic cleaning of APT cache failed"
 			return 1
 		}
 		;;
 	*opkg)
-		Txt "* 移除暫存檔案"
+		Txt "* Remove temporary files"
 		rm -rf /tmp/* || {
-			Err "移除暫存檔案失敗"
+			Err "Failed to remove temporary files"
 			return 1
 		}
-		Txt "* 更新 OPKG"
+		Txt "* Update OPKG"
 		opkg update || {
-			Err "更新 OPKG 失敗"
+			Err "Update OPKG failed"
 			return 1
 		}
-		Txt "* 清理 OPKG 快取"
+		Txt "* Clean OPKG cache"
 		opkg clean || {
-			Err "清理 OPKG 快取失敗"
+			Err "Cleaning OPKG cache failed"
 			return 1
 		}
 		;;
 	*pacman)
-		Txt "* 更新和升級套件"
+		Txt "*Update and upgrade packages"
 		pacman -Syu --noconfirm || {
-			Err "使用 pacman 更新和升級套件失敗"
+			Err "Update and upgrade packages using pacman fail"
 			return 1
 		}
-		Txt "* 清理 pacman 快取"
+		Txt "* Clean pacman cache"
 		pacman -Sc --noconfirm || {
-			Err "清理 pacman 快取失敗"
+			Err "Cleaning pacman cache failed"
 			return 1
 		}
-		Txt "* 清理所有 pacman 快取"
+		Txt "* Clean all pacman caches"
 		pacman -Scc --noconfirm || {
-			Err "清理所有 pacman 快取失敗"
+			Err "Cleaning all pacman cache failed"
 			return 1
 		}
 		;;
 	*yum)
-		Txt "* 自動移除套件"
+		Txt "* Automatic removal kit"
 		yum autoremove -y || {
-			Err "自動移除套件失敗"
+			Err "Automatic package removal failed"
 			return 1
 		}
-		Txt "* 清理 YUM 快取"
+		Txt "* Clean YUM cache"
 		yum clean all || {
-			Err "清理 YUM 快取失敗"
+			Err "Cleaning YUM cache failed"
 			return 1
 		}
-		Txt "* 建立 YUM 快取"
+		Txt "* Create YUM cache"
 		yum makecache || {
-			Err "建立 YUM 快取失敗"
+			Err "Failed to create YUM cache"
 			return 1
 		}
 		;;
 	*zypper)
-		Txt "* 清理 Zypper 快取"
+		Txt "* Clean Zypper cache"
 		zypper clean --all || {
-			Err "清理 Zypper 快取失敗"
+			Err "Cleaning Zypper cache failed"
 			return 1
 		}
-		Txt "* 重新整理 Zypper 套件庫"
+		Txt "* Reorganize Zypper package library"
 		zypper refresh || {
-			Err "重新整理 Zypper 套件庫失敗"
+			Err "Refreshing Zypper package library failed"
 			return 1
 		}
 		;;
 	*dnf)
-		Txt "* 自動移除套件"
+		Txt "* Automatic removal kit"
 		dnf autoremove -y || {
-			Err "自動移除套件失敗"
+			Err "Automatic package removal failed"
 			return 1
 		}
-		Txt "* 清理 DNF 快取"
+		Txt "* Clean DNF cache"
 		dnf clean all || {
-			Err "清理 DNF 快取失敗"
+			Err "Cleaning DNF cache failed"
 			return 1
 		}
-		Txt "* 建立 DNF 快取"
+		Txt "* Create DNF cache"
 		dnf makecache || {
-			Err "建立 DNF 快取失敗"
+			Err "Failed to create DNF cache"
 			return 1
 		}
 		;;
 	*) {
-		Err "不支援的套件管理器。跳過系統特定清理"
+		Err "Unsupported package manager. Skip system specific cleanup"
 		return 1
 	} ;;
 	esac
 	if command -v journalctl &>/dev/null; then
-		Task "* 輪替和清理 journalctl 日誌" "journalctl --rotate --vacuum-time=1d --vacuum-size=500M" || {
-			Err "輪替和清理 journalctl 日誌失敗"
+		Task "* Rotate and clean journalctl logs" "journalctl --rotate --vacuum-time=1d --vacuum-size=500M" || {
+			Err "Failed to rotate and clean journalctl logs"
 			return 1
 		}
 	fi
-	Task "* 移除暫存檔案" "rm -rf /tmp/*" || {
-		Err "移除暫存檔案失敗"
+	Task "* Remove temporary files" "rm -rf /tmp/*" || {
+		Err "Failed to remove temporary files"
 		return 1
 	}
 	for cmd_SysClean in docker npm pip; do
 		if command -v "${cmd_SysClean}" &>/dev/null; then
 			case "${cmd_SysClean}" in
-			docker) Task "* 清理 Docker 系統" "docker system prune -af" || {
-				Err "清理 Docker 系統失敗"
+			docker) Task "* Clean Docker system" "docker system prune -af" || {
+				Err "Cleaning up Docker system failed"
 				return 1
 			} ;;
-			npm) Task "* 清理 NPM 快取" "npm cache clean --force" || {
-				Err "清理 NPM 快取失敗"
+			npm) Task "* Clean NPM cache" "npm cache clean --force" || {
+				Err "Cleaning NPM cache failed"
 				return 1
 			} ;;
-			pip) Task "* 清除 PIP 快取" "pip cache purge" || {
-				Err "清除 PIP 快取失敗"
+			pip) Task "* Clear PIP cache" "pip cache purge" || {
+				Err "Clearing PIP cache failed"
 				return 1
 			} ;;
 			esac
 		fi
 	done
-	Task "* 移除使用者快取檔案" "rm -rf ~/.cache/*" || {
-		Err "移除使用者快取檔案失敗"
+	Task "* Remove user cache files" "rm -rf ~/.cache/*" || {
+		Err "Failed to remove user cache file"
 		return 1
 	}
-	Task "* 移除縮圖檔案" "rm -rf ~/.thumbnails/*" || {
-		Err "移除縮圖檔案失敗"
+	Task "* Remove thumbnail files" "rm -rf ~/.thumbnails/*" || {
+		Err "Failed to remove thumbnail file"
 		return 1
 	}
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
-	Txt "${CLR2}完成${CLR0}\n"
+	Txt "${CLR8}${DLINE}${CLR0}"
+	Txt "${CLR2}Complete${CLR0}\n"
 }
 function SysInfo() {
-	Txt "${CLR3}系統資訊${CLR0}"
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
-	Txt "- 主機名稱：		${CLR2}$(uname -n || hostname)${CLR0}"
-	Txt "- 作業系統：		${CLR2}$(ChkOs)${CLR0}"
-	Txt "- 核心版本：		${CLR2}$(uname -r)${CLR0}"
-	Txt "- 系統語言：		${CLR2}$LANG${CLR0}"
-	Txt "- Shell 版本：		${CLR2}$(ShellVer)${CLR0}"
-	Txt "- 最後系統更新：	${CLR2}$(LastUpd)${CLR0}"
-	Txt "${CLR8}$(Linet - 32)${CLR0}"
-	Txt "- 架構：		${CLR2}$(uname -m)${CLR0}"
-	Txt "- CPU 型號：		${CLR2}$(CpuModel)${CLR0}"
-	Txt "- CPU 核心數：		${CLR2}$(nproc)${CLR0}"
-	Txt "- CPU 頻率：		${CLR2}$(CpuFreq)${CLR0}"
-	Txt "- CPU 使用率：		${CLR2}$(CpuUsage)%${CLR0}"
-	Txt "- CPU 快取：		${CLR2}$(CpuCache)${CLR0}"
-	Txt "${CLR8}$(Linet - 32)${CLR0}"
-	Txt "- 記憶體使用率：	${CLR2}$(MemUsage)${CLR0}"
-	Txt "- SWAP 使用率：		${CLR2}$(SwapUsage)${CLR0}"
-	Txt "- 磁碟使用率：		${CLR2}$(DiskUsage)${CLR0}"
-	Txt "- 檔案系統類型：	${CLR2}$(df -T / | awk 'NR==2 {print $2}')${CLR0}"
-	Txt "${CLR8}$(Linet - 32)${CLR0}"
-	Txt "- IPv4 地址：		${CLR2}$(IpAddr --ipv4)${CLR0}"
-	Txt "- IPv6 地址：		${CLR2}$(IpAddr --ipv6)${CLR0}"
-	Txt "- MAC 位址：		${CLR2}$(MacAddr)${CLR0}"
-	Txt "- 網路供應商：		${CLR2}$(NetProv)${CLR0}"
-	Txt "- DNS 伺服器：		${CLR2}$(DnsAddr)${CLR0}"
-	Txt "- 公開 IP：		${CLR2}$(PubIp)${CLR0}"
-	Txt "- 網路介面：		${CLR2}$(Iface -i)${CLR0}"
-	Txt "- 內部時區：		${CLR2}$(TimeZn --internal)${CLR0}"
-	Txt "- 外部時區：		${CLR2}$(TimeZn --external)${CLR0}"
-	Txt "${CLR8}$(Linet - 32)${CLR0}"
-	Txt "- 負載平均：		${CLR2}$(LoadAvg)${CLR0}"
-	Txt "- 程序數量：		${CLR2}$(ps aux | wc -l)${CLR0}"
-	Txt "- 已安裝套件：		${CLR2}$(PkgCnt)${CLR0}"
-	Txt "${CLR8}$(Linet - 32)${CLR0}"
-	Txt "- 運行時間：		${CLR2}$(uptime -p | sed 's/up //')${CLR0}"
-	Txt "- 啟動時間：		${CLR2}$(who -b | awk '{print $3, $4}')${CLR0}"
-	Txt "${CLR8}$(Linet - 32)${CLR0}"
-	Txt "- 虛擬化：		${CLR2}$(ChkVirt)${CLR0}"
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
+	Txt "${CLR3}System Information${CLR0}"
+	Txt "${CLR8}${DLINE}${CLR0}"
+	Txt "- Hostname:\t\t${CLR2}$(uname -n || hostname)${CLR0}"
+	Txt "- Operating system:\t\t${CLR2}$(ChkOs)${CLR0}"
+	Txt "- Core version:\t\t${CLR2}$(uname -r)${CLR0}"
+	Txt "- System language:\t\t${CLR2}${LANG}${CLR0}"
+	Txt "- Shell version:\t\t${CLR2}$(ShellVer)${CLR0}"
+	Txt "- Last system update:\t${CLR2}$(LastUpd)${CLR0}"
+	Txt "${CLR8}${SLINE}${CLR0}"
+	Txt "- Architecture:\t\t${CLR2}$(uname -m)${CLR0}"
+	Txt "- CPU model:\t\t${CLR2}$(CpuModel)${CLR0}"
+	Txt "- Number of CPU cores:\t\t${CLR2}$(nproc)${CLR0}"
+	Txt "- CPU frequency:\t\t${CLR2}$(CpuFreq)${CLR0}"
+	Txt "- CPU usage:\t\t${CLR2}$(CpuUsage)%${CLR0}"
+	Txt "- CPU cache:\t\t${CLR2}$(CpuCache)${CLR0}"
+	Txt "${CLR8}${SLINE}${CLR0}"
+	Txt "- Memory usage:\t${CLR2}$(MemUsage)${CLR0}"
+	Txt "- SWAP usage:\t\t${CLR2}$(SwapUsage)${CLR0}"
+	Txt "- Disk usage:\t\t${CLR2}$(DiskUsage)${CLR0}"
+	Txt "- File system type:\t${CLR2}$(df -T / | awk 'NR==2 {print $2}')${CLR0}"
+	Txt "${CLR8}${SLINE}${CLR0}"
+	Txt "- IPv4 address:\t\t${CLR2}$(IpAddr --ipv4)${CLR0}"
+	Txt "- IPv6 address:\t\t${CLR2}$(IpAddr --ipv6)${CLR0}"
+	Txt "- MAC address:\t\t${CLR2}$(MacAddr)${CLR0}"
+	Txt "- Network provider:\t\t${CLR2}$(NetProv)${CLR0}"
+	Txt "- DNS server:\t\t${CLR2}$(DnsAddr)${CLR0}"
+	Txt "- Public IP:\t\t${CLR2}$(PubIp)${CLR0}"
+	Txt "- Network interface: \t\t${CLR2}$(Iface -i)${CLR0}"
+	Txt "- Internal time zone:\t\t${CLR2}$(TimeZn --internal)${CLR0}"
+	Txt "- External time zone:\t\t${CLR2}$(TimeZn --external)${CLR0}"
+	Txt "${CLR8}${SLINE}${CLR0}"
+	Txt "- Load average:\t\t${CLR2}$(LoadAvg)${CLR0}"
+	Txt "- Number of programs: \t\t${CLR2}$(ps aux | wc -l)${CLR0}"
+	Txt "- Installed package:\t\t${CLR2}$(PkgCnt)${CLR0}"
+	Txt "${CLR8}${SLINE}${CLR0}"
+	Txt "- Running time: \t\t${CLR2}$(uptime -p | sed 's/up //')${CLR0}"
+	Txt "- Startup time:\t\t${CLR2}$(who -b | awk '{print $3, $4}')${CLR0}"
+	Txt "${CLR8}${SLINE}${CLR0}"
+	Txt "- Virtualization:\t\t${CLR2}$(ChkVirt)${CLR0}"
+	Txt "${CLR8}${DLINE}${CLR0}"
 }
 function SysOptz() {
 	ChkRoot
-	Txt "${CLR3}正在優化長期運行伺服器的系統設定...${CLR0}"
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
+	Txt "${CLR3} is optimizing system settings for long-running servers...${CLR0}"
+	Txt "${CLR8}${DLINE}${CLR0}"
 	sysctl_conf_SysOptimize="/etc/sysctl.d/99-server-optimizations.conf"
-	Txt "# 長期運行系統的伺服器優化" >"${sysctl_conf_SysOptimize}"
-	Task "* 正在優化記憶體管理" "
+	Txt "# Server optimization for long-term running systems" >"${sysctl_conf_SysOptimize}"
+	Task "* Optimizing memory management" "
 		Txt 'vm.swappiness = 1' >> ${sysctl_conf_SysOptimize}
 		Txt 'vm.vfs_cache_pressure = 50' >> ${sysctl_conf_SysOptimize}
 		Txt 'vm.dirty_ratio = 15' >> ${sysctl_conf_SysOptimize}
 		Txt 'vm.dirty_background_ratio = 5' >> ${sysctl_conf_SysOptimize}
 		Txt 'vm.min_free_kbytes = 65536' >> ${sysctl_conf_SysOptimize}
 	" || {
-		Err "優化記憶體管理失敗"
+		Err "Optimizing memory management failed"
 		return 1
 	}
-	Task "* 正在優化網路設定" "
+	Task "* Optimizing network settings" "
 		Txt 'net.core.somaxconn = 65535' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.core.netdev_max_backlog = 65535' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.ipv4.tcp_max_syn_backlog = 65535' >> ${sysctl_conf_SysOptimize}
@@ -1623,124 +1621,124 @@ function SysOptz() {
 		Txt 'net.ipv4.tcp_tw_reuse = 1' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.ipv4.ip_local_port_range = 1024 65535' >> ${sysctl_conf_SysOptimize}
 	" || {
-		Err "優化網路設定失敗"
+		Err "Optimizing network settings failed"
 		return 1
 	}
-	Task "* 正在優化 TCP 緩衝區" "
+	Task "* Optimizing TCP buffer" "
 		Txt 'net.core.rmem_max = 16777216' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.core.wmem_max = 16777216' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.ipv4.tcp_rmem = 4096 87380 16777216' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.ipv4.tcp_wmem = 4096 65536 16777216' >> ${sysctl_conf_SysOptimize}
 		Txt 'net.ipv4.tcp_mtu_probing = 1' >> ${sysctl_conf_SysOptimize}
 	" || {
-		Err "優化 TCP 緩衝區失敗"
+		Err "Optimizing TCP buffer failed"
 		return 1
 	}
-	Task "* 正在優化檔案系統設定" "
+	Task "* Optimizing file system settings" "
 		Txt 'fs.file-max = 2097152' >> ${sysctl_conf_SysOptimize}
 		Txt 'fs.nr_open = 2097152' >> ${sysctl_conf_SysOptimize}
 		Txt 'fs.inotify.max_user_watches = 524288' >> ${sysctl_conf_SysOptimize}
 	" || {
-		Err "優化檔案系統設定失敗"
+		Err "Optimizing file system settings failed"
 		return 1
 	}
-	Task "* 正在優化系統限制" "
+	Task "* Optimizing system limitations" "
 		Txt '* soft nofile 1048576' >> /etc/security/limits.conf
 		Txt '* hard nofile 1048576' >> /etc/security/limits.conf
 		Txt '* soft nproc 65535' >> /etc/security/limits.conf
 		Txt '* hard nproc 65535' >> /etc/security/limits.conf
 	" || {
-		Err "優化系統限制失敗"
+		Err "Optimizing system limits failed"
 		return 1
 	}
-	Task "* 正在優化 I/O 排程器" "
-		for disk in /sys/block/[sv]d*; do
-			Txt 'none' > \$disk/queue/scheduler 2>/dev/null || true
-			Txt '256' > \$disk/queue/nr_requests 2>/dev/null || true
+	Task "* Optimizing I/O scheduler" "
+		for disk_SysOptz in /sys/block/[sv]d*; do
+			Txt 'none' > ${disk_SysOptz}/queue/scheduler 2>/dev/null || true
+			Txt '256' > ${disk_SysOptz}/queue/nr_requests 2>/dev/null || true
 		done
 	" || {
-		Err "優化 I/O 排程器失敗"
+		Err "Optimizing I/O scheduler failed"
 		return 1
 	}
-	Task "* 停用非必要服務" "
+	Task "* Disable non-essential services" "
 		for service_SysOptz in bluetooth cups avahi-daemon postfix nfs-server rpcbind autofs; do
-			systemctl disable --now $service_SysOptz 2>/dev/null || true
+			systemctl disable --now ${service_SysOptz} 2>/dev/null || true
 		done
 	" || {
-		Err "停用服務失敗"
+		Err "Failed to deactivate service"
 		return 1
 	}
-	Task "* 套用系統參數" "sysctl -p ${sysctl_conf_SysOptimize}" || {
-		Err "套用系統參數失敗"
+	Task "* Apply system parameters" "sysctl -p ${sysctl_conf_SysOptimize}" || {
+		Err "Failed to apply system parameters"
 		return 1
 	}
-	Task "* 清除系統快取" "
+	Task "* Clear system cache" "
 		sync
 		Txt 3 > /proc/sys/vm/drop_caches
 		ip -s -s neigh flush all
 	" || {
-		Err "清除系統快取失敗"
+		Err "Failed to clear system cache"
 		return 1
 	}
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
-	Txt "${CLR2}完成${CLR0}\n"
+	Txt "${CLR8}${DLINE}${CLR0}"
+	Txt "${CLR2}Complete${CLR0}\n"
 }
 function SysRboot() {
 	ChkRoot
-	Txt "${CLR3}正在準備重新啟動系統...${CLR0}"
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
+	Txt "${CLR3} is preparing to reboot the system...${CLR0}"
+	Txt "${CLR8}${DLINE}${CLR0}"
 	active_usrs_SysRboot=$(who | wc -l) || {
-		Err "取得活動使用者數量失敗"
+		Err "Failed to get the number of active users"
 		return 1
 	}
 	if [ "${active_usrs_SysRboot}" -gt 1 ]; then
-		Txt "${CLR1}警告：目前系統有 ${active_usrs_SysRboot} 個活動使用者${CLR0}\n"
-		Txt "活動使用者："
+		Txt "${CLR1}Warning: There are currently ${active_usrs_SysRboot} active users on the system${CLR0}\n"
+		Txt "Active users:"
 		who | awk '{print $1 " since " $3 " " $4}'
 		Txt
 	fi
 	important_procs_SysRboot=$(ps aux --no-headers | awk '$3 > 1.0 || $4 > 1.0' | wc -l) || {
-		Err "檢查執行中的程序失敗"
+		Err "Checking executing program failed"
 		return 1
 	}
 	if [ "${important_procs_SysRboot}" -gt 0 ]; then
-		Txt "${CLR1}警告：有 ${important_procs_SysRboot} 個重要程序正在執行${CLR0}\n"
-		Txt "${CLR8}CPU 使用率最高的 5 個程序：${CLR0}"
+		Txt "${CLR1}Warning: There are ${important_procs_SysRboot} important procedures executing${CLR0}\n"
+		Txt "${CLR8}Top 5 CPU usage programs: ${CLR0}"
 		ps aux --sort=-%cpu | head -n 6
 		Txt
 	fi
-	Ask "您確定要立即重新啟動系統嗎？(y/N) " -n 1 cont_SysRboot
+	Ask "Are you sure you want to restart your system now? (y/N)" -n 1 cont_SysRboot
 	Txt
 	[[ ! ${cont_SysRboot} =~ ^[Yy]$ ]] && {
-		Txt "${CLR2}已取消重新啟動${CLR0}\n"
+		Txt "${CLR2} has canceled restart${CLR0}\n"
 		return 0
 	}
-	Task "* 執行最終檢查" "sync" || {
-		Err "同步檔案系統失敗"
+	Task "* Perform final inspection" "sync" || {
+		Err "Failed to synchronize file system"
 		return 1
 	}
-	Task "* 開始重新啟動" "reboot || sudo reboot" || {
-		Err "啟動重新啟動失敗"
+	Task "* Start restarting" "reboot || sudo reboot" || {
+		Err "Startup restart failed"
 		return 1
 	}
-	Txt "${CLR2}已成功發出重新啟動命令。系統將立即重新啟動${CLR0}"
+	Txt "${CLR2} successfully issued the restart command. The system will restart ${CLR0} immediately"
 }
 function SysUpd() {
 	ChkRoot
-	Txt "${CLR3}正在更新系統軟體...${CLR0}"
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
+	Txt "${CLR3} is updating system software...${CLR0}"
+	Txt "${CLR8}${DLINE}${CLR0}"
 	UpdPkg() {
 		cmd_SysUpd_UpdPkg="$1"
 		upd_cmd_SysUpd_UpdPkg="$2"
 		upg_cmd_SysUpd_UpdPkg="$3"
-		Txt "* 正在更新套件清單"
+		Txt "*Updating kit list"
 		${upd_cmd_SysUpd_UpdPkg} || {
-			Err "使用 ${cmd_SysUpd_UpdPkg} 更新套件清單失敗"
+			Err "Failed to update package manifest using ${cmd_SysUpd_UpdPkg}"
 			return 1
 		}
-		Txt "* 正在升級套件"
+		Txt "*Upgrading suite"
 		${upg_cmd_SysUpd_UpdPkg} || {
-			Err "使用 ${cmd_SysUpd_UpdPkg} 升級套件失敗"
+			Err "Upgrading package using ${cmd_SysUpd_UpdPkg} failed"
 			return 1
 		}
 	}
@@ -1748,110 +1746,110 @@ function SysUpd() {
 	*apk) UpdPkg "apk" "apk update" "apk upgrade" ;;
 	*apt)
 		while fuser /var/lib/dpkg/lock-frontend &>/dev/null; do
-			Task "* 等待 dpkg 鎖定" "sleep 1" || return 1
+			Task "* Wait for dpkg to lock" "sleep 1" || return 1
 			((wait_time_SysUpd++))
 			[ "${wait_time_SysUpd}" -gt 10 ] && {
-				Err "等待 dpkg 鎖定釋放超時"
+				Err "Timeout waiting for dpkg lock release"
 				return 1
 			}
 		done
-		Task "* 設定待處理的套件" "DEBIAN_FRONTEND=noninteractive dpkg --configure -a" || {
-			Err "設定待處理的套件失敗"
+		Task "* Set pending packages" "DEBIAN_FRONTEND=noninteractive dpkg --configure -a" || {
+			Err "Failed to set pending packages"
 			return 1
 		}
 		UpdPkg "apt" "apt update -y" "apt full-upgrade -y"
 		;;
 	*opkg) UpdPkg "opkg" "opkg update" "opkg upgrade" ;;
-	*pacman) Task "* 更新和升級套件" "pacman -Syu --noconfirm" || {
-		Err "使用 pacman 更新和升級套件失敗"
+	*pacman) Task "*Update and upgrade packages" "pacman -Syu --noconfirm" || {
+		Err "Update and upgrade packages using pacman fail"
 		return 1
 	} ;;
 	*yum) UpdPkg "yum" "yum check-update" "yum -y update" ;;
 	*zypper) UpdPkg "zypper" "zypper refresh" "zypper update -y" ;;
 	*dnf) UpdPkg "dnf" "dnf check-update" "dnf -y update" ;;
 	*) {
-		Err "不支援的套件管理器"
+		Err "Unsupported package manager"
 		return 1
 	} ;;
 	esac
-	Txt "* 正在更新 ${SCRIPTS}"
+	Txt "*Updating ${SCRIPTS}"
 	bash <(curl -L https://raw.githubusercontent.com/OG-Open-Source/UtilKit/main/sh/get_utilkit.sh) || {
-		Err "更新 ${SCRIPTS} 失敗"
+		Err "Update ${SCRIPTS} failed"
 		return 1
 	}
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
-	Txt "${CLR2}完成${CLR0}\n"
+	Txt "${CLR8}${DLINE}${CLR0}"
+	Txt "${CLR2}Complete${CLR0}\n"
 }
 function SysUpg() {
 	ChkRoot
-	Txt "${CLR3}正在升級系統至下一個主要版本...${CLR0}"
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
+	Txt "${CLR3} is upgrading the system to the next major version...${CLR0}"
+	Txt "${CLR8}${DLINE}${CLR0}"
 	os_nm_SysUpg=$(ChkOs --name)
 	case "${os_nm_SysUpg}" in
 	Debian)
-		Txt "* 偵測到 'Debian' 系統"
-		Txt "* 正在更新套件清單"
+		Txt "* 'Debian' system detected"
+		Txt "*Updating kit list"
 		apt update -y || {
-			Err "使用 apt 更新套件清單失敗"
+			Err "Updating package manifest using apt fails"
 			return 1
 		}
-		Txt "* 正在升級目前的套件"
+		Txt "* Upgrading current package"
 		apt full-upgrade -y || {
-			Err "升級目前的套件失敗"
+			Err "Upgrading current package failed"
 			return 1
 		}
-		Txt "* 開始 'Debian' 發行版升級..."
+		Txt "* Start 'Debian' distribution upgrade..."
 		curr_codenm_SysUpg=$(lsb_release -cs)
 		targ_codenm_SysUpg=$(curl -s http://ftp.debian.org/debian/dists/stable/Release | grep "^Codename:" | awk '{print $2}')
 		[ "${cur}rent_codename" = "${targ_codenm_SysUpg}" ] && {
-			Err "系統已經是最新的穩定版本 (${targ_codenm_SysUpg})"
+			Err "The system is already the latest stable version (${targ_codenm_SysUpg})"
 			return 1
 		}
-		Txt "* 正在從 ${CLR2}${curr_codenm_SysUpg}${CLR0} 升級到 ${CLR3}${targ_codenm_SysUpg}${CLR0}"
-		Task "* 備份 sources.list" "cp /etc/apt/sources.list /etc/apt/sources.list.backup" || {
-			Err "備份 sources.list 失敗"
+		Txt "* Upgrading from ${CLR2}${curr_codenm_SysUpg}${CLR0} to ${CLR3}${targ_codenm_SysUpg}${CLR0}"
+		Task "* Back up sources.list" "cp /etc/apt/sources.list /etc/apt/sources.list.backup" || {
+			Err "Backup of sources.list failed"
 			return 1
 		}
-		Task "* 更新 sources.list" "sed -i 's/${curr_codenm_SysUpg}/${targ_codenm_SysUpg}/g' /etc/apt/sources.list" || {
-			Err "更新 sources.list 失敗"
+		Task "* Update sources.list" "sed -i 's/${curr_codenm_SysUpg}/${targ_codenm_SysUpg}/g' /etc/apt/sources.list" || {
+			Err "Failed to update sources.list"
 			return 1
 		}
-		Task "* 更新新版本的套件清單" "apt update -y" || {
-			Err "更新新版本的套件清單失敗"
+		Task "* Updated package list for new versions" "apt update -y" || {
+			Err "Failed to update package manifest for new version"
 			return 1
 		}
-		Task "* 升級到新的 Debian 版本" "apt full-upgrade -y" || {
-			Err "升級到新的 Debian 版本失敗"
+		apt full-upgrade -y || {
+			Err "Upgrading to new Debian version fails"
 			return 1
 		}
 		;;
 	Ubuntu)
-		Txt "* 偵測到 'Ubuntu' 系統"
-		Task "* 正在更新套件清單" "apt update -y" || {
-			Err "使用 apt 更新套件清單失敗"
+		Txt "* 'Ubuntu' system detected"
+		Task "*Updating kit list" "apt update -y" || {
+			Err "Updating package manifest using apt fails"
 			return 1
 		}
-		Task "* 正在升級目前的套件" "apt full-upgrade -y" || {
-			Err "升級目前的套件失敗"
+		Task "* Upgrading current package" "apt full-upgrade -y" || {
+			Err "Upgrading current package failed"
 			return 1
 		}
-		Task "* 安裝 update-manager-core" "apt install -y update-manager-core" || {
-			Err "安裝 update-manager-core 失敗"
+		Task "* Install update-manager-core" "apt install -y update-manager-core" || {
+			Err "Installation of update-manager-core failed"
 			return 1
 		}
-		Task "* 升級 Ubuntu 版本" "do-release-upgrade -f DistUpgradeViewNonInteractive" || {
-			Err "升級 Ubuntu 版本失敗"
+		do-release-upgrade -f DistUpgradeViewNonInteractive || {
+			Err "Upgrading Ubuntu version failed"
 			return 1
 		}
 		SysRboot
 		;;
 	*) {
-		Err "您的系統尚不支援主要版本升級"
+		Err "Your system does not yet support major version upgrades"
 		return 1
 	} ;;
 	esac
-	Txt "${CLR8}$(Linet = 24)${CLR0}"
-	Txt "${CLR2}系統升級完成${CLR0}\n"
+	Txt "${CLR8}${DLINE}${CLR0}"
+	Txt "${CLR2} system upgrade completed${CLR0}\n"
 }
 function Task() {
 	msg_Task="$1"
@@ -1860,11 +1858,11 @@ function Task() {
 	tmp_file_Task=$(mktemp)
 	Txt -n "${msg_Task}..."
 	if eval "${cmd_Task}" >"${tmp_file_Task}" 2>&1; then
-		Txt "${CLR2}完成${CLR0}"
+		Txt "${CLR2} completed ${CLR0}"
 		ret_Task=0
 	else
 		ret_Task=$?
-		Txt "${CLR1}失敗${CLR0} (${ret_Task})"
+		Txt "${CLR1} failed ${CLR0} (${ret_Task})"
 		[[ -s ${tmp_file_Task} ]] && Txt "${CLR1}$(cat ${tmp_file_Task})${CLR0}"
 		[[ ${ign_err_Task} != "true" ]] && return "${ret_Task}"
 	fi
@@ -1878,7 +1876,7 @@ function TimeZn() {
 			data_TimeZn=$(timeout 1s curl -sL worldtimeapi.org/api/ip | grep -oP '"timezone":"\K[^"]+') ||
 			data_TimeZn=$(timeout 1s curl -sL ip-api.com/json | grep -oP '"timezone":"\K[^"]+') ||
 			[ -n "${data_TimeZn}" ] && Txt "${data_TimeZn}" || {
-			Err "從外部服務偵測時區失敗"
+			Err "Failed to detect time zone from external service"
 			return 1
 		}
 		;;
@@ -1887,7 +1885,7 @@ function TimeZn() {
 			data_TimeZn=$(command -v timedatectl &>/dev/null && timedatectl status | awk '/Time zone:/ {print $3}') ||
 			data_TimeZn=$(cat /etc/timezone 2>/dev/null | uniq) ||
 			[ -n "${data_TimeZn}" ] && Txt "${data_TimeZn}" || {
-			Err "偵測系統時區失敗"
+			Err "Failed to detect system time zone"
 			return 1
 		}
 		;;
@@ -1895,7 +1893,7 @@ function TimeZn() {
 }
 function Press() {
 	read -p "$1" -n 1 -r || {
-		Err "讀取使用者輸入失敗"
+		Err "Failed to read user input"
 		return 1
 	}
 }

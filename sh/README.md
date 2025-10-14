@@ -573,6 +573,7 @@ This project utilizes external components or code whose copyright and licensing 
 | Component Name                    | Source / Author | License Type | Location of License Document     | Hash Values                      |
 | :-------------------------------- | :-------------- | :----------- | :------------------------------- | -------------------------------- |
 | OG-Open-Source README.md Template | OG-Open-Source  | MIT          | /licenses/OG-Open-Source/LICENSE | 120aee1912f4c2c51937f4ea3c449954 |
+| Iface function part               | Unknown         | GPL          | /licenses/Unknown/LICENSE        | 1ebbd3e34237af26da5dc08a4e440464 |
 
 ---
 

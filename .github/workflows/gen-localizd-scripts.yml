@@ -33,7 +33,7 @@ jobs:
       - name: Get changed source files
         id: changed-files
         if: github.event_name == 'push'
-        uses: tj-actions/changed-files@v46
+        uses: tj-actions/changed-files@6cb76d07bee4c9772c6882c06c37837bf82a04d3
         with:
           files: "sh/utilkit.sh"
 
