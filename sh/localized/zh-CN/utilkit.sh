@@ -2,7 +2,7 @@
 
 AUTHORS="OG-Open-Source"
 SCRIPTS="UtilKit.sh"
-VERSION="7.046.007"
+VERSION="7.046.009"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -25,7 +25,7 @@ UNIT_PREF="iB"
 function Txt() { echo -e "$@"; }
 function Err() {
 	if [[ "${LOG_ENABLED}" = true ]]; then
-		Txt "$(date -u '+%Y-%m-%dT%H:%M:%SZ') | ${SCRIPTS} - ${VERSION} | $(Txt"$1" | tr -d '\n')" >>"/var/log/ogos/utilkit/sh/error.log" 2>/dev/null
+		Txt "$(date -u '+%Y-%m-%dT%H:%M:%SZ') | ${SCRIPTS} - ${VERSION} | $(Txt "$1" | tr -d '\n')" >>"/var/log/ogos/utilkit/sh/error.log" 2>/dev/null
 	fi
 	Txt "${CLR1}$1${CLR0}"
 }
@@ -225,7 +225,7 @@ function ChkDeps() {
 	case "${mod_ChkDeps}" in
 	"interactive")
 		Txt "\n${CLR3}缺少的套件：${CLR0} ${missg_deps_ChkDeps[*]}"
-		Ask "是否要安装缺少的套件？ (y/N)" -n 1 cont_inst_ChkDeps
+		Ask "是否要安装缺少的套件？(y/N) " -n 1 cont_inst_ChkDeps
 		Txt
 		[[ ${cont_inst_ChkDeps} =~ ^[Yy]$ ]] && Add "${missg_deps_ChkDeps[@]}"
 		;;
@@ -1024,7 +1024,7 @@ function LoadAvg() {
 	[[ ${zo_mi_LoadAvg} =~ ^[0-9.]+$ ]] || zo_mi_LoadAvg=0
 	[[ ${zv_mi_LoadAvg} =~ ^[0-9.]+$ ]] || zv_mi_LoadAvg=0
 	[[ ${ov_mi_LoadAvg} =~ ^[0-9.]+$ ]] || ov_mi_LoadAvg=0
-	LC_ALL=C printf "%.2f, %.2f, %.2f (%d cores)" "${zo_mi_LoadAvg}" "${zv_mi_LoadAvg}" "${ov_mi_LoadAvg}" "$(nproc)"
+	LC_ALL=C printf "%.2f, %.2f, %.2f (%d 核心)" "${zo_mi_LoadAvg}" "${zv_mi_LoadAvg}" "${ov_mi_LoadAvg}" "$(nproc)"
 }
 function Loc() {
 	case "$1" in
@@ -1588,8 +1588,8 @@ function SysInfo() {
 	Txt "- 程序数量：\t\t${CLR2}$(ps aux | wc -l)${CLR0}"
 	Txt "- 已安装套件：\t\t${CLR2}$(PkgCnt)${CLR0}"
 	Txt "${CLR8}${SLINE}${CLR0}"
-	Txt "- 运行时间：\t\t${CLR2}$(uptime -p | sed 's/up //')${CLR0}"
-	Txt "- 启动时间：\t\t${CLR2}$(who -b | awk '{print $3, $4}')${CLR0}"
+	Txt "- 运行时间：\t\t${CLR2}$(uptime -p | sed -E 's/^up //; s/ year[s]?/ 年/g; s/ week[s]?/ 周/g; s/ day[s]?/ 天/g; s/ hour[s]?/ 小时/g; s/ minute[s]?/ 分钟/g; s/, /，/g')${CLR0}"
+	Txt "- 启动时间：\t\t${CLR2}$(who -b | awk '{print $3, $4}' | sed -E 's/([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2})/\1 年 \2 月 \3 日 \4 点 \5 分/')${CLR0}"
 	Txt "${CLR8}${SLINE}${CLR0}"
 	Txt "- 虚拟化：\t\t${CLR2}$(ChkVirt)${CLR0}"
 	Txt "${CLR8}${DLINE}${CLR0}"
@@ -1707,7 +1707,7 @@ function SysRboot() {
 		ps aux --sort=-%cpu | head -n 6
 		Txt
 	fi
-	Ask "您确定要立即重新启动系统吗？ (y/N)" -n 1 cont_SysRboot
+	Ask "您确定要立即重新启动系统吗？(y/N) " -n 1 cont_SysRboot
 	Txt
 	[[ ! ${cont_SysRboot} =~ ^[Yy]$ ]] && {
 		Txt "${CLR2}已取消重新启动${CLR0}\n"

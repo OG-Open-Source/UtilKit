@@ -2,7 +2,7 @@
 
 AUTHORS="OG-Open-Source"
 SCRIPTS="UtilKit.sh"
-VERSION="7.046.007"
+VERSION="7.046.009"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -25,7 +25,7 @@ UNIT_PREF="iB"
 function Txt() { echo -e "$@"; }
 function Err() {
 	if [[ "${LOG_ENABLED}" = true ]]; then
-		Txt "$(date -u '+%Y-%m-%dT%H:%M:%SZ') | ${SCRIPTS} - ${VERSION} | $(Txt"$1" | tr -d '\n')" >>"/var/log/ogos/utilkit/sh/error.log" 2>/dev/null
+		Txt "$(date -u '+%Y-%m-%dT%H:%M:%SZ') | ${SCRIPTS} - ${VERSION} | $(Txt "$1" | tr -d '\n')" >>"/var/log/ogos/utilkit/sh/error.log" 2>/dev/null
 	fi
 	Txt "${CLR1}$1${CLR0}"
 }
@@ -214,9 +214,9 @@ function ChkDeps() {
 	done
 	for dep_ChkDeps in "${deps[@]}"; do
 		if command -v "${dep_ChkDeps}" &>/dev/null; then
-			status_ChkDeps="${CLR2}［可用］${CLR0}"
+			status_ChkDeps="${CLR2}[Available]${CLR0}"
 		else
-			status_ChkDeps="${CLR1}［缺失］${CLR0}"
+			status_ChkDeps="${CLR1}[Not found]${CLR0}"
 			missg_deps_ChkDeps+=("${dep_ChkDeps}")
 		fi
 		Txt "${status_ChkDeps}\t${dep_ChkDeps}"
@@ -310,7 +310,7 @@ function ChkVirt() {
 				Txt "Not detected (possibly a physical machine)"
 			fi
 			;;
-		*) Txt "${virt_typ_ChkVirt:-not detected (possibly a physical machine)}" ;;
+		*) Txt "${virt_typ_ChkVirt:-Not detected (possibly a physical machine)}" ;;
 		esac
 	elif [ -f /proc/cpuinfo ]; then
 		virt_typ_ChkVirt=$(grep -i "hypervisor" /proc/cpuinfo >/dev/null && Txt "virtual machine" || Txt "none")
@@ -947,7 +947,7 @@ function Iface() {
 		for iface_Iface in ${interface_Iface}; do
 			if stats_Iface=$(awk -v iface="${iface_Iface}" '$1 ~ iface":" {print $2, $3, $5, $10, $11, $13}' /proc/net/dev 2>/dev/null); then
 				read rx_bytes_Iface rx_packets_Iface rx_drop_Iface tx_bytes_Iface tx_packets_Iface tx_drop_Iface <<<"${stats_Iface}"
-				Txt "${iface_Iface}: input: $(ConvSz ${rx_bytes_Iface}), output: $(ConvSz ${tx_bytes_Iface})"
+				Txt "${iface_Iface}: RX: $(ConvSz ${rx_bytes_Iface}), TX: $(ConvSz ${tx_bytes_Iface})"
 			fi
 		done
 		;;
@@ -1446,7 +1446,7 @@ function SysClean() {
 		}
 		;;
 	*pacman)
-		Txt "*Update and upgrade packages"
+		Txt "* Update and upgrade packages"
 		pacman -Syu --noconfirm || {
 			Err "Update and upgrade packages using pacman fail"
 			return 1
@@ -1556,20 +1556,20 @@ function SysInfo() {
 	Txt "${CLR3}System Information${CLR0}"
 	Txt "${CLR8}${DLINE}${CLR0}"
 	Txt "- Hostname:\t\t${CLR2}$(uname -n || hostname)${CLR0}"
-	Txt "- Operating system:\t\t${CLR2}$(ChkOs)${CLR0}"
+	Txt "- Operating system:\t${CLR2}$(ChkOs)${CLR0}"
 	Txt "- Core version:\t\t${CLR2}$(uname -r)${CLR0}"
-	Txt "- System language:\t\t${CLR2}${LANG}${CLR0}"
-	Txt "- Shell version:\t\t${CLR2}$(ShellVer)${CLR0}"
+	Txt "- System language:\t${CLR2}${LANG}${CLR0}"
+	Txt "- Shell version:\t${CLR2}$(ShellVer)${CLR0}"
 	Txt "- Last system update:\t${CLR2}$(LastUpd)${CLR0}"
 	Txt "${CLR8}${SLINE}${CLR0}"
 	Txt "- Architecture:\t\t${CLR2}$(uname -m)${CLR0}"
 	Txt "- CPU model:\t\t${CLR2}$(CpuModel)${CLR0}"
-	Txt "- Number of CPU cores:\t\t${CLR2}$(nproc)${CLR0}"
-	Txt "- CPU frequency:\t\t${CLR2}$(CpuFreq)${CLR0}"
+	Txt "- Number of CPU cores:\t${CLR2}$(nproc)${CLR0}"
+	Txt "- CPU frequency:\t${CLR2}$(CpuFreq)${CLR0}"
 	Txt "- CPU usage:\t\t${CLR2}$(CpuUsage)%${CLR0}"
 	Txt "- CPU cache:\t\t${CLR2}$(CpuCache)${CLR0}"
 	Txt "${CLR8}${SLINE}${CLR0}"
-	Txt "- Memory usage:\t${CLR2}$(MemUsage)${CLR0}"
+	Txt "- Memory usage:\t	${CLR2}$(MemUsage)${CLR0}"
 	Txt "- SWAP usage:\t\t${CLR2}$(SwapUsage)${CLR0}"
 	Txt "- Disk usage:\t\t${CLR2}$(DiskUsage)${CLR0}"
 	Txt "- File system type:\t${CLR2}$(df -T / | awk 'NR==2 {print $2}')${CLR0}"
@@ -1577,21 +1577,21 @@ function SysInfo() {
 	Txt "- IPv4 address:\t\t${CLR2}$(IpAddr --ipv4)${CLR0}"
 	Txt "- IPv6 address:\t\t${CLR2}$(IpAddr --ipv6)${CLR0}"
 	Txt "- MAC address:\t\t${CLR2}$(MacAddr)${CLR0}"
-	Txt "- Network provider:\t\t${CLR2}$(NetProv)${CLR0}"
+	Txt "- Network provider:\t${CLR2}$(NetProv)${CLR0}"
 	Txt "- DNS server:\t\t${CLR2}$(DnsAddr)${CLR0}"
 	Txt "- Public IP:\t\t${CLR2}$(PubIp)${CLR0}"
-	Txt "- Network interface: \t\t${CLR2}$(Iface -i)${CLR0}"
-	Txt "- Internal time zone:\t\t${CLR2}$(TimeZn --internal)${CLR0}"
-	Txt "- External time zone:\t\t${CLR2}$(TimeZn --external)${CLR0}"
+	Txt "- Network interface:\t${CLR2}$(Iface -i)${CLR0}"
+	Txt "- Internal time zone:\t${CLR2}$(TimeZn --internal)${CLR0}"
+	Txt "- External time zone:\t${CLR2}$(TimeZn --external)${CLR0}"
 	Txt "${CLR8}${SLINE}${CLR0}"
 	Txt "- Load average:\t\t${CLR2}$(LoadAvg)${CLR0}"
-	Txt "- Number of programs: \t\t${CLR2}$(ps aux | wc -l)${CLR0}"
-	Txt "- Installed package:\t\t${CLR2}$(PkgCnt)${CLR0}"
+	Txt "- Number of programs:\t${CLR2}$(ps aux | wc -l)${CLR0}"
+	Txt "- Installed package:\t${CLR2}$(PkgCnt)${CLR0}"
 	Txt "${CLR8}${SLINE}${CLR0}"
-	Txt "- Running time: \t\t${CLR2}$(uptime -p | sed 's/up //')${CLR0}"
+	Txt "- Running time:\t\t${CLR2}$(uptime -p | sed 's/up //')${CLR0}"
 	Txt "- Startup time:\t\t${CLR2}$(who -b | awk '{print $3, $4}')${CLR0}"
 	Txt "${CLR8}${SLINE}${CLR0}"
-	Txt "- Virtualization:\t\t${CLR2}$(ChkVirt)${CLR0}"
+	Txt "- Virtualization:\t${CLR2}$(ChkVirt)${CLR0}"
 	Txt "${CLR8}${DLINE}${CLR0}"
 }
 function SysOptz() {
@@ -1731,12 +1731,12 @@ function SysUpd() {
 		cmd_SysUpd_UpdPkg="$1"
 		upd_cmd_SysUpd_UpdPkg="$2"
 		upg_cmd_SysUpd_UpdPkg="$3"
-		Txt "*Updating kit list"
+		Txt "* Updating kit list"
 		${upd_cmd_SysUpd_UpdPkg} || {
 			Err "Failed to update package manifest using ${cmd_SysUpd_UpdPkg}"
 			return 1
 		}
-		Txt "*Upgrading suite"
+		Txt "* Upgrading suite"
 		${upg_cmd_SysUpd_UpdPkg} || {
 			Err "Upgrading package using ${cmd_SysUpd_UpdPkg} failed"
 			return 1
@@ -1760,7 +1760,7 @@ function SysUpd() {
 		UpdPkg "apt" "apt update -y" "apt full-upgrade -y"
 		;;
 	*opkg) UpdPkg "opkg" "opkg update" "opkg upgrade" ;;
-	*pacman) Task "*Update and upgrade packages" "pacman -Syu --noconfirm" || {
+	*pacman) Task "* Update and upgrade packages" "pacman -Syu --noconfirm" || {
 		Err "Update and upgrade packages using pacman fail"
 		return 1
 	} ;;
@@ -1772,7 +1772,7 @@ function SysUpd() {
 		return 1
 	} ;;
 	esac
-	Txt "*Updating ${SCRIPTS}"
+	Txt "* Updating ${SCRIPTS}"
 	bash <(curl -L https://raw.githubusercontent.com/OG-Open-Source/UtilKit/main/sh/get_utilkit.sh) || {
 		Err "Update ${SCRIPTS} failed"
 		return 1
@@ -1788,7 +1788,7 @@ function SysUpg() {
 	case "${os_nm_SysUpg}" in
 	Debian)
 		Txt "* 'Debian' system detected"
-		Txt "*Updating kit list"
+		Txt "* Updating kit list"
 		apt update -y || {
 			Err "Updating package manifest using apt fails"
 			return 1
@@ -1825,7 +1825,7 @@ function SysUpg() {
 		;;
 	Ubuntu)
 		Txt "* 'Ubuntu' system detected"
-		Task "*Updating kit list" "apt update -y" || {
+		Task "* Updating kit list" "apt update -y" || {
 			Err "Updating package manifest using apt fails"
 			return 1
 		}
