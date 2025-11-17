@@ -550,7 +550,7 @@ Txt "This is a ${CLR2}green${CLR0} message."
 ## Contributors
 
 <a href="https://github.com/OG-Open-Source/UtilKit/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=OG-Open-Source/UtilKit"  alt="Contributor list and icons for the OG-Open-Source/.github project" />
+  <img src="https://contrib.rocks/image?repo=OG-Open-Source/UtilKit"  alt="Contributor list and icons for the OG-Open-Source/UtilKit project" />
 </a>
 
 ## Contributing
