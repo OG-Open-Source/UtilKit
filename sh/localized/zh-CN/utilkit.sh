@@ -2,7 +2,7 @@
 
 AUTHORS="OG-Open-Source"
 SCRIPTS="UtilKit.sh"
-VERSION="7.046.009"
+VERSION="7.046.010"
 
 CLR1="\033[0;31m"
 CLR2="\033[0;32m"
@@ -25,7 +25,7 @@ UNIT_PREF="iB"
 function Txt() { echo -e "$@"; }
 function Err() {
 	if [[ "${LOG_ENABLED}" = true ]]; then
-		Txt "$(date -u '+%Y-%m-%dT%H:%M:%SZ') | ${SCRIPTS} - ${VERSION} | $(Txt "$1" | tr -d '\n')" >>"/var/log/ogos/utilkit/sh/error.log" 2>/dev/null
+		Txt "$(date -u '+%Y-%m-%dT%H:%M:%S.%6NZ') | ${SCRIPTS} - ${VERSION} | $(Txt "$1" | tr -d '\n')" >>"/var/log/ogos/utilkit/sh/error.log" 2>/dev/null
 	fi
 	Txt "${CLR1}$1${CLR0}"
 }
@@ -947,7 +947,7 @@ function Iface() {
 		for iface_Iface in ${interface_Iface}; do
 			if stats_Iface=$(awk -v iface="${iface_Iface}" '$1 ~ iface":" {print $2, $3, $5, $10, $11, $13}' /proc/net/dev 2>/dev/null); then
 				read rx_bytes_Iface rx_packets_Iface rx_drop_Iface tx_bytes_Iface tx_packets_Iface tx_drop_Iface <<<"${stats_Iface}"
-				Txt "${iface_Iface}: 输入: $(ConvSz ${rx_bytes_Iface}), 输出: $(ConvSz ${tx_bytes_Iface})"
+				Txt "${iface_Iface}：输入：$(ConvSz ${rx_bytes_Iface})，输出：$(ConvSz ${tx_bytes_Iface})"
 			fi
 		done
 		;;
@@ -1555,43 +1555,43 @@ function SysClean() {
 function SysInfo() {
 	Txt "${CLR3}系统资讯${CLR0}"
 	Txt "${CLR8}${DLINE}${CLR0}"
-	Txt "- 主机名称：\t\t${CLR2}$(uname -n || hostname)${CLR0}"
-	Txt "- 作业系统：\t\t${CLR2}$(ChkOs)${CLR0}"
-	Txt "- 核心版本：\t\t${CLR2}$(uname -r)${CLR0}"
-	Txt "- 系统语言：\t\t${CLR2}${LANG}${CLR0}"
-	Txt "- Shell 版本：\t\t${CLR2}$(ShellVer)${CLR0}"
-	Txt "- 最后系统更新：\t${CLR2}$(LastUpd)${CLR0}"
+	Txt "- 主机名称：            ${CLR2}$(uname -n || hostname)${CLR0}"
+	Txt "- 作业系统：            ${CLR2}$(ChkOs)${CLR0}"
+	Txt "- 核心版本：            ${CLR2}$(uname -r)${CLR0}"
+	Txt "- 系统语言：            ${CLR2}${LANG}${CLR0}"
+	Txt "- Shell 版本：          ${CLR2}$(ShellVer)${CLR0}"
+	Txt "- 最后系统更新：        ${CLR2}$(LastUpd)${CLR0}"
 	Txt "${CLR8}${SLINE}${CLR0}"
-	Txt "- 架构：\t\t${CLR2}$(uname -m)${CLR0}"
-	Txt "- CPU 型号：\t\t${CLR2}$(CpuModel)${CLR0}"
-	Txt "- CPU 核心数：\t\t${CLR2}$(nproc)${CLR0}"
-	Txt "- CPU 频率：\t\t${CLR2}$(CpuFreq)${CLR0}"
-	Txt "- CPU 使用率：\t\t${CLR2}$(CpuUsage)%${CLR0}"
-	Txt "- CPU 快取：\t\t${CLR2}$(CpuCache)${CLR0}"
+	Txt "- 架构：                ${CLR2}$(uname -m)${CLR0}"
+	Txt "- CPU 型号：            ${CLR2}$(CpuModel)${CLR0}"
+	Txt "- CPU 核心数：          ${CLR2}$(nproc)${CLR0}"
+	Txt "- CPU 频率：            ${CLR2}$(CpuFreq)${CLR0}"
+	Txt "- CPU 使用率：          ${CLR2}$(CpuUsage)%${CLR0}"
+	Txt "- CPU 快取：            ${CLR2}$(CpuCache)${CLR0}"
 	Txt "${CLR8}${SLINE}${CLR0}"
-	Txt "- 记忆体使用率：\t${CLR2}$(MemUsage)${CLR0}"
-	Txt "- SWAP 使用率：\t\t${CLR2}$(SwapUsage)${CLR0}"
-	Txt "- 磁碟使用率：\t\t${CLR2}$(DiskUsage)${CLR0}"
-	Txt "- 档案系统类型：\t${CLR2}$(df -T / | awk 'NR==2 {print $2}')${CLR0}"
+	Txt "- 记忆体使用率：        ${CLR2}$(MemUsage)${CLR0}"
+	Txt "- SWAP 使用率：         ${CLR2}$(SwapUsage)${CLR0}"
+	Txt "- 磁碟使用率：          ${CLR2}$(DiskUsage)${CLR0}"
+	Txt "- 档案系统类型：        ${CLR2}$(df -T / | awk 'NR==2 {print $2}')${CLR0}"
 	Txt "${CLR8}${SLINE}${CLR0}"
-	Txt "- IPv4 地址：\t\t${CLR2}$(IpAddr --ipv4)${CLR0}"
-	Txt "- IPv6 地址：\t\t${CLR2}$(IpAddr --ipv6)${CLR0}"
-	Txt "- MAC 位址：\t\t${CLR2}$(MacAddr)${CLR0}"
-	Txt "- 网路供应商：\t\t${CLR2}$(NetProv)${CLR0}"
-	Txt "- DNS 伺服器：\t\t${CLR2}$(DnsAddr)${CLR0}"
-	Txt "- 公开 IP：\t\t${CLR2}$(PubIp)${CLR0}"
-	Txt "- 网路介面：\t\t${CLR2}$(Iface -i)${CLR0}"
-	Txt "- 内部时区：\t\t${CLR2}$(TimeZn --internal)${CLR0}"
-	Txt "- 外部时区：\t\t${CLR2}$(TimeZn --external)${CLR0}"
+	Txt "- IPv4 地址：           ${CLR2}$(IpAddr --ipv4)${CLR0}"
+	Txt "- IPv6 地址：           ${CLR2}$(IpAddr --ipv6)${CLR0}"
+	Txt "- MAC 位址：            ${CLR2}$(MacAddr)${CLR0}"
+	Txt "- 网路供应商：          ${CLR2}$(NetProv)${CLR0}"
+	Txt "- DNS 伺服器：          ${CLR2}$(DnsAddr)${CLR0}"
+	Txt "- 公开 IP：             ${CLR2}$(PubIp)${CLR0}"
+	Txt "- 网路介面：            ${CLR2}$(Iface -i)${CLR0}"
+	Txt "- 内部时区：            ${CLR2}$(TimeZn --internal)${CLR0}"
+	Txt "- 外部时区：            ${CLR2}$(TimeZn --external)${CLR0}"
 	Txt "${CLR8}${SLINE}${CLR0}"
-	Txt "- 负载平均：\t\t${CLR2}$(LoadAvg)${CLR0}"
-	Txt "- 程序数量：\t\t${CLR2}$(ps aux | wc -l)${CLR0}"
-	Txt "- 已安装套件：\t\t${CLR2}$(PkgCnt)${CLR0}"
+	Txt "- 负载平均：            ${CLR2}$(LoadAvg)${CLR0}"
+	Txt "- 程序数量：            ${CLR2}$(ps aux | wc -l)${CLR0}"
+	Txt "- 已安装套件：          ${CLR2}$(PkgCnt)${CLR0}"
 	Txt "${CLR8}${SLINE}${CLR0}"
-	Txt "- 运行时间：\t\t${CLR2}$(uptime -p | sed -E 's/^up //; s/ year[s]?/ 年/g; s/ week[s]?/ 周/g; s/ day[s]?/ 天/g; s/ hour[s]?/ 小时/g; s/ minute[s]?/ 分钟/g; s/, /，/g')${CLR0}"
-	Txt "- 启动时间：\t\t${CLR2}$(who -b | awk '{print $3, $4}' | sed -E 's/([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2})/\1 年 \2 月 \3 日 \4 点 \5 分/')${CLR0}"
+	Txt "- 运行时间：            ${CLR2}$(uptime -p | sed -E 's/^up //; s/ year[s]?/ 年/g; s/ week[s]?/ 周/g; s/ day[s]?/ 天/g; s/ hour[s]?/ 小时/g; s/ minute[s]?/ 分钟/g; s/, /，/g')${CLR0}"
+	Txt "- 启动时间：            ${CLR2}$(who -b | awk '{print $3, $4}' | sed -E 's/([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2})/\1 年 \2 月 \3 日 \4 点 \5 分/')${CLR0}"
 	Txt "${CLR8}${SLINE}${CLR0}"
-	Txt "- 虚拟化：\t\t${CLR2}$(ChkVirt)${CLR0}"
+	Txt "- 虚拟化：              ${CLR2}$(ChkVirt)${CLR0}"
 	Txt "${CLR8}${DLINE}${CLR0}"
 }
 function SysOptz() {

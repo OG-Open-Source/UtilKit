@@ -1,5 +1,5 @@
 {
-    "UtilKit.sh - zh-CN": {
+    "fed7ded1-b2fb-5007-a93d-b3245bef9644": {
         "e3d357ba16425eebe8509eeb15beb2edb8685b98c5456284a73d13034566d172": "$(date -u '+%Y-%m-%dT%H:%M:%SZ') | ${SCRIPTS} - ${VERSION} | $(Txt ",
         "39a2108619a90089f83e559f43a65e22c4acf7f78b6e982ed8fa2dfc06a975e6": "${CLR1}$1${CLR0}",
         "d837fe81608320c886d34882291b70761b87b3b19ad71072c69fa0f881fc52b0": "未指定要新增的项目。请提供至少一个要新增的项目",
@@ -303,6 +303,38 @@
         "9a47ee9bcbbf213cd990b495299066d837f6649b1462110a959c70561dad8122": "${CLR2}完成${CLR0}",
         "7f70e85f45f801005d15357be7ec5bff79b7191234106f62b0de6e630b6551d8": "${CLR1}失败${CLR0} (${ret_Task})",
         "08a5d5fb9f4f6d40f07a4eaf8c823294222a7110e2026e69c11b2ca4e87f3cac": "从外部服务侦测时区失败",
-        "1cc8e79c65fa2c7f3d5087e20b36115f871aacf6e066f6013ee5cda92f6fd730": "侦测系统时区失败"
+        "1cc8e79c65fa2c7f3d5087e20b36115f871aacf6e066f6013ee5cda92f6fd730": "侦测系统时区失败",
+        "a16e594413ff70c41f083887c8b23f4f908b4d93062734df31699f7c0dafe4b5": "- 主机名称：            ${CLR2}$(uname -n || hostname)${CLR0}",
+        "92c80da129d710bc75a58e4d0489f1f4fe8b9d1f50906af0cfd6ade75b6dbc2a": "- 作业系统：            ${CLR2}$(ChkOs)${CLR0}",
+        "1426404ee55bda7162e3d359dd0080e95f043d0df149c248963f0a13b8f99ab1": "- 核心版本：            ${CLR2}$(uname -r)${CLR0}",
+        "bb49e045db9f2e6de1819ab57f15cd923c598b21d198a742c58787b1870aadcf": "- 系统语言：            ${CLR2}${LANG}${CLR0}",
+        "a48f24820f349df01e8c53b0c2a4597e26e7ab92421927f6fd4c020d3dccafe3": "- Shell 版本：          ${CLR2}$(ShellVer)${CLR0}",
+        "a5996ea6753af54e0b8664d7f33d66a583899e0e0a2974e018b86ad943d5610b": "- 最后系统更新：        ${CLR2}$(LastUpd)${CLR0}",
+        "1eb76f1db4c3f97b8c28e988d8a2be8c865413f48c5432b56ecc6c2560f62859": "- 架构：                ${CLR2}$(uname -m)${CLR0}",
+        "ad1d694717d6b566eafa2c6350cac63647e773d6000dfcdb1a79be9e53febcf0": "- CPU 型号：            ${CLR2}$(CpuModel)${CLR0}",
+        "064a6c2f5b99a6fb7eb04fbe4951dd96cd275233e487904fde8437ab88f95be4": "- CPU 核心数：          ${CLR2}$(nproc)${CLR0}",
+        "a5a94052681d0af7b68175d28345aa1081b5a604664974167a450fe876b5e4d1": "- CPU 频率：            ${CLR2}$(CpuFreq)${CLR0}",
+        "6b41494f663b5364a2057ba14123ecf5695470420872c3994ab723fe73d28da7": "- CPU 使用率：          ${CLR2}$(CpuUsage)%${CLR0}",
+        "6ea4a6020c99c5bd7a2465fb6f52542653f08f93e7642555106f4cd75231eaa2": "- CPU 快取：            ${CLR2}$(CpuCache)${CLR0}",
+        "17038dea0576cdf4c657ff4ae060d8ee2d8ab80192c839207e9e59e1bc5a733f": "- 记忆体使用率：        ${CLR2}$(MemUsage)${CLR0}",
+        "9bf9a1510acfa715e734283885779360d68a026ea65bdec76dbef9f7eb88ceba": "- SWAP 使用率：         ${CLR2}$(SwapUsage)${CLR0}",
+        "55236b4afebd1403eab08a3539fb52b1aff2ccefb4102e0dd1aa032b31691f42": "- 磁碟使用率：          ${CLR2}$(DiskUsage)${CLR0}",
+        "e13c6fa998e60445d3bc170c1802304451df84b6aaf785cb56f20ad2fa185066": "- 档案系统类型：        ${CLR2}$(df -T / | awk 'NR==2 {print $2}')${CLR0}",
+        "a8b882cf08649a5845b70d28994dbbe76ac228c6768e64d5259bdde5d1eed120": "- IPv4 地址：           ${CLR2}$(IpAddr --ipv4)${CLR0}",
+        "c590e56d6e42c0825fac1380cdb4cb1770cdfb9f2882b688385f9f708c6ab865": "- IPv6 地址：           ${CLR2}$(IpAddr --ipv6)${CLR0}",
+        "aa5f1b7c48fcc1daf32ef524268a85e69dbca72e6bb7b362047e4ea3c882b44f": "- MAC 位址：            ${CLR2}$(MacAddr)${CLR0}",
+        "902af1f19315f60cda4c478f5324a60de4b26dc00fcf3966732b3e79d69f85aa": "- 网路供应商：          ${CLR2}$(NetProv)${CLR0}",
+        "a1973fe7bb1b12b1fa6c4091edb52e631a16dd0a0c8c6dc2b89fdfe66d0f95d0": "- DNS 伺服器：          ${CLR2}$(DnsAddr)${CLR0}",
+        "70353b887195d1265b6765e0d445416acd76bbaab665486dc268b3e0392b14d1": "- 公开 IP：             ${CLR2}$(PubIp)${CLR0}",
+        "d944835a3ed380dc7747798c2eadfbbcc4a3558411657f62ebef3197f3eda6e5": "- 网路介面：            ${CLR2}$(Iface -i)${CLR0}",
+        "dcacc49510998eeb1c3fb3fae83d8d33122ebb339e2b3b489c6b2a3308046e9e": "- 内部时区：            ${CLR2}$(TimeZn --internal)${CLR0}",
+        "2177c9c0d651752a138e91917c6fd588454537e076ae7dde8aeec2b8b0c50465": "- 外部时区：            ${CLR2}$(TimeZn --external)${CLR0}",
+        "0126b40054d5f7385fd0bd4aa46e42d1f16b810706e24731b75e37119219c3ae": "- 负载平均：            ${CLR2}$(LoadAvg)${CLR0}",
+        "5beb0a1b3efcfe716e924a6ee8ab0cac1b1cbb54878adf0f54ffdc0bf4a7ed0b": "- 程序数量：            ${CLR2}$(ps aux | wc -l)${CLR0}",
+        "3c3d722033ef08afd4aaf360f9167fb973937c6e58f140186c340158d224091a": "- 已安装套件：          ${CLR2}$(PkgCnt)${CLR0}",
+        "c9242800e07df9d4425dd6af878c9e9ae03c6de64c9a2c1a64f6d81601191fe0": "- 运行时间：            ${CLR2}$(uptime -p | sed -E 's/^up //; s/ year[s]?/ 年/g; s/ week[s]?/ 周/g; s/ day[s]?/ 天/g; s/ hour[s]?/ 小时/g; s/ minute[s]?/ 分钟/g; s/, /，/g')${CLR0}",
+        "d65c29fc6e8ef70bf95538439a8d3319ca24ca433e42a2421081b22ff053c4fa": "- 启动时间：            ${CLR2}$(who -b | awk '{print $3, $4}' | sed -E 's/([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2})/\\1 年 \\2 月 \\3 日 \\4 点 \\5 分/')${CLR0}",
+        "c5d4ad51d916e385d04717ad72621aa0f917d5a28dd5bed790914884e11c2f38": "- 虚拟化：              ${CLR2}$(ChkVirt)${CLR0}",
+        "127b1aeb3184f1da79ddb2911526eff428c3ab462949608f0fb186b50dc57d45": "${iface_Iface}：输入：$(ConvSz ${rx_bytes_Iface})，输出：$(ConvSz ${tx_bytes_Iface})"
     }
 }
