@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VERSION="8.0.0a1"
+# VERSION="8.0.0a2"
 
 set +u
 shopt -s expand_aliases
@@ -19,7 +19,6 @@ declare CLR=(
 	"\033[0;97m" # [9] 高亮白
 )
 
-alias .BadPM='Err "不支援的套件管理器" || return 1'
 alias .Flag='(($# == 0)) && return 1'
 alias .Root='((EUID != 0 || $(id -u) != 0)) && return 1'
 alias .Root.Flag='.Root; .Flag'
@@ -32,7 +31,7 @@ function Raw() { if [[ -n "$*" ]]; then printf "%b" "$*" || return 1; fi; }
 function Txt() { if [[ -n "$*" ]]; then printf "%b\n" "$*" || return 1; fi; }
 function Cmdd() {
 	.Flag
-	command -v "$1" &> /dev/null
+	command -v "$1" &>/dev/null || return 127
 }
 function Trim() {
 	.Flag
@@ -40,13 +39,116 @@ function Trim() {
 	stdin_buffer=$(cat)
 
 	[[ -n "${1:-}" ]] && stdin_buffer="${stdin_buffer#*"$1"}"
-	[[ -n "${2:-}" ]] && stdin_buffer="${stdin_buffer%%"$1"*}"
+	[[ -n "${2:-}" ]] && stdin_buffer="${stdin_buffer%%"$2"*}"
 
 	Txt "${stdin_buffer}"
+}
+function Extract() {
+	# 可變整數宣告 (-i 優先)
+	local -i i
+	i=0
+	# 可變字串宣告 (僅鍵名宣告，後賦值)
+	local dir_v dir_h
+	dir_v="tb"
+	dir_h="lr"
+
+	# 解析 OPTIONS (數值比較使用 (( ... )) 與 > 運算子)
+	while (($# > 0)); do
+		# 遵循規範：非整數輸入以 "" 包裹，但 case 選項因支援正則故「不包裹」
+		case "$1" in
+			--bt)
+				dir_v="bt"
+				shift
+				;;
+			--tb)
+				dir_v="tb"
+				shift
+				;;
+			--rl)
+				dir_h="rl"
+				shift
+				;;
+			--lr)
+				dir_h="lr"
+				shift
+				;;
+			*) break ;;
+		esac
+	done
+
+	# 讀取位置參數 (宣告即賦值視為不可變，遵循 -i > -r 順序)
+	local -ir target_row="${1:-1}" target_col="${2:-1}"
+	local -r delimiter="${3:-}"
+
+	# 1. 讀取標準輸入並切分成「行」陣列 (可變陣列規範：先鍵名，後用=()初始化)
+	local mapfile_lines
+	mapfile_lines=()
+	mapfile -t mapfile_lines
+
+	# 2. 處理垂直方向
+	local lines
+	lines=()
+	if [[ "${dir_v}" == "bt" ]]; then
+		# 數值運算子內部直接使用裸變數名稱 i
+		for ((i = ${#mapfile_lines[@]} - 1; i >= 0; i--)); do
+			lines+=("${mapfile_lines[i]}")
+		done
+	else
+		lines=("${mapfile_lines[@]}")
+	fi
+
+	# 檢查行數是否超出範圍 (純數值判斷改用 (( ))，並以簡潔控制子取代 if)
+	((target_row > ${#lines[@]} || target_row < 1)) && return 1
+
+	# 取得目標行的文本 (不可變字串，使用 C 風格 $(( )) 運算子)
+	local -r raw_line="${lines[$((target_row - 1))]}"
+
+	# 3. 使用 IFS 精確解析該行的欄位
+	local mapfile_cols
+	mapfile_cols=()
+
+	if [[ -z "${delimiter}" ]]; then
+		read -r -a mapfile_cols <<<"${raw_line}"
+	else
+		local -r old_ifs="${IFS}"
+		IFS="${delimiter}"
+		read -r -a mapfile_cols <<<"${raw_line}"
+		IFS="${old_ifs}"
+
+		# temp_cols 宣告後不再變更，為不可變陣列
+		local -r temp_cols=("${mapfile_cols[@]}")
+		mapfile_cols=()
+
+		local item
+		item=""
+		for item in "${temp_cols[@]}"; do
+			# 字串賦值必須以 "" 包裹
+			item="$(echo "${item}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+			[[ -n "${item}" ]] && mapfile_cols+=("${item}")
+		done
+	fi
+
+	# 4. 處理水平方向
+	local cols
+	cols=()
+	if [[ "${dir_h}" == "rl" ]]; then
+		for ((i = ${#mapfile_cols[@]} - 1; i >= 0; i--)); do
+			cols+=("${mapfile_cols[i]}")
+		done
+	else
+		cols=("${mapfile_cols[@]}")
+	fi
+
+	# 檢查欄位數是否超出範圍
+	((target_col > ${#cols[@]} || target_col < 1)) && return 1
+
+	# 5. 輸出最終結果
+	Txt "${cols[$((target_col - 1))]}"
 }
 function GetValue() {
 	local -r key="$1" data_source="${2:-}"
 	local pattern
+	pattern="(^|[[:space:],'{ \"])(\"${key}\"|'${key}'|\<${key}\>)[[:space:]]*[:=][[:space:]]*(\"([^\"]*)\"|'([^']*)'|([^,[:space:]#]+))"
 
 	_Parse() {
 		local line
@@ -67,28 +169,55 @@ function GetValue() {
 		return 1
 	}
 
-	pattern="(^|[[:space:],'{ \"])(\"${key}\"|'${key}'|\<${key}\>)[[:space:]]*[:=][[:space:]]*(\"([^\"]*)\"|'([^']*)'|([^,[:space:]#]+))"
-
 	if [[ -z "${data_source}" ]]; then
 		_Parse "${pattern}"
 	elif [[ -f "${data_source}" ]]; then
-		_Parse "${pattern}" < "${data_source}"
+		_Parse "${pattern}" <"${data_source}"
 	else
-		_Parse "${pattern}" <<< "${data_source}"
+		_Parse "${pattern}" <<<"${data_source}"
+	fi
+}
+function ChkApt() {
+	local -ir wait_time=0 max_timeout=180
+
+	Cmdd "fuser" || return 1
+	while fuser "/var/lib/dpkg/lock-frontend" "/var/lib/dpkg/lock" &>/dev/null; do
+		Task "- 等待 DPKG 鎖定釋放 (${wait_time}s)" "sleep 1" || return 1
+		((wait_time++))
+		if ((wait_time > max_timeout)); then
+			Err "等待 DPKG 鎖定釋放超時" || return 1
+		fi
+	done
+}
+
+function pkg::count() {
+	case "${PKG_MGR^^}" in
+		APK) data=$(apk info | wc -l) ;;
+		APT) data=$(dpkg --get-selections | wc -l) ;;
+		DNF) data=$(rpm -qa | wc -l) ;;
+		OPKG) data=$(opkg list-installed | wc -l) ;;
+		PACMAN) data=$(pacman -Q | wc -l) ;;
+		YUM) data=$(rpm -qa | wc -l) ;;
+		ZYPPER) data=$(rpm -qa | wc -l) ;;
+		*) return 127 ;;
+	esac
+
+	if ! Txt "${data}"; then
+		Err "計算 ${PKG_MGR} 的套件數量失敗" || return 1
 	fi
 }
 function pkg::is_installed() {
 	.Flag
 
 	case "${PKG_MGR^^}" in
-		APK) apk info -e "${1,,}" &> /dev/null ;;
-		APT) dpkg -s "${1,,}" &> /dev/null ;;
-		DNF) rpm -q "${1,,}" &> /dev/null ;;
-		OPKG) opkg status "${1,,}" 2> /dev/null | grep -q "Status:.*installed" ;;
-		PACMAN) pacman -Qq "${1,,}" &> /dev/null ;;
-		YUM) rpm -q "${1,,}" &> /dev/null ;;
-		ZYPPER) rpm -q "${1,,}" &> /dev/null ;;
-		*) .BadPM ;;
+		APK) apk info -e "${1,,}" &>/dev/null ;;
+		APT) dpkg -s "${1,,}" &>/dev/null ;;
+		DNF) rpm -q "${1,,}" &>/dev/null ;;
+		OPKG) opkg status "${1,,}" 2>/dev/null | grep -q "Status:.*installed" ;;
+		PACMAN) pacman -Qq "${1,,}" &>/dev/null ;;
+		YUM) rpm -q "${1,,}" &>/dev/null ;;
+		ZYPPER) rpm -q "${1,,}" &>/dev/null ;;
+		*) return 127 ;;
 	esac
 }
 function pkg::installl() {
@@ -102,7 +231,7 @@ function pkg::installl() {
 		PACMAN) pacman -S --noconfirm "${1,,}" ;;
 		YUM) yum install -y "${1,,}" ;;
 		ZYPPER) zypper --non-interactive install -y "${1,,}" ;;
-		*) .BadPM ;;
+		*) return 127 ;;
 	esac
 }
 function pkg::remove() {
@@ -116,20 +245,8 @@ function pkg::remove() {
 		PACMAN) pacman -Rns --noconfirm "${1,,}" ;;
 		YUM) yum remove -y "${1,,}" ;;
 		ZYPPER) zypper --non-interactive remove -y "${1,,}" ;;
-		*) .BadPM ;;
+		*) return 127 ;;
 	esac
-}
-function ChkApt() {
-	local -ir wait_time=0 max_timeout=180
-
-	Cmdd "fuser" || return 0
-	while fuser "/var/lib/dpkg/lock-frontend" "/var/lib/dpkg/lock" &> /dev/null; do
-		Task "- 等待 DPKG 鎖定釋放 (${wait_time}s)" "sleep 1" || return 1
-		((wait_time++))
-		if ((wait_time > max_timeout)); then
-			Err "等待 DPKG 鎖定釋放超時" || return 1
-		fi
-	done
 }
 function pkg::update() {
 	.Root
@@ -142,7 +259,7 @@ function pkg::update() {
 		PACMAN) : ;;
 		YUM) yum check-update -y ;;
 		ZYPPER) zypper refresh ;;
-		*) .BadPM ;;
+		*) return 127 ;;
 	esac
 }
 function pkg::upgrade() {
@@ -157,10 +274,11 @@ function pkg::upgrade() {
 			PACMAN) pacman -Syu --noconfirm ;;
 			YUM) yum upgrade -y ;;
 			ZYPPER) zypper dup -y --no-allow-vendor-change ;;
-			*) .BadPM ;;
+			*) return 127 ;;
 		esac
 	fi
 }
+
 function AddFile() {
 	.Flag
 	local item parent_dir
@@ -178,7 +296,7 @@ function AddFile() {
 			fi
 		fi
 
-		if : > "${item}"; then
+		if : >"${item}"; then
 			Txt "- 檔案 '${item}' 建立成功"
 		else
 			Err "建立檔案 '${item}' 失敗。請檢查權限和磁碟空間" || return 1
@@ -217,7 +335,7 @@ function AddPkg() {
 		PACMAN) : ;;
 		YUM) : ;;
 		ZYPPER) : ;;
-		*) .BadPM ;;
+		*) Err "不支援的套件管理器" || return 1 ;;
 	esac
 
 	for pkg in "$@"; do
@@ -236,51 +354,49 @@ function AddPkg() {
 	Finish
 }
 function ChkDeps() {
-	local cont_inst dep msg mode
+	local -i mode
+	mode=0
+	local cont_inst dep msg
+	cont_inst="" dep="" msg=""
 	local missg_deps target_deps
-	missg_deps=()
-	target_deps=()
-	mode="display"
+	missg_deps=() target_deps=()
 
-	# 1. 動態解析參數 (支援 Flag 放在任何位置)
 	while (($# > 0)); do
 		case "$1" in
-			-a | --automatic) mode="automatic" ;;
-			-i | --interactive) mode="interactive" ;;
-			-*) Err "無效的選項：${1}" || return 1 ;;
-			*) target_deps+=("$1") ;; # 非 Flag 的參數，皆視為要檢查的套件
+			-a | --automatic) mode=1 ;;
+			-i | --interactive) mode=2 ;;
+			-*) Err "無效的選項：$1" || return 1 ;;
+			*) target_deps+=("${1}") ;;
 		esac
 		shift
 	done
 
-	# 2. 安全防禦：如果使用者什麼套件都沒帶入，直接返回
 	((${#target_deps[@]} == 0)) && return 0
 
-	# 3. 逐一檢查依賴套件
 	for dep in "${target_deps[@]}"; do
-		if Cmdd "${dep}"; then
-			msg="${CLR[2]}［可用］${CLR[0]}"
+		if command -v "${dep}" &>/dev/null; then
+			msg="${CLR[2]}［可執行］${CLR[0]}"
+		elif pkg::is_installed "${dep}"; then
+			msg="${CLR[3]}［僅存在］${CLR[0]}"
 		else
-			msg="${CLR[1]}［缺失］${CLR[0]}"
+			msg="${CLR[1]}［未能知］${CLR[0]}"
 			missg_deps+=("${dep}")
 		fi
 		Txt "${msg}\t${dep}"
 	done
 
-	# 4. 如果沒有缺失任何套件，完美退出
 	((${#missg_deps[@]} == 0)) && return 0
 
-	# 5. 依據模式處理缺失套件
 	case "${mode}" in
-		automatic)
+		1)
 			Raw "\n"
-			Add "${missg_deps[@]}"
+			AddPkg "${missg_deps[@]}"
 			;;
-		interactive)
+		2)
 			Txt "\n${CLR[3]}缺少的套件：${CLR[0]} ${missg_deps[*]}"
 			Ask "是否要安裝缺少的套件？(y/N) " -n 1 cont_inst
 			Raw "\n"
-			[[ "${cont_inst}" =~ ^[Yy]$ ]] && Add "${missg_deps[@]}"
+			[[ "${cont_inst}" =~ ^[Yy]$ ]] && AddPkg "${missg_deps[@]}"
 			;;
 	esac
 }
@@ -334,7 +450,7 @@ function ChkOs() {
 }
 function sys::virt() {
 	if Cmdd "systemd-detect-virt"; then
-		local -r virt_typ="$(systemd-detect-virt 2> /dev/null)"
+		local -r virt_typ="$(systemd-detect-virt 2>/dev/null)"
 
 		if [[ -z "${virt_typ}" ]]; then
 			Err "無法偵測虛擬化環境" || return 1
@@ -342,7 +458,7 @@ function sys::virt() {
 
 		case "${virt_typ^^}" in
 			KVM)
-				if [[ "$(cat "/sys/class/dmi/id/product_name" 2> /dev/null)" == *[Pp]roxmox* ]]; then
+				if [[ "$(cat "/sys/class/dmi/id/product_name" 2>/dev/null)" == *[Pp]roxmox* ]]; then
 					Txt "Proxmox VE (KVM)"
 				else
 					Txt "KVM"
@@ -351,9 +467,9 @@ function sys::virt() {
 			MICROSOFT) Txt "Microsoft Hyper-V" ;;
 			WSL) Txt "適用於 Linux 的 Windows 子系統" ;;
 			NONE)
-				if [[ -r "/proc/1/environ" ]] && grep -q "container=lxc" "/proc/1/environ" 2> /dev/null; then
+				if [[ -r "/proc/1/environ" ]] && grep -q "container=lxc" "/proc/1/environ" 2>/dev/null; then
 					Txt "LXC 容器"
-				elif [[ -r "/proc/cpuinfo" ]] && grep -qi "hypervisor" "/proc/cpuinfo" 2> /dev/null; then
+				elif [[ -r "/proc/cpuinfo" ]] && grep -qi "hypervisor" "/proc/cpuinfo" 2>/dev/null; then
 					Txt "虛擬機器（未知類型）"
 				else
 					Txt "未偵測到（可能為實體機器）"
@@ -362,7 +478,7 @@ function sys::virt() {
 			*) Txt "${virt_typ}" ;;
 		esac
 	elif [[ -f "/proc/cpuinfo" ]]; then
-		if grep -qi "hypervisor" "/proc/cpuinfo" 2> /dev/null; then
+		if grep -qi "hypervisor" "/proc/cpuinfo" 2>/dev/null; then
 			Txt "虛擬機器（未知類型）"
 		else
 			Txt "未偵測到（可能為實體機器）"
@@ -383,7 +499,7 @@ function cpu::cache() {
 	if [[ -f "/proc/cpuinfo" ]]; then
 		Err "無法存取 CPU 資訊。/proc/cpuinfo 不可用" || return 1
 	fi
-	cpu_cache=$(awk '/^cache size/ {sum+=${4}; count++} END {print (count>0) ? sum/count : "N/A"}' "/proc/cpuinfo")
+	cpu_cache=$(awk '/^cache size/ {sum+=$4; count++} END {print (count>0) ? sum/count : "N/A"}' "/proc/cpuinfo")
 	if [[ "${cpu_cache}" == "N/A" ]]; then
 		Err "無法確定 CPU 快取大小" || return 1
 	fi
@@ -391,7 +507,9 @@ function cpu::cache() {
 }
 function cpu::frequency() {
 	local cpu_freq
-	[[ -f /proc/cpuinfo ]] || { Err "無法存取 CPU 資訊。/proc/cpuinfo 不可用" || return 1; }
+	if [[ -f "/proc/cpuinfo" ]]; then
+		Err "無法存取 CPU 資訊。/proc/cpuinfo 不可用" || return 1
+	fi
 	cpu_freq=$(awk '/^cpu MHz/ {sum+=$4; count++} END {print (count>0) ? sprintf("%.2f", sum/count/1000) : "N/A"}' /proc/cpuinfo)
 	if [[ ${cpu_freq} == "N/A" ]]; then
 		Err "無法確定 CPU 頻率" || return 1
@@ -416,7 +534,7 @@ function cpu::usage() {
 	local -i usr nice sys idle iowait irq softirq steal guest guest_nice
 	local -i prev_total prev_idle curr_total curr_idle tot_delta idle_delta cpu_usage
 
-	if read -r _ usr nice sys idle iowait irq softirq steal guest guest_nice <<< "$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11}' /proc/stat)"; then
+	if read -r _ usr nice sys idle iowait irq softirq steal guest guest_nice <<<"$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11}' /proc/stat)"; then
 		[[ -n "${idle}" ]] || { Err "從 /proc/stat 讀取第一階段 CPU 統計失敗" || return 1; }
 	fi
 	prev_total=$((usr + nice + sys + idle + iowait + irq + softirq + steal + guest + guest_nice))
@@ -424,7 +542,7 @@ function cpu::usage() {
 
 	sleep 0.3
 
-	if read -r _ usr nice sys idle iowait irq softirq steal guest guest_nice <<< "$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11}' /proc/stat)"; then
+	if read -r _ usr nice sys idle iowait irq softirq steal guest guest_nice <<<"$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11}' /proc/stat)"; then
 		[[ -n "${idle}" ]] || { Err "從 /proc/stat 讀取第二階段 CPU 統計失敗" || return 1; }
 	fi
 	curr_total=$((usr + nice + sys + idle + iowait + irq + softirq + steal + guest + guest_nice))
@@ -539,7 +657,7 @@ function DelPkg() {
 		PACMAN) : ;;
 		YUM) : ;;
 		ZYPPER) : ;;
-		*) .BadPM ;;
+		*) Err "不支援的套件管理器" || return 1 ;;
 	esac
 
 	for pkg in "$@"; do
@@ -641,7 +759,7 @@ function file::download() {
 				rnm_file="$1"
 				shift 2
 				;;
-			-*) Err "無效的選項：${1}" || return 1 ;;
+			-*) Err "無效的選項：$1" || return 1 ;;
 			*)
 				if [[ -z "${url}" ]]; then
 					url="$1" || targ_dir="$1"
@@ -719,7 +837,7 @@ function net::interface() {
 			sort -n
 	) || { Err "從 /proc/net/dev 取得網路介面失敗" || return 1; }
 
-	mapfile -t items <<< "${all_interfaces}"
+	mapfile -t items <<<"${all_interfaces}"
 	interfaces=([0]="placeholder")
 	for item in "${items[@]}"; do
 		[[ -n "${item}" ]] && interfaces+=("${item}")
@@ -727,8 +845,8 @@ function net::interface() {
 	unset 'interfaces[0]'
 	interfaces_num=${#interfaces[@]}
 
-	default4_route=$(ip -4 route show default 2> /dev/null || Txt "")
-	default6_route=$(ip -6 route show default 2> /dev/null || Txt "")
+	default4_route=$(ip -4 route show default 2>/dev/null || Txt "")
+	default6_route=$(ip -6 route show default 2>/dev/null || Txt "")
 
 	for ((i = 1; i <= ${#interfaces[@]}; i++)); do
 		item="${interfaces[i]}"
@@ -778,13 +896,13 @@ function net::interface() {
 			for iface in ${interface}; do
 				while read -r line; do
 					if [[ "$line" =~ ^[[:space:]]*"${iface}": ]]; then
-						read -r -a arr <<< "$line"
+						read -r -a arr <<<"$line"
 						stats="${arr[1]} ${arr[2]} ${arr[4]} ${arr[9]} ${arr[10]} ${arr[12]}"
 						break
 					fi
-				done < /proc/net/dev 2> /dev/null
+				done </proc/net/dev 2>/dev/null
 				if [[ -n "${stats}" ]]; then
-					read -r rx_bytes rx_packets rx_drop tx_bytes tx_packets tx_drop <<< "${stats}"
+					read -r rx_bytes rx_packets rx_drop tx_bytes tx_packets tx_drop <<<"${stats}"
 					case "$1" in
 						--rx_bytes) Txt "${rx_bytes}" && break ;;
 						--rx_packets) Txt "${rx_packets}" && break ;;
@@ -800,13 +918,13 @@ function net::interface() {
 			for iface in ${interface}; do
 				while read -r line; do
 					if [[ "${line}" =~ ^[[:space:]]*"${iface}": ]]; then
-						read -r -a arr <<< "${line}"
+						read -r -a arr <<<"${line}"
 						stats="${arr[1]} ${arr[2]} ${arr[4]} ${arr[9]} ${arr[10]} ${arr[12]}"
 						break
 					fi
-				done < "/proc/net/dev" 2> /dev/null
+				done <"/proc/net/dev" 2>/dev/null
 				if [[ -n "${stats}" ]]; then
-					read -r rx_bytes rx_packets rx_drop tx_bytes tx_packets tx_drop <<< "${stats}"
+					read -r rx_bytes rx_packets rx_drop tx_bytes tx_packets tx_drop <<<"${stats}"
 					Txt "${iface}：輸入：$(ConvSz "${rx_bytes}")，輸出：$(ConvSz "${tx_bytes}")"
 				fi
 			done
@@ -821,21 +939,21 @@ function net::ip() {
 	case "$1" in
 		-4 | --ipv4)
 			for api in "${apis[@]}"; do
-				ip4_addr=$(timeout 1s curl -s4L "${api}" 2> /dev/null)
+				ip4_addr=$(timeout 1s curl -s4L "${api}" 2>/dev/null)
 				break
 			done
 
-			ip4_addr=$(grep -oE "${ip4_regex}" <<< "${ip4_addr}")
+			ip4_addr=$(grep -oE "${ip4_regex}" <<<"${ip4_addr}")
 			if ! Txt "${ip4_addr:-N/A}"; then
 				Err "取得 IPv4 位址失敗" || return 1
 			fi
 			;;
 		-6 | --ipv6)
 			for api in "${apis[@]}"; do
-				ip6_addr=$(timeout 1s curl -s6L "${api}" 2> /dev/null)
+				ip6_addr=$(timeout 1s curl -s6L "${api}" 2>/dev/null)
 				break
 			done
-			ip6_addr=$(grep -oE "${ip6_regex}" <<< "${ip6_addr}")
+			ip6_addr=$(grep -oE "${ip6_regex}" <<<"${ip6_addr}")
 			if ! Txt "${ip6_addr:-N/A}"; then
 				Err "取得 IPv6 位址失敗" || return 1
 			fi
@@ -848,16 +966,16 @@ function net::ip() {
 			;;
 		*)
 			for api in "${apis[@]}"; do
-				ip4_addr=$(timeout 1s curl -s4L "${api}" 2> /dev/null)
+				ip4_addr=$(timeout 1s curl -s4L "${api}" 2>/dev/null)
 				break
 			done
-			ip4_addr=$(grep -oE "${ip4_regex}" <<< "${ip4_addr}")
+			ip4_addr=$(grep -oE "${ip4_regex}" <<<"${ip4_addr}")
 
 			for api in "${apis[@]}"; do
-				ip6_addr=$(timeout 1s curl -s6L "${api}" 2> /dev/null)
+				ip6_addr=$(timeout 1s curl -s6L "${api}" 2>/dev/null)
 				break
 			done
-			ip6_addr=$(grep -oE "${ip6_regex}" <<< "${ip6_addr}")
+			ip6_addr=$(grep -oE "${ip6_regex}" <<<"${ip6_addr}")
 
 			if [[ -z "${ip4_addr}"${ip6_addr} ]]; then
 				Err "取得 IP 位址失敗" || return 1
@@ -869,7 +987,7 @@ function net::ip() {
 }
 function LastUpd() {
 	if [[ -f "/var/log/apt/history.log" ]]; then
-		data=$(awk '/End-Date:/ {print $2, $3, $4; exit}' "/var/log/apt/history.log" 2> /dev/null)
+		data=$(awk '/End-Date:/ {print $2, $3, $4; exit}' "/var/log/apt/history.log" 2>/dev/null)
 	elif [[ -f /var/log/dpkg.log ]]; then
 		data=$(tail -n 1 /var/log/dpkg.log | awk '{print $1, $2}')
 	elif Cmdd rpm; then
@@ -881,12 +999,12 @@ function sys::load() {
 	local -r LC_ALL=C
 	local data zo_mi zv_mi ov_mi
 
-	if read -r zo_mi zv_mi ov_mi _ _ < /proc/loadavg 2> /dev/null; then
+	if read -r zo_mi zv_mi ov_mi _ _ </proc/loadavg 2>/dev/null; then
 		data="${zo_mi}, ${zv_mi}, ${ov_mi}"
 	elif Cmdd uptime; then
-		data=$(uptime 2> /dev/null | awk -F'load average?: ' '{print $2}' | sed 's/,//g')
-		[[ -z "${data}" ]] && data=$(uptime 2> /dev/null | awk '{print $(NF-2), $(NF-1), ${NF}}' | sed 's/,//g')
-		read -r zo_mi zv_mi ov_mi <<< "${data}"
+		data=$(uptime 2>/dev/null | awk -F'load average?: ' '{print $2}' | sed 's/,//g')
+		[[ -z "${data}" ]] && data=$(uptime 2>/dev/null | awk '{print $(NF-2), $(NF-1), ${NF}}' | sed 's/,//g')
+		read -r zo_mi zv_mi ov_mi <<<"${data}"
 	else
 		Err "缺失取得方法" || return 1
 	fi
@@ -932,21 +1050,7 @@ function net::provider() {
 		data=$(timeout 1s curl -sL ip-api.com/json | grep -oP '"org"\s*:\s*"\K[^"]+')
 	Txt "${data}" || { Err "無法偵測網路供應商。請檢查網路連線" || return 1; }
 }
-function pkg::count() {
-	case "${PKG_MGR^^}" in
-		APK) data=$(apk info | wc -l) ;;
-		APT) data=$(dpkg --get-selections | wc -l) ;;
-		DNF) data=$(rpm -qa | wc -l) ;;
-		OPKG) data=$(opkg list-installed | wc -l) ;;
-		PACMAN) data=$(pacman -Q | wc -l) ;;
-		YUM) data=$(rpm -qa | wc -l) ;;
-		ZYPPER) data=$(rpm -qa | wc -l) ;;
-		*) .BadPM ;;
-	esac
-	if ! Txt "${data}"; then
-		Err "計算 ${PKG_MGR} 的套件數量失敗" || return 1
-	fi
-}
+
 function sys::shell_version() {
 	local LC_ALL="C"
 
@@ -1110,7 +1214,7 @@ function SysOptz() {
 
 	Txt "${CLR[3]}正在優化長期運行伺服器的系統設定...${CLR[0]}" && DLine
 	file::add "${sysctl_conf}"
-	Txt "# 長期運行系統的伺服器優化" > "${sysctl_conf}"
+	Txt "# 長期運行系統的伺服器優化" >"${sysctl_conf}"
 	_mem() {
 		local sysctl_conf="$1"
 		{
@@ -1119,7 +1223,7 @@ function SysOptz() {
 			Txt 'vm.min_free_kbytes = 65536'
 			Txt 'vm.swappiness = 1'
 			Txt 'vm.vfs_cache_pressure = 50'
-		} >> "${sysctl_conf}"
+		} >>"${sysctl_conf}"
 	}
 
 	_net() {
@@ -1134,7 +1238,7 @@ function SysOptz() {
 			Txt 'net.ipv4.tcp_keepalive_time = 300'
 			Txt 'net.ipv4.tcp_max_syn_backlog = 65535'
 			Txt 'net.ipv4.tcp_tw_reuse = 1'
-		} >> "${sysctl_conf}"
+		} >>"${sysctl_conf}"
 	}
 
 	_tcp() {
@@ -1145,7 +1249,7 @@ function SysOptz() {
 			Txt 'net.ipv4.tcp_mtu_probing = 1'
 			Txt 'net.ipv4.tcp_rmem = 4096 87380 16777216'
 			Txt 'net.ipv4.tcp_wmem = 4096 65536 16777216'
-		} >> "${sysctl_conf}"
+		} >>"${sysctl_conf}"
 	}
 
 	_fs() {
@@ -1154,7 +1258,7 @@ function SysOptz() {
 			Txt 'fs.file-max = 2097152'
 			Txt 'fs.inotify.max_user_watches = 524288'
 			Txt 'fs.nr_open = 2097152'
-		} >> "${sysctl_conf}"
+		} >>"${sysctl_conf}"
 	}
 	_limits() {
 		{
@@ -1162,27 +1266,27 @@ function SysOptz() {
 			Txt '* hard nproc 65535'
 			Txt '* soft nofile 1048576'
 			Txt '* soft nproc 65535'
-		} >> "/etc/security/limits.conf"
+		} >>"/etc/security/limits.conf"
 	}
 	_io() {
 		local disk
 		for disk in /sys/block/[sv]d*; do
 			if [[ -d "${disk}" ]]; then
-				Txt 'none' > "${disk}/queue/scheduler" 2> /dev/null || true
-				Txt '256' > "${disk}/queue/nr_requests" 2> /dev/null || true
+				Txt 'none' >"${disk}/queue/scheduler" 2>/dev/null || true
+				Txt '256' >"${disk}/queue/nr_requests" 2>/dev/null || true
 			fi
 		done
 	}
 	_unused_service() {
 		local service
 		for service in bluetooth cups avahi-daemon postfix nfs-server rpcbind autofs; do
-			systemctl disable --now "${service}" 2> /dev/null || true
+			systemctl disable --now "${service}" 2>/dev/null || true
 		done
 	}
 	_clean_cache() {
 		sync
-		sysctl -w vm.drop_caches=3 > /dev/null 2>&1 || true
-		ip -s -s neigh flush all > /dev/null 2>&1 || true
+		sysctl -w vm.drop_caches=3 >/dev/null 2>&1 || true
+		ip -s -s neigh flush all >/dev/null 2>&1 || true
 	}
 
 	Task "- 正在優化記憶體管理" "_mem ${sysctl_conf}" &&
@@ -1241,7 +1345,7 @@ function SysUpd() {
 	Txt "${CLR[3]}正在更新系統套件...${CLR[0]}" && DLine
 
 	pkg::upgrade
-	(set -o pipefail 2> /dev/null) && set -o pipefail
+	(set -o pipefail 2>/dev/null) && set -o pipefail
 	wget -qO- "${update_url}" | bash -s -- "${current_lang}" && { Err "更新 UtilKit.sh 失敗" || return 1; }
 
 	DLine && Finish
@@ -1294,7 +1398,7 @@ function Task() {
 
 	Raw "$1... "
 
-	if eval "${command_str}" > "${tmp_file}" 2>&1; then
+	if eval "${command_str}" >"${tmp_file}" 2>&1; then
 		Finish
 		ret=0
 	else
@@ -1315,14 +1419,14 @@ function sys::timezone() {
 		(
 			timeout 1.5s curl -sL "https://ipapi.co/json" | GetValue "timezone" ||
 				timeout 1.5s wget -qO- "http://ip-api.com" | grep -oP '"timezone":"\K[^"]+'
-		) 2> /dev/null | grep -oE "${tz_regex}"
+		) 2>/dev/null | grep -oE "${tz_regex}"
 	}
 	_detect_internal() {
 		(
 			readlink /etc/localtime | sed "s|^.*/zoneinfo/||" ||
 				{ Cmdd timedatectl && timedatectl status | awk '/Time zone:/ {print $3}'; } ||
 				grep -v "^#" /etc/timezone | tr -d " "
-		) 2> /dev/null | grep -oE "${tz_regex}"
+		) 2>/dev/null | grep -oE "${tz_regex}"
 	}
 
 	case "$1" in
@@ -1371,7 +1475,7 @@ function HelpMsg() {
 			*)
 				item="$1"
 
-				if [[ -n "${2:-}" && "${2}" != -* ]]; then
+				if [[ -n "${2:-}" && "$2" != -* ]]; then
 					desc="$2"
 					shift 2
 				else
