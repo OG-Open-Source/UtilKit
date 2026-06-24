@@ -1,22 +1,27 @@
 #!/usr/bin/env bash
-# VERSION="8.0.0a2"
+# VERSION="8.0.0a3"
 
 set +u
 shopt -s expand_aliases
 
-declare _ PKG_MGR="" LANG="en" UNIT_PREF="IB"
+declare _ UT_ERR_CODE
+declare PKG_MGR="" LANG="en" UNIT_PREF="IB"
+declare -A SYS_CAPS=(
+	[_proc_cpuinfo]=0
+	[_etc_resolv - conf]=0
+)
 
 declare CLR=(
-	"\033[0m"    # [0] 重置
-	"\033[0;31m" # [1] 紅
-	"\033[0;32m" # [2] 綠
-	"\033[0;33m" # [3] 黃
-	"\033[0;34m" # [4] 藍
-	"\033[0;35m" # [5] 紫
-	"\033[0;36m" # [6] 青
-	"\033[0;37m" # [7] 白
-	"\033[0;96m" # [8] 高亮青
-	"\033[0;97m" # [9] 高亮白
+	"\x1b[0m"    # [0] 重置
+	"\x1b[0;31m" # [1] 紅
+	"\x1b[0;32m" # [2] 綠
+	"\x1b[0;33m" # [3] 黃
+	"\x1b[0;34m" # [4] 藍
+	"\x1b[0;35m" # [5] 紫
+	"\x1b[0;36m" # [6] 青
+	"\x1b[0;37m" # [7] 白
+	"\x1b[0;96m" # [8] 高亮青
+	"\x1b[0;97m" # [9] 高亮白
 )
 
 alias .Flag='(($# == 0)) && return 1'
@@ -26,7 +31,28 @@ alias .Root.Flag='.Root; .Flag'
 function DLine() { printf "%b\n" "${1:-${CLR[8]}}========================${CLR[0]}"; }
 function SLine() { printf "%b\n" "${1:-${CLR[8]}}--------------------------------${CLR[0]}"; }
 function Finish() { printf "%b\n" "${CLR[2]}完成${CLR[0]}"; }
-function Err() { if [[ -n "$*" ]]; then printf "%b\n" "${CLR[1]}$*${CLR[0]}" >&2 && return 1; fi; }
+function Err() {
+	if [[ -n "$*" ]]; then
+		printf "%b\n" "${CLR[1]}$*${CLR[0]}" >&2
+		return 1
+	fi
+}
+function ErrNext() {
+	[[ -z "$1" ]] && return 1
+	if [[ -n "$2" ]]; then
+		if [[ "$2" =~ ^[A-Z]{2}[0-9]{2}$ ]]; then
+			UT_ERR_CODE="$2"
+		else
+			return 1
+		fi
+	fi
+
+	printf "%b\n" "${CLR[1]}$1${CLR[0]}" >&2
+	return 1
+}
+function _DontUseThis() {
+	printf "%b" "${UT_ERR_CODE}"
+}
 function Raw() { if [[ -n "$*" ]]; then printf "%b" "$*" || return 1; fi; }
 function Txt() { if [[ -n "$*" ]]; then printf "%b\n" "$*" || return 1; fi; }
 function Cmdd() {
@@ -44,17 +70,12 @@ function Trim() {
 	Txt "${stdin_buffer}"
 }
 function Extract() {
-	# 可變整數宣告 (-i 優先)
 	local -i i
 	i=0
-	# 可變字串宣告 (僅鍵名宣告，後賦值)
 	local dir_v dir_h
-	dir_v="tb"
-	dir_h="lr"
+	dir_v="tb" dir_h="lr"
 
-	# 解析 OPTIONS (數值比較使用 (( ... )) 與 > 運算子)
 	while (($# > 0)); do
-		# 遵循規範：非整數輸入以 "" 包裹，但 case 選項因支援正則故「不包裹」
 		case "$1" in
 			--bt)
 				dir_v="bt"
@@ -76,20 +97,16 @@ function Extract() {
 		esac
 	done
 
-	# 讀取位置參數 (宣告即賦值視為不可變，遵循 -i > -r 順序)
 	local -ir target_row="${1:-1}" target_col="${2:-1}"
 	local -r delimiter="${3:-}"
 
-	# 1. 讀取標準輸入並切分成「行」陣列 (可變陣列規範：先鍵名，後用=()初始化)
 	local mapfile_lines
 	mapfile_lines=()
 	mapfile -t mapfile_lines
 
-	# 2. 處理垂直方向
 	local lines
 	lines=()
 	if [[ "${dir_v}" == "bt" ]]; then
-		# 數值運算子內部直接使用裸變數名稱 i
 		for ((i = ${#mapfile_lines[@]} - 1; i >= 0; i--)); do
 			lines+=("${mapfile_lines[i]}")
 		done
@@ -97,13 +114,10 @@ function Extract() {
 		lines=("${mapfile_lines[@]}")
 	fi
 
-	# 檢查行數是否超出範圍 (純數值判斷改用 (( ))，並以簡潔控制子取代 if)
 	((target_row > ${#lines[@]} || target_row < 1)) && return 1
 
-	# 取得目標行的文本 (不可變字串，使用 C 風格 $(( )) 運算子)
 	local -r raw_line="${lines[$((target_row - 1))]}"
 
-	# 3. 使用 IFS 精確解析該行的欄位
 	local mapfile_cols
 	mapfile_cols=()
 
@@ -115,20 +129,17 @@ function Extract() {
 		read -r -a mapfile_cols <<<"${raw_line}"
 		IFS="${old_ifs}"
 
-		# temp_cols 宣告後不再變更，為不可變陣列
 		local -r temp_cols=("${mapfile_cols[@]}")
 		mapfile_cols=()
 
 		local item
 		item=""
 		for item in "${temp_cols[@]}"; do
-			# 字串賦值必須以 "" 包裹
 			item="$(echo "${item}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
 			[[ -n "${item}" ]] && mapfile_cols+=("${item}")
 		done
 	fi
 
-	# 4. 處理水平方向
 	local cols
 	cols=()
 	if [[ "${dir_h}" == "rl" ]]; then
@@ -139,30 +150,21 @@ function Extract() {
 		cols=("${mapfile_cols[@]}")
 	fi
 
-	# 檢查欄位數是否超出範圍
 	((target_col > ${#cols[@]} || target_col < 1)) && return 1
 
-	# 5. 輸出最終結果
 	Txt "${cols[$((target_col - 1))]}"
 }
 function GetValue() {
 	local -r key="$1" data_source="${2:-}"
-	local pattern
-	pattern="(^|[[:space:],'{ \"])(\"${key}\"|'${key}'|\<${key}\>)[[:space:]]*[:=][[:space:]]*(\"([^\"]*)\"|'([^']*)'|([^,[:space:]#]+))"
+	local -r pattern="(^|[[:space:],'{ \"])(\"${key}\"|'${key}'|\<${key}\>)[[:space:]]*[:=][[:space:]]*(\"([^\"]*)\"|'([^']*)'|([^,#]*[^[:space:],#]))"
 
-	_Parse() {
+	function _Parse() {
+		local -r target_pattern="$1"
 		local line
-		pattern="$1"
 
 		while read -r line; do
-			if [[ "${line}" =~ ${pattern} ]]; then
-				if [[ -n "${BASH_REMATCH[4]}" ]]; then
-					printf "%s\n" "${BASH_REMATCH[4]}"
-				elif [[ -n "${BASH_REMATCH[5]}" ]]; then
-					printf "%s\n" "${BASH_REMATCH[5]}"
-				else
-					printf "%s\n" "${BASH_REMATCH[6]}"
-				fi
+			if [[ "${line}" =~ ${target_pattern} ]]; then
+				printf "%s\n" "${BASH_REMATCH[4]}${BASH_REMATCH[5]}${BASH_REMATCH[6]}"
 				return 0
 			fi
 		done
@@ -192,19 +194,15 @@ function ChkApt() {
 
 function pkg::count() {
 	case "${PKG_MGR^^}" in
-		APK) data=$(apk info | wc -l) ;;
-		APT) data=$(dpkg --get-selections | wc -l) ;;
-		DNF) data=$(rpm -qa | wc -l) ;;
-		OPKG) data=$(opkg list-installed | wc -l) ;;
-		PACMAN) data=$(pacman -Q | wc -l) ;;
-		YUM) data=$(rpm -qa | wc -l) ;;
-		ZYPPER) data=$(rpm -qa | wc -l) ;;
+		APK) Txt "$(apk info | wc -l)" ;;
+		APT) Txt "$(dpkg -l | grep -c "^ii")" ;;
+		DNF) Txt "$(rpm -qa | wc -l)" ;;
+		OPKG) Txt "$(opkg list-installed | wc -l)" ;;
+		PACMAN) Txt "$(pacman -Qq | wc -l)" ;;
+		YUM) Txt "$(rpm -qa | wc -l)" ;;
+		ZYPPER) Txt "$(rpm -qa | wc -l)" ;;
 		*) return 127 ;;
 	esac
-
-	if ! Txt "${data}"; then
-		Err "計算 ${PKG_MGR} 的套件數量失敗" || return 1
-	fi
 }
 function pkg::is_installed() {
 	.Flag
@@ -356,17 +354,17 @@ function AddPkg() {
 function ChkDeps() {
 	local -i mode
 	mode=0
-	local cont_inst dep msg
-	cont_inst="" dep="" msg=""
 	local missg_deps target_deps
 	missg_deps=() target_deps=()
+	local cont_inst dep msg
+	cont_inst="" dep="" msg=""
 
 	while (($# > 0)); do
 		case "$1" in
 			-a | --automatic) mode=1 ;;
 			-i | --interactive) mode=2 ;;
 			-*) Err "無效的選項：$1" || return 1 ;;
-			*) target_deps+=("${1}") ;;
+			*) target_deps+=("$1") ;;
 		esac
 		shift
 	done
@@ -400,7 +398,7 @@ function ChkDeps() {
 			;;
 	esac
 }
-function ChkOs() {
+function sys::distro() {
 	local os_id
 
 	case "$1" in
@@ -424,7 +422,7 @@ function ChkOs() {
 			elif [[ -f "/etc/alpine-release" ]]; then
 				cat "/etc/alpine-release"
 			else
-				Err "未知的發行版" || return 1
+				Err "Unknown" || return 1
 			fi
 			;;
 		-n | --name)
@@ -433,17 +431,16 @@ function ChkOs() {
 			elif [[ -f "/etc/DISTRO_SPECS" ]]; then
 				cat "/etc/DISTRO_SPECS" | GetValue "DISTRO_NAME"
 			else
-				Err "未知的發行版" || return 1
+				Err "Unknown" || return 1
 			fi
 			;;
 		*)
-
 			if [[ -f "/etc/os-release" ]]; then
 				cat "/etc/os-release" | GetValue "NAME"
 			elif [[ -f "/etc/DISTRO_SPECS" ]]; then
 				cat "/etc/DISTRO_SPECS" | GetValue "DISTRO_NAME"
 			else
-				Err "未知的發行版" || return 1
+				Err "Unknown" || return 1
 			fi
 			;;
 	esac
@@ -469,7 +466,7 @@ function sys::virt() {
 			NONE)
 				if [[ -r "/proc/1/environ" ]] && grep -q "container=lxc" "/proc/1/environ" 2>/dev/null; then
 					Txt "LXC 容器"
-				elif [[ -r "/proc/cpuinfo" ]] && grep -qi "hypervisor" "/proc/cpuinfo" 2>/dev/null; then
+				elif ((SYS_CAPS[_proc_cpuinfo] == 1)) && grep -qi "hypervisor" "/proc/cpuinfo" 2>/dev/null; then
 					Txt "虛擬機器（未知類型）"
 				else
 					Txt "未偵測到（可能為實體機器）"
@@ -477,7 +474,7 @@ function sys::virt() {
 				;;
 			*) Txt "${virt_typ}" ;;
 		esac
-	elif [[ -f "/proc/cpuinfo" ]]; then
+	elif ((SYS_CAPS[_proc_cpuinfo] == 1)); then
 		if grep -qi "hypervisor" "/proc/cpuinfo" 2>/dev/null; then
 			Txt "虛擬機器（未知類型）"
 		else
@@ -494,77 +491,66 @@ function Clear() {
 	clear
 }
 function cpu::cache() {
-	local cpu_cache
-
-	if [[ -f "/proc/cpuinfo" ]]; then
-		Err "無法存取 CPU 資訊。/proc/cpuinfo 不可用" || return 1
-	fi
-	cpu_cache=$(awk '/^cache size/ {sum+=$4; count++} END {print (count>0) ? sum/count : "N/A"}' "/proc/cpuinfo")
+	if ((SYS_CAPS[_proc_cpuinfo] != 1)); then Err "無法存取 CPU 資訊。" || return 1; fi
+	local -r cpu_cache="$(awk '/^cache size/ {sum+=$4; count++} END {print (count>0) ? sum/count : "N/A"}' "/proc/cpuinfo")"
 	if [[ "${cpu_cache}" == "N/A" ]]; then
 		Err "無法確定 CPU 快取大小" || return 1
 	fi
 	Txt "${cpu_cache} KB"
 }
-function cpu::frequency() {
-	local cpu_freq
-	if [[ -f "/proc/cpuinfo" ]]; then
-		Err "無法存取 CPU 資訊。/proc/cpuinfo 不可用" || return 1
-	fi
-	cpu_freq=$(awk '/^cpu MHz/ {sum+=$4; count++} END {print (count>0) ? sprintf("%.2f", sum/count/1000) : "N/A"}' /proc/cpuinfo)
-	if [[ ${cpu_freq} == "N/A" ]]; then
+function cpu::freq() {
+	if ((SYS_CAPS[_proc_cpuinfo] != 1)); then Err "無法存取 CPU 資訊。" || return 1; fi
+	local -r cpu_freq="$(awk '/^cpu MHz/ {sum+=$4; count++} END {print (count>0) ? sprintf("%.2f", sum/count/1000) : "N/A"}' "/proc/cpuinfo")"
+	if [[ "${cpu_freq}" == "N/A" ]]; then
 		Err "無法確定 CPU 頻率" || return 1
 	fi
 	Txt "${cpu_freq} GHz"
 }
 function cpu::model() {
-	local cpuspec model_name
-	if Cmdd lscpu; then
-		cpuspec=$(lscpu)
-		model_name="${cpuspec##*Model name:}"
-		model_name="${model_name%%$'\n'*}"
-		Txt "${model_name}"
-	elif [[ -f "/proc/cpuinfo" ]]; then
-		sed -n 's/^model name[[:space:]]*: //p' "/proc/cpuinfo" | head -n1
+	if Cmdd "lscpu"; then
+		lscpu | GetValue "Model name"
+	elif ((SYS_CAPS[_proc_cpuinfo] == 1)); then
+		cat "/proc/cpuinfo" | GetValue "model name"
 	elif Cmdd "sysctl"; then
 		sysctl -n machdep.cpu.brand_string
-	fi || { Err "${CLR[1]}未知${CLR[0]}" || return 1; }
+	else
+		Err "${CLR[1]}未知${CLR[0]}" || return 1
+	fi
 }
 function cpu::usage() {
-	local _
 	local -i usr nice sys idle iowait irq softirq steal guest guest_nice
-	local -i prev_total prev_idle curr_total curr_idle tot_delta idle_delta cpu_usage
 
 	if read -r _ usr nice sys idle iowait irq softirq steal guest guest_nice <<<"$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11}' /proc/stat)"; then
-		[[ -n "${idle}" ]] || { Err "從 /proc/stat 讀取第一階段 CPU 統計失敗" || return 1; }
+		if [[ ! -n "${idle}" ]]; then
+			Err "從 /proc/stat 讀取第一階段 CPU 統計失敗" || return 1
+		fi
 	fi
-	prev_total=$((usr + nice + sys + idle + iowait + irq + softirq + steal + guest + guest_nice))
-	prev_idle=idle
+	local -ir prev_total=$((usr + nice + sys + idle + iowait + irq + softirq + steal + guest + guest_nice)) prev_idle=idle
 
 	sleep 0.3
 
 	if read -r _ usr nice sys idle iowait irq softirq steal guest guest_nice <<<"$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11}' /proc/stat)"; then
-		[[ -n "${idle}" ]] || { Err "從 /proc/stat 讀取第二階段 CPU 統計失敗" || return 1; }
+		if [[ ! -n "${idle}" ]]; then
+			Err "從 /proc/stat 讀取第二階段 CPU 統計失敗" || return 1
+		fi
 	fi
-	curr_total=$((usr + nice + sys + idle + iowait + irq + softirq + steal + guest + guest_nice))
-	curr_idle=idle
-
-	tot_delta=$((curr_total - prev_total))
-	idle_delta=$((curr_idle - prev_idle))
+	local -ir curr_total=$((usr + nice + sys + idle + iowait + irq + softirq + steal + guest + guest_nice)) curr_idle=idle
+	local -ir tot_delta=$((curr_total - prev_total)) idle_delta=$((curr_idle - prev_idle))
 
 	((tot_delta == 0)) && Txt "0"
-	cpu_usage=$((100 * (tot_delta - idle_delta) / tot_delta))
-	Txt "${cpu_usage}"
+	Txt "$((100 * (tot_delta - idle_delta) / tot_delta))"
 }
 function ConvSz() {
 	.Flag
+	# TODO: change these variables
 	local size="$1" default_pref="${UNIT_PREF:-b}" && local unit="${2:-${default_pref}}"
 
-	if [[ ${size} == -* ]]; then
+	if ((size < 0)); then
 		Err "大小值不能為負數：${size}" || return 1
 	fi
 
 	LC_NUMERIC=C
-	awk -v size="${size}" -v unit="${unit}" '
+	awk -v size="${size}" -v unit="${unit,,}" '
         function ToBytes(val, u) {
             if (u == "b" || u == "ib")      return val;
             if (u == "kb")                  return val * 1000;
@@ -607,7 +593,7 @@ function ConvSz() {
                 else                    printf "%.3f %s", value, units_arr[power + 1];
             }
         }
-    ' || { Err "不支持的單位或格式錯誤：size=${size} unit=${unit}" || return 1; }
+    ' || { Err "不支持的單位或格式錯誤：size=${size} unit=${unit,,}" || return 1; }
 }
 function DelFile() {
 	.Flag
@@ -676,10 +662,9 @@ function DelPkg() {
 	Finish
 }
 function disk::info() {
-	local usd tot pct
-	usd=$(df -B1 / | awk '/^\/dev/ {print $3}') || { Err "取得磁碟使用統計資料失敗" || return 1; }
-	tot=$(df -B1 / | awk '/^\/dev/ {print $2}') || { Err "取得總磁碟空間失敗" || return 1; }
-	pct=$(df / | awk '/^\/dev/ {printf("%.2f"), $3/$2 * 100.0}')
+	local -r pct=$(df / | awk '/^\/dev/ {printf("%.2f"), $3/$2 * 100.0}')
+	local -r tot=$(df -B1 / | awk '/^\/dev/ {print $2}')
+	local -r usd=$(df -B1 / | awk '/^\/dev/ {print $3}')
 	case "${1:-}" in
 		-p | --percentage) Txt "${pct}" ;;
 		-t | --total) Txt "${tot}" ;;
@@ -725,33 +710,14 @@ function net::dns() {
 			;;
 	esac
 }
-function FindPkg() {
-	.Flag
-	local srch_cmd
-
-	case "${PKG_MGR^^}" in
-		APK) srch_cmd="apk search" ;;
-		APT) srch_cmd="apt-cache search" ;;
-		DNF) srch_cmd="dnf search" ;;
-		OPKG) srch_cmd="opkg search" ;;
-		PACMAN) srch_cmd="pacman -Ss" ;;
-		YUM) srch_cmd="yum search" ;;
-		ZYPPER) srch_cmd="zypper search" ;;
-		*) Err "找不到或不支援的套件管理器" || return 1 ;;
-	esac
-	for targ in "$@"; do
-		Txt "${CLR[3]}搜尋 '${targ}'${CLR[0]}"
-		${srch_cmd} "${targ}" || { Err "找不到 '${targ}' 的結果\n" || return 1; }
-	done
-	Finish
-}
 function file::download() {
-	local unzip targ_dir rnm_file url oup_file oup_path file_sz
-	unzip=false
+	local -i unzip
+	unzip=0
+	local targ_dir rnm_file url oup_file oup_path file_sz
 	targ_dir="."
 	while (($# > 0)); do
 		case "$1" in
-			-x | --unzip) unzip=true && shift ;;
+			-x | --unzip) unzip=1 && shift ;;
 			-r | --rename)
 				if [[ -z "$1" || "$1" == -* ]]; then
 					Err "-r 選項後未指定檔案名稱" || return 1
@@ -795,8 +761,8 @@ function file::download() {
 
 	if [[ -f "${oup_path}" ]]; then
 		Txt "- 檔案成功下載至 ${oup_path}"
-		if [[ ${unzip} == true ]]; then
-			if case ${oup_file} in
+		if ((unzip == 1)); then
+			if case "${oup_file}" in
 				*.tar.gz | *.tgz) tar -xzf "${oup_path}" -C "${targ_dir}" ;;
 				*.tar) tar -xf "${oup_path}" -C "${targ_dir}" ;;
 				*.tar.bz2 | *.tbz2) tar -xjf "${oup_path}" -C "${targ_dir}" ;;
@@ -990,7 +956,7 @@ function LastUpd() {
 		data=$(awk '/End-Date:/ {print $2, $3, $4; exit}' "/var/log/apt/history.log" 2>/dev/null)
 	elif [[ -f /var/log/dpkg.log ]]; then
 		data=$(tail -n 1 /var/log/dpkg.log | awk '{print $1, $2}')
-	elif Cmdd rpm; then
+	elif Cmdd "rpm"; then
 		data=$(rpm -qa --last | head -n 1 | awk '{print $3, $4, $5, $6, $7}')
 	fi
 	Txt "${data}" || { Err "無法確定最後系統更新時間。找不到更新日誌" || return 1; }
@@ -1001,7 +967,7 @@ function sys::load() {
 
 	if read -r zo_mi zv_mi ov_mi _ _ </proc/loadavg 2>/dev/null; then
 		data="${zo_mi}, ${zv_mi}, ${ov_mi}"
-	elif Cmdd uptime; then
+	elif Cmdd "uptime"; then
 		data=$(uptime 2>/dev/null | awk -F'load average?: ' '{print $2}' | sed 's/,//g')
 		[[ -z "${data}" ]] && data=$(uptime 2>/dev/null | awk '{print $(NF-2), $(NF-1), ${NF}}' | sed 's/,//g')
 		read -r zo_mi zv_mi ov_mi <<<"${data}"
@@ -1034,13 +1000,13 @@ function net::mac() {
 	fi
 }
 function mem::info() {
-	usd=$(free -b | awk '/^Mem:/ {print $3}') || usd=$(vmstat -s | grep 'used memory' | awk '{print $1*1024}') || { Err "取得記憶體使用統計資料失敗" || return 1; }
-	tot=$(free -b | awk '/^Mem:/ {print $2}') || tot=$(grep MemTotal /proc/meminfo | awk '{print $2*1024}')
-	pct=$(free | awk '/^Mem:/ {printf("%.2f"), $3/$2 * 100.0}') || pct=$(awk '/^MemTotal:/ {total=$2} /^MemAvailable:/ {available=$2} END {printf("%.2f", (total-available)/total * 100.0)}' /proc/meminfo)
+	local -r pct=$(free --bytes | awk '/^Mem:/ {printf("%.2f"), $3/$2 * 100.0}')
+	local -r tot=$(free --bytes | awk '/^Mem:/ {print $2}')
+	local -r usd=$(free --bytes | awk '/^Mem:/ {print $3}')
 	case "${1:-}" in
-		-u | --used) Txt "${usd}" ;;
-		-t | --total) Txt "${tot}" ;;
 		-p | --percentage) Txt "${pct}" ;;
+		-t | --total) Txt "${tot}" ;;
+		-u | --used) Txt "${usd}" ;;
 		*) Txt "$(ConvSz "${usd}") / $(ConvSz "${tot}") (${pct}%)" ;;
 	esac
 }
@@ -1063,15 +1029,14 @@ function sys::shell_version() {
 	fi
 }
 function swap::info() {
-	local usd tot pct
-	pct=$(free -b | awk '/^Swap:/ {if($2>0) printf("%.2f"), $3/$2 * 100.0; else print "0.00"}')
-	tot=$(free -b | awk '/^Swap:/ {printf "%.0f", $2}')
-	usd=$(free -b | awk '/^Swap:/ {printf "%.0f", $3}')
+	local -r pct=$(free --bytes | awk '/^Swap:/ {if($2>0) printf("%.2f"), $3/$2 * 100.0; else print "0.00"}')
+	local -r tot=$(free --bytes | awk '/^Swap:/ {printf "%.0f", $2}')
+	local -r usd=$(free --bytes | awk '/^Swap:/ {printf "%.0f", $3}')
 	case "${1:-}" in
 		-p | --percentage) Txt "${pct}" ;;
 		-t | --total) Txt "${tot}" ;;
 		-u | --used) Txt "${usd}" ;;
-		*) Txt "$(ConvSz "${usd}")/$(ConvSz "${tot}") (${pct}%)" ;;
+		*) Txt "$(ConvSz "${usd}") / $(ConvSz "${tot}") (${pct}%)" ;;
 	esac
 }
 function SysClean() {
@@ -1116,10 +1081,10 @@ function SysClean() {
 			Task "- 清理 ${PKG_MGR} 快取" "zypper clean --all" || { Err "清理 ${PKG_MGR} 快取失敗" || return 1; }
 			Task "- 重新整理 ${PKG_MGR} 套件庫" "zypper refresh" || { Err "重新整理 ${PKG_MGR} 套件庫失敗" || return 1; }
 			;;
-		*) Err "不支援的套件管理器。跳過系統特定清理" || return 1 ;;
+		*) Err "不支援的套件管理器" || return 1 ;;
 	esac
 
-	if Cmdd journalctl; then
+	if Cmdd "journalctl"; then
 		if ! Task "- 輪替和清理 journalctl 日誌" "journalctl --rotate --vacuum-time=1d --vacuum-size=500M"; then
 			Err "輪替和清理 journalctl 日誌失敗（系統找不到 journalctl 指令）" || return 1
 		fi
@@ -1157,7 +1122,7 @@ function SysInfo() {
 	DLine
 
 	Txt "- 主機名稱：            ${CLR[2]}$(uname -n || hostname)${CLR[0]}"
-	Txt "- 作業系統：            ${CLR[2]}$(ChkOs)${CLR[0]}"
+	Txt "- 作業系統：            ${CLR[2]}$(sys::distro)${CLR[0]}"
 	Txt "- 核心版本：            ${CLR[2]}$(uname -r)${CLR[0]}"
 	Txt "- 系統語言：            ${CLR[2]}${LANG}${CLR[0]}"
 	Txt "- Shell 版本：          ${CLR[2]}$(sys::shell_version)${CLR[0]}"
@@ -1168,15 +1133,15 @@ function SysInfo() {
 	Txt "- 架構：                ${CLR[2]}$(uname -m)${CLR[0]}"
 	Txt "- CPU 型號：            ${CLR[2]}$(cpu::model)${CLR[0]}"
 	Txt "- CPU 核心數：          ${CLR[2]}$(nproc)${CLR[0]}"
-	Txt "- CPU 頻率：            ${CLR[2]}$(cpu::frequency)${CLR[0]}"
+	Txt "- CPU 頻率：            ${CLR[2]}$(cpu::freq)${CLR[0]}"
 	Txt "- CPU 使用率：          ${CLR[2]}$(cpu::usage)%${CLR[0]}"
 	Txt "- CPU 快取：            ${CLR[2]}$(cpu::cache)${CLR[0]}"
 
 	SLine
 
-	Txt "- 記憶體使用率：        ${CLR[2]}$(mem::info)${CLR[0]}"
+	Txt "- RAM 使用率：          ${CLR[2]}$(mem::info)${CLR[0]}"
 	Txt "- SWAP 使用率：         ${CLR[2]}$(swap::info)${CLR[0]}"
-	Txt "- 磁碟使用率：          ${CLR[2]}$(disk::info)${CLR[0]}"
+	Txt "- DISK 使用率：         ${CLR[2]}$(disk::info)${CLR[0]}"
 	Txt "- 檔案系統類型：        ${CLR[2]}$(df -T / | awk 'NR==2 {print $2}')${CLR[0]}"
 
 	SLine
@@ -1215,8 +1180,7 @@ function SysOptz() {
 	Txt "${CLR[3]}正在優化長期運行伺服器的系統設定...${CLR[0]}" && DLine
 	file::add "${sysctl_conf}"
 	Txt "# 長期運行系統的伺服器優化" >"${sysctl_conf}"
-	_mem() {
-		local sysctl_conf="$1"
+	_MemoryOptz() {
 		{
 			Txt 'vm.dirty_background_ratio = 5'
 			Txt 'vm.dirty_ratio = 15'
@@ -1226,8 +1190,7 @@ function SysOptz() {
 		} >>"${sysctl_conf}"
 	}
 
-	_net() {
-		local sysctl_conf="$1"
+	_NetworkOptz() {
 		{
 			Txt 'net.core.netdev_max_backlog = 65535'
 			Txt 'net.core.somaxconn = 65535'
@@ -1241,8 +1204,7 @@ function SysOptz() {
 		} >>"${sysctl_conf}"
 	}
 
-	_tcp() {
-		local sysctl_conf="$1"
+	_TcpBufferOptz() {
 		{
 			Txt 'net.core.rmem_max = 16777216'
 			Txt 'net.core.wmem_max = 16777216'
@@ -1252,15 +1214,14 @@ function SysOptz() {
 		} >>"${sysctl_conf}"
 	}
 
-	_fs() {
-		local sysctl_conf="$1"
+	_FsSystemOptz() {
 		{
 			Txt 'fs.file-max = 2097152'
 			Txt 'fs.inotify.max_user_watches = 524288'
 			Txt 'fs.nr_open = 2097152'
 		} >>"${sysctl_conf}"
 	}
-	_limits() {
+	_SystemLimitsOptz() {
 		{
 			Txt '* hard nofile 1048576'
 			Txt '* hard nproc 65535'
@@ -1268,7 +1229,7 @@ function SysOptz() {
 			Txt '* soft nproc 65535'
 		} >>"/etc/security/limits.conf"
 	}
-	_io() {
+	_IoStreamOptz() {
 		local disk
 		for disk in /sys/block/[sv]d*; do
 			if [[ -d "${disk}" ]]; then
@@ -1277,59 +1238,63 @@ function SysOptz() {
 			fi
 		done
 	}
-	_unused_service() {
+	_NotUsefulService() {
 		local service
 		for service in bluetooth cups avahi-daemon postfix nfs-server rpcbind autofs; do
 			systemctl disable --now "${service}" 2>/dev/null || true
 		done
 	}
-	_clean_cache() {
+	_CleanSystemCache() {
 		sync
 		sysctl -w vm.drop_caches=3 >/dev/null 2>&1 || true
 		ip -s -s neigh flush all >/dev/null 2>&1 || true
 	}
 
-	Task "- 正在優化記憶體管理" "_mem ${sysctl_conf}" &&
-		Task "- 正在優化網路設定" "_net ${sysctl_conf}" &&
-		Task "- 正在優化 TCP 緩衝區" "_tcp ${sysctl_conf}" &&
-		Task "- 正在優化檔案系統設定" "_fs ${sysctl_conf}" &&
-		Task "- 正在優化系統限制" "_limits" &&
-		Task "- 正在優化 I/O 排程器" "_io" &&
-		Task "- 停用非必要服務" "_unused_service" &&
+	Task "- 正在優化記憶體管理" "_MemoryOptz" &&
+		Task "- 正在優化網路設定" "_NetworkOptz" &&
+		Task "- 正在優化 TCP 緩衝區" "_TcpBufferOptz" &&
+		Task "- 正在優化檔案系統設定" "_FsSystemOptz" &&
+		Task "- 正在優化系統限制" "_SystemLimitsOptz" &&
+		Task "- 正在優化 I/O 排程器" "_IoStreamOptz" &&
+		Task "- 停用非必要服務" "_NotUsefulService" &&
 		Task "- 套用系統參數" "sysctl --system" &&
-		Task "- 清除系統快取" "_clean_cache"
+		Task "- 清除系統快取" "_CleanSystemCache"
 	[[ $? == 0 ]] || { Err "系統優化流程中斷或失敗" || return 1; }
 
 	DLine && Finish
 }
 function SysRboot() {
 	.Root
-	local active_usrs important_procs cont
+	local -r active_usrs="$(who | wc -l)" important_procs="$(ps aux --no-headers | awk '$3 > 1.0 || $4 > 1.0' | wc -l)"
+	local cont
 
 	Txt "${CLR[3]}正在準備重新啟動系統...${CLR[0]}" && DLine
 
-	active_usrs=$(who | wc -l) || { Err "取得活動使用者數量失敗" || return 1; }
-	if ((active_usrs > 1)); then
-		Txt "${CLR[1]}警告：目前系統有 ${active_usrs} 個活動使用者${CLR[0]}"
+	if ((active_usrs != 0)); then
+		Txt "${CLR[3]}警告：目前系統有 ${active_usrs} 個活動使用者${CLR[0]}"
 		Raw "\n"
-		Txt "活動使用者：" && who | awk '{print $1 " since " $3 " " $4}'
+		Txt "活動使用者："
+		who | awk '{print $1 " since " $3 " " $4}'
 		Raw "\n"
 	fi
-	important_procs=$(ps aux --no-headers | awk '$3 > 1.0 || $4 > 1.0' | wc -l) || { Err "檢查執行中的程序失敗" || return 1; }
-	[[ ${important_procs} == 0 ]] || {
-		Txt "${CLR[1]}警告：有 ${important_procs} 個重要程序正在執行${CLR[0]}"
+
+	if ((important_procs != 0)); then
+		Txt "${CLR[3]}警告：有 ${important_procs} 個重要程序正在執行${CLR[0]}"
 		Raw "\n"
 		Txt "${CLR[8]}CPU 使用率最高的 5 個程序：${CLR[0]}"
 		ps aux --sort=-%cpu | head -n 6
 		Raw "\n"
-	}
+	fi
+
 	Ask "您確定要立即重新啟動系統嗎？(y/N) " -n 1 cont
 	Raw "\n"
-	[[ ${cont} =~ ^[Yy]$ ]] || {
+
+	if ! [[ ${cont} =~ ^[Yy]$ ]]; then
 		Txt "${CLR[2]}已取消重新啟動${CLR[0]}"
 		Raw "\n"
 		return 0
-	}
+	fi
+
 	Task "- 執行最終檢查" "sync" || { Err "同步檔案系統失敗" || return 1; }
 	Task "- 開始重新啟動" "reboot || sudo reboot" || { Err "啟動重新啟動失敗" || return 1; }
 	Txt "${CLR[2]}已成功發出重新啟動命令。系統將立即重新啟動${CLR[0]}"
@@ -1337,16 +1302,16 @@ function SysRboot() {
 function SysUpd() {
 	.Root
 
-	local current_lang update_url
+	local -r current_lang="${LANG}" update_url="https://raw.githubusercontent.com/OG-Open-Source/UtilKit/main/sh/get_utilkit.sh"
 
-	current_lang="${LANG}"
-	update_url="https://raw.githubusercontent.com/OG-Open-Source/UtilKit/main/sh/get_utilkit.sh"
-
-	Txt "${CLR[3]}正在更新系統套件...${CLR[0]}" && DLine
+	Txt "${CLR[3]}正在更新系統套件...${CLR[0]}"
+	DLine
 
 	pkg::upgrade
 	(set -o pipefail 2>/dev/null) && set -o pipefail
-	wget -qO- "${update_url}" | bash -s -- "${current_lang}" && { Err "更新 UtilKit.sh 失敗" || return 1; }
+	if ! wget -qO- "${update_url}" | bash -s -- "${current_lang}"; then
+		Err "更新 UtilKit.sh 失敗" || return 1
+	fi
 
 	DLine && Finish
 }
@@ -1355,9 +1320,9 @@ function SysUpg() {
 
 	Txt "${CLR[3]}正在升級系統至下一個主要版本...${CLR[0]}" && DLine
 
-	os_nm=$(ChkOs --name)
-	case "${os_nm,,}" in
-		debian)
+	os_nm=$(sys::distro --name)
+	case "${os_nm^^}" in
+		DEBIAN)
 			Txt "- 偵測到 DEBIAN 系統"
 			Txt "- 正在更新套件清單"
 			DEBIAN_FRONTEND=noninteractive apt-get update -y || { Err "使用 APT 更新套件清單失敗" || return 1; }
@@ -1375,7 +1340,7 @@ function SysUpg() {
 			Task "- 更新套件清單" "DEBIAN_FRONTEND=noninteractive apt-get update -y" || { Err "更新新版本的套件清單失敗" || return 1; }
 			DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y || { Err "升級到新的 DEBIAN 版本失敗" || return 1; }
 			;;
-		ubuntu)
+		UBUNTU)
 			Txt "- 偵測到 UBUNTU 系統"
 			Task "- 正在更新套件清單" "DEBIAN_FRONTEND=noninteractive apt-get update -y" || { Err "使用 APT 更新套件清單失敗" || return 1; }
 			Task "- 正在升級目前的套件" "DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y" || { Err "升級目前的套件失敗" || return 1; }
@@ -1392,7 +1357,9 @@ function Task() {
 	local -r command_str="$2" ignore_error="${3:-false}"
 	local ret tmp_file
 
-	tmp_file=$(mktemp) || { Err "無法建立臨時檔案" || return 1; }
+	if ! tmp_file=$(mktemp); then
+		Err "無法建立臨時檔案" || return 1
+	fi
 
 	trap 'rm -f "${tmp_file}"' RETURN
 
@@ -1413,54 +1380,64 @@ function sys::timezone() {
 	.Flag
 
 	Cmdd "curl" || { Err "缺失必要套件" || return 1; }
-	local -r tz_regex="^[A-Za-z0-9_-]+/[A-Za-z0-9_-]+$|^[A-Z]{3,4}$|^Etc/GMT[+-]?[0-9]+$"
-	local data
-	_detect_external() {
-		(
-			timeout 1.5s curl -sL "https://ipapi.co/json" | GetValue "timezone" ||
-				timeout 1.5s wget -qO- "http://ip-api.com" | grep -oP '"timezone":"\K[^"]+'
-		) 2>/dev/null | grep -oE "${tz_regex}"
+	_DetectExternal() {
+		if timeout 1.5s curl -sL "https://ipapi.co/json" | GetValue "timezone"; then
+			:
+		elif timeout 1.5s wget -qO- "http://ip-api.com" | grep -oP '"timezone":"\K[^"]+'; then
+			return 1
+		fi
 	}
-	_detect_internal() {
-		(
-			readlink /etc/localtime | sed "s|^.*/zoneinfo/||" ||
-				{ Cmdd timedatectl && timedatectl status | awk '/Time zone:/ {print $3}'; } ||
-				grep -v "^#" /etc/timezone | tr -d " "
-		) 2>/dev/null | grep -oE "${tz_regex}"
+	_DetectInternal() {
+		if readlink "/etc/localtime" | Trim "zoneinfo/"; then
+			:
+		elif Cmdd "timedatectl" && timedatectl status | GetValue "Time zone"; then
+			:
+		elif grep -v "^#" /etc/timezone | tr -d " "; then
+			return 1
+		fi
 	}
 
 	case "$1" in
 		-e | --external)
-			wget -qO- "http://ip-api.com" | Trim '"timezone"     : "' '",'
-			data=$(_detect_external)
-
-			data=$(curl -sL "https://ipapi.co/json" | GetValue "timezone")
-			Txt "${data}" || { Err "從外部服務偵測時區失敗" || return 1; }
+			if ! Txt "$(_DetectExternal)"; then
+				Err "從外部服務偵測時區失敗" || return 1
+			fi
 			;;
 		-i | --internal)
-			data=$(_detect_internal)
-			Txt "${data}" || { Err "偵測系統時區失敗" || return 1; }
+			if ! Txt "$(_DetectInternal)"; then
+				Err "偵測系統時區失敗" || return 1
+			fi
 			;;
 	esac
 }
-function Press() { read -p "$1" -n 1 -r || { Err "讀取使用者輸入失敗" || return 1; }; }
+function Press() {
+	if read -p "$1" -n 1 -r; then
+		Err "讀取使用者輸入失敗" || return 1
+	fi
+}
 
 function HelpMsg() {
-	local app_name current_section max_len cmds cmd_descs opts opt_descs
-	max_len=0
-	cmds=() cmd_descs=()
-	opts=() opt_descs=()
-	local item desc i
+	local -i max_len=0 i=0 perform_validation=0
+	local app_name="" current_section="" item="" desc=""
+	local cmds cmd_descs opts opt_descs valid_cmds valid_opts args_to_validate
+	cmds=() cmd_descs=() opts=() opt_descs=() valid_cmds=() valid_opts=() args_to_validate=()
+
+	function _IsInArray() {
+		local -r target="$1"
+		shift
+		local element=""
+		for element in "${@}"; do
+			[[ "${element}" == "${target}" ]] && return 0
+		done
+		return 1
+	}
+
+	function _GetStrWidth() { printf "%s" "$1" | LANG=C.UTF-8 wc -L; }
 
 	if [[ "${1:-}" == "-n" ]]; then
 		app_name="${2:-}"
 		shift 2
 	fi
-
-	# 內部寬度計算函式：強制使用 UTF-8 環境，精準計算終端機寬度
-	get_str_width() {
-		printf "%s" "$1" | LANG=C.UTF-8 wc -L
-	}
 
 	while (($# > 0)); do
 		case "$1" in
@@ -1472,10 +1449,16 @@ function HelpMsg() {
 				current_section="OPT"
 				shift
 				;;
+			--validate | -v)
+				perform_validation=1
+				shift
+				args_to_validate=("$@")
+				break
+				;;
 			*)
 				item="$1"
 
-				if [[ -n "${2:-}" && "$2" != -* ]]; then
+				if [[ -n "${2:-}" && "${2:-}" != -* ]]; then
 					desc="$2"
 					shift 2
 				else
@@ -1483,36 +1466,115 @@ function HelpMsg() {
 					shift 1
 				fi
 
-				local -r item_width="$(get_str_width "${item}")"
+				local -i item_width=0
+				item_width=$(_GetStrWidth "${item}")
 
 				if [[ "${current_section}" == "CMD" ]]; then
 					cmds+=("${item}")
 					cmd_descs+=("${desc}")
-					((item_width > max_len)) && max_len=${item_width}
+					valid_cmds+=("${item}")
+					((item_width > max_len)) && max_len=item_width
 				elif [[ "${current_section}" == "OPT" ]]; then
 					opts+=("${item}")
 					opt_descs+=("${desc}")
-					((item_width > max_len)) && max_len=${item_width}
+
+					# 拆分選項定義（如 "-h, --help" 拆為 "-h" 與 "--help"）並寫入驗證白名單
+					local opt_cleaned="${item//[,|]/ }"
+					local opt_part=""
+					for opt_part in ${opt_cleaned}; do
+						valid_opts+=("${opt_part}")
+					done
+
+					((item_width > max_len)) && max_len=item_width
 				fi
 				;;
 		esac
 	done
+
+	local -i help_requested=0 has_error=0 command_seen=0
+	local error_msg=""
+
+	if ((perform_validation == 1)); then
+		local arg=""
+		for arg in "${args_to_validate[@]}"; do
+			if [[ "${arg}" == "-h" || "${arg}" == "--help" ]]; then
+				help_requested=1
+				break
+			fi
+		done
+
+		if ((help_requested == 0)); then
+			for arg in "${args_to_validate[@]}"; do
+				if [[ "${arg}" == --* ]]; then
+					local opt_name="${arg%%=*}"
+					if ! _IsInArray "${opt_name}" "${valid_opts[@]}"; then
+						error_msg="Invalid option: ${arg}"
+						has_error=1
+						break
+					fi
+				elif [[ "${arg}" == -* && "${arg}" != "-" ]]; then
+					local first_opt="-${arg:1:1}"
+					if _IsInArray "${first_opt}" "${valid_opts[@]}"; then
+						if ! _IsInArray "${arg}" "${valid_opts[@]}"; then
+							local -i idx=0 is_cluster_valid=1
+							for ((idx = 1; idx < ${#arg}; idx++)); do
+								local char_opt="-${arg:idx:1}"
+								if ! _IsInArray "${char_opt}" "${valid_opts[@]}"; then
+									is_cluster_valid=0
+									break
+								fi
+							done
+							if ((is_cluster_valid == 0)); then
+								error_msg="Invalid option: ${arg}"
+								has_error=1
+								break
+							fi
+						fi
+					else
+						error_msg="Invalid option: ${arg}"
+						has_error=1
+						break
+					fi
+				else
+					if ((${#cmds[@]} > 0)); then
+						if ((command_seen == 0)); then
+							if _IsInArray "${arg}" "${valid_cmds[@]}"; then
+								command_seen=1
+							else
+								error_msg="Invalid command: ${arg}"
+								has_error=1
+								break
+							fi
+						fi
+					fi
+				fi
+			done
+		fi
+
+		if ((help_requested == 1)); then
+			local -r should_exit_0=1
+		elif ((has_error == 1)); then
+			printf "Error: %s\n\n" "${error_msg}" >&2
+			local -r should_exit_1=1
+		else
+			return 0
+		fi
+	fi
 
 	Txt "Usage: ${app_name:-\$0} [OPTIONS] COMMAND"
 	Raw "\n"
 
 	local -r total_width=$((max_len + 4))
 
-	print_aligned_line() {
+	function _PrintAlignedLine() {
 		local -r target="$1" description="$2"
-		local -r w=$(get_str_width "${target}")
-		local -r spaces=$((total_width - w))
-
+		local -i spaces=0 w=0
+		spaces=$((total_width - w))
+		w=$(_GetStrWidth "${target}")
 		local pad
+		pad=""
 
-		if ((spaces > 0)); then
-			printf -v pad "%*s" "${spaces}" ""
-		fi
+		((spaces > 0)) && printf -v pad "%*s" "${spaces}" ""
 
 		printf "    %s%s%s\n" "${target}" "${pad}" "${description}"
 	}
@@ -1520,7 +1582,7 @@ function HelpMsg() {
 	if ((${#cmds[@]} > 0)); then
 		Txt "Commands:"
 		for ((i = 0; i < ${#cmds[@]}; i++)); do
-			print_aligned_line "${cmds[i]}" "${cmd_descs[i]}"
+			_PrintAlignedLine "${cmds[i]}" "${cmd_descs[i]}"
 		done
 		Raw "\n"
 	fi
@@ -1528,7 +1590,14 @@ function HelpMsg() {
 	if ((${#opts[@]} > 0)); then
 		Txt "Options:"
 		for ((i = 0; i < ${#opts[@]}; i++)); do
-			print_aligned_line "${opts[i]}" "${opt_descs[i]}"
+			_PrintAlignedLine "${opts[i]}" "${opt_descs[i]}"
 		done
+	fi
+
+	# 根據驗證狀態判定結束與否
+	if [[ "${should_exit_0:-}" == "1" ]]; then
+		exit 0
+	elif [[ "${should_exit_1:-}" == "1" ]]; then
+		exit 1
 	fi
 }
