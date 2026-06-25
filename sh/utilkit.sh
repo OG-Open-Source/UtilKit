@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VERSION="8.0.0a3"
+# VERSION="8.0.0a4"
 
 set +u
 shopt -s expand_aliases
@@ -7,8 +7,7 @@ shopt -s expand_aliases
 declare _ UT_ERR_CODE
 declare PKG_MGR="" LANG="en" UNIT_PREF="IB"
 declare -A SYS_CAPS=(
-	[_proc_cpuinfo]=0
-	[_etc_resolv - conf]=0
+	[proc_cpuinfo]=0
 )
 
 declare CLR=(
@@ -60,6 +59,11 @@ function Cmdd() {
 	command -v "$1" &>/dev/null || return 127
 }
 function Trim() {
+	# @usage
+	#   Trim "移除前綴" "移除後綴"
+	#
+	# @type
+	#   str: $1, $2
 	.Flag
 	local stdin_buffer
 	stdin_buffer=$(cat)
@@ -70,89 +74,235 @@ function Trim() {
 	Txt "${stdin_buffer}"
 }
 function Extract() {
-	local -i i
-	i=0
-	local dir_v dir_h
-	dir_v="tb" dir_h="lr"
+	local modifiers="_>"
+	local has_modifiers=0
 
-	while (($# > 0)); do
-		case "$1" in
-			--bt)
-				dir_v="bt"
-				shift
-				;;
-			--tb)
-				dir_v="tb"
-				shift
-				;;
-			--rl)
-				dir_h="rl"
-				shift
-				;;
-			--lr)
-				dir_h="lr"
-				shift
-				;;
-			*) break ;;
-		esac
-	done
-
-	local -ir target_row="${1:-1}" target_col="${2:-1}"
-	local -r delimiter="${3:-}"
-
-	local mapfile_lines
-	mapfile_lines=()
-	mapfile -t mapfile_lines
-
-	local lines
-	lines=()
-	if [[ "${dir_v}" == "bt" ]]; then
-		for ((i = ${#mapfile_lines[@]} - 1; i >= 0; i--)); do
-			lines+=("${mapfile_lines[i]}")
-		done
-	else
-		lines=("${mapfile_lines[@]}")
+	# Check if $1 matches the modifier pattern.
+	# The pattern can contain symbols ^, _, <, > and digits, like ^3<2, ^, <, etc.
+	if [[ $# -gt 0 && "$1" =~ ^([_<>^][0-9]*)([_<>^][0-9]*)?$ ]]; then
+		modifiers="$1"
+		has_modifiers=1
+		shift
 	fi
 
-	((target_row > ${#lines[@]} || target_row < 1)) && return 1
+	local part1 part2
 
-	local -r raw_line="${lines[$((target_row - 1))]}"
+	if ((has_modifiers == 1)); then
+		part1="${BASH_REMATCH[1]}"
+		part2="${BASH_REMATCH[2]}"
+	else
+		part1="_"
+		part2=">"
+	fi
 
-	local mapfile_cols
-	mapfile_cols=()
+	local sym1="${part1:0:1}" num1="${part1:1}"
+	local sym2 num2
 
-	if [[ -z "${delimiter}" ]]; then
-		read -r -a mapfile_cols <<<"${raw_line}"
+	if [[ -n "${part2}" ]]; then
+		sym2="${part2:0:1}"
+		num2="${part2:1}"
+	else
+		# Auto-complete based on the type of the first symbol
+		if [[ "${sym1}" == "^" || "${sym1}" == "_" ]]; then
+			sym2=">"
+			num2=""
+		else
+			sym2="_"
+			num2=""
+		fi
+	fi
+
+	local -r mod_num1="${num1:-1}" mod_num2="${num2:-1}"
+
+	local -i row_num=1 col_num=1
+	local raw_col_args=()
+	local col_sym delim row_arg row_sym
+
+	# Assign row/col symbols and arguments based on the left-to-right order
+	if [[ "${sym1}" == "^" || "${sym1}" == "_" ]]; then
+		row_sym="${sym1}"
+		row_num="${mod_num1}"
+		row_arg="${1:-1}"
+
+		col_sym="${sym2}"
+		col_num="${mod_num2}"
+
+		# Remaining arguments from $2 onwards are col args & possible delimiter
+		local -a remaining_args=("${@:2}")
+		local -i rem_count="${#remaining_args[@]}"
+
+		if ((rem_count == 0)); then
+			raw_col_args=(1)
+		elif ((rem_count == 1)); then
+			raw_col_args=("${remaining_args[0]}")
+		else
+			local last_arg="${remaining_args[rem_count - 1]}"
+			# If the last argument is of length 1 and is not a number, treat as delim
+			if [[ "${#last_arg}" -eq 1 && ! "${last_arg}" =~ ^[0-9]$ ]]; then
+				delim="${last_arg}"
+				raw_col_args=("${remaining_args[@]:0:rem_count-1}")
+			else
+				raw_col_args=("${remaining_args[@]}")
+			fi
+		fi
+	else
+		col_sym="${sym1}"
+		col_num="${mod_num1}"
+
+		row_sym="${sym2}"
+		row_num="${mod_num2}"
+
+		# Under col priority, row_arg is the last argument.
+		# e.g., Extract ">_" {1..3} 2
+		row_arg="${@: -1}"
+		row_arg="${row_arg:-1}"
+
+		local -i rem_count=$#
+		if ((rem_count <= 1)); then
+			raw_col_args=(1)
+		else
+			local -a remaining_args=("${@:1:rem_count-1}")
+			local -i rem_cols_count="${#remaining_args[@]}"
+
+			local last_arg="${remaining_args[rem_cols_count - 1]}"
+			if [[ "${#last_arg}" -eq 1 && ! "${last_arg}" =~ ^[0-9]$ && rem_cols_count -gt 1 ]]; then
+				delim="${last_arg}"
+				raw_col_args=("${remaining_args[@]:0:rem_cols_count-1}")
+			else
+				raw_col_args=("${remaining_args[@]}")
+			fi
+		fi
+	fi
+
+	# Read all input lines from stdin
+	local mapfile_lines=()
+	mapfile -t mapfile_lines
+	local -i total_lines="${#mapfile_lines[@]}"
+	((total_lines == 0)) && return 1
+
+	local selected_line=""
+
+	# 1. Row parsing
+	if [[ "${row_arg}" =~ ^[0-9]+$ ]]; then
+		# Absolute/Relative positioning
+		local -i target_idx=-1
+		if [[ "${row_sym}" == "^" ]]; then
+			target_idx=$((total_lines - row_arg))
+		else
+			target_idx=$((row_arg - 1))
+		fi
+
+		((target_idx < 0 || target_idx >= total_lines)) && return 1
+		selected_line="${mapfile_lines[target_idx]}"
+	else
+		# Filtering by string
+		local -i match_count=0
+		local -i found_idx=-1
+		local -i idx=0
+
+		if [[ "${row_sym}" == "_" ]]; then
+			# Top-to-bottom search
+			for ((idx = 0; idx < total_lines; idx++)); do
+				if [[ "${mapfile_lines[idx]}" == *"${row_arg}"* ]]; then
+					((match_count++))
+					if ((match_count == row_num)); then
+						found_idx=idx
+						break
+					fi
+				fi
+			done
+		else
+			# Bottom-to-top search (sym is ^)
+			for ((idx = total_lines - 1; idx >= 0; idx--)); do
+				if [[ "${mapfile_lines[idx]}" == *"${row_arg}"* ]]; then
+					((match_count++))
+					if ((match_count == row_num)); then
+						found_idx=idx
+						break
+					fi
+				fi
+			done
+		fi
+
+		((found_idx == -1)) && return 1
+		selected_line="${mapfile_lines[found_idx]}"
+	fi
+
+	# 2. Split line into columns
+	local mapfile_cols=()
+	if [[ -z "${delim}" ]]; then
+		read -r -a mapfile_cols <<<"${selected_line}"
 	else
 		local -r old_ifs="${IFS}"
-		IFS="${delimiter}"
-		read -r -a mapfile_cols <<<"${raw_line}"
+		IFS="${delim}"
+		read -r -a mapfile_cols <<<"${selected_line}"
 		IFS="${old_ifs}"
 
 		local -r temp_cols=("${mapfile_cols[@]}")
 		mapfile_cols=()
 
 		local item
-		item=""
 		for item in "${temp_cols[@]}"; do
 			item="$(echo "${item}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
 			[[ -n "${item}" ]] && mapfile_cols+=("${item}")
 		done
 	fi
 
-	local cols
-	cols=()
-	if [[ "${dir_h}" == "rl" ]]; then
-		for ((i = ${#mapfile_cols[@]} - 1; i >= 0; i--)); do
-			cols+=("${mapfile_cols[i]}")
-		done
-	else
-		cols=("${mapfile_cols[@]}")
-	fi
+	local -i total_cols="${#mapfile_cols[@]}"
+	((total_cols == 0)) && return 1
 
-	((target_col > ${#cols[@]} || target_col < 1)) && return 1
+	local -a output_cols=()
 
-	Txt "${cols[$((target_col - 1))]}"
+	# 3. Col parsing
+	local col_arg
+	for col_arg in "${raw_col_args[@]}"; do
+		if [[ "${col_arg}" =~ ^[0-9]+$ ]]; then
+			# Absolute/Relative positioning
+			local -i target_idx=-1
+			if [[ "${col_sym}" == "<" ]]; then
+				target_idx=$((total_cols - col_arg))
+			else
+				target_idx=$((col_arg - 1))
+			fi
+
+			((target_idx < 0 || target_idx >= total_cols)) && return 1
+			output_cols+=("${mapfile_cols[target_idx]}")
+		else
+			# Filtering by string
+			local -i match_count=0
+			local -i found_idx=-1
+			local -i idx=0
+
+			if [[ "${col_sym}" == ">" ]]; then
+				# Left-to-right search
+				for ((idx = 0; idx < total_cols; idx++)); do
+					if [[ "${mapfile_cols[idx]}" == *"${col_arg}"* ]]; then
+						((match_count++))
+						if ((match_count == col_num)); then
+							found_idx=idx
+							break
+						fi
+					fi
+				done
+			else
+				# Right-to-left search (sym is <)
+				for ((idx = total_cols - 1; idx >= 0; idx--)); do
+					if [[ "${mapfile_cols[idx]}" == *"${col_arg}"* ]]; then
+						((match_count++))
+						if ((match_count == col_num)); then
+							found_idx=idx
+							break
+						fi
+					fi
+				done
+			fi
+
+			((found_idx == -1)) && return 1
+			output_cols+=("${mapfile_cols[found_idx]}")
+		fi
+	done
+
+	Txt "${output_cols[*]}"
 }
 function GetValue() {
 	local -r key="$1" data_source="${2:-}"
@@ -183,7 +333,7 @@ function ChkApt() {
 	local -ir wait_time=0 max_timeout=180
 
 	Cmdd "fuser" || return 1
-	while fuser "/var/lib/dpkg/lock-frontend" "/var/lib/dpkg/lock" &>/dev/null; do
+	while fuser /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock &>/dev/null; do
 		Task "- 等待 DPKG 鎖定釋放 (${wait_time}s)" "sleep 1" || return 1
 		((wait_time++))
 		if ((wait_time > max_timeout)); then
@@ -372,7 +522,7 @@ function ChkDeps() {
 	((${#target_deps[@]} == 0)) && return 0
 
 	for dep in "${target_deps[@]}"; do
-		if command -v "${dep}" &>/dev/null; then
+		if Cmdd "${dep}"; then
 			msg="${CLR[2]}［可執行］${CLR[0]}"
 		elif pkg::is_installed "${dep}"; then
 			msg="${CLR[3]}［僅存在］${CLR[0]}"
@@ -399,50 +549,39 @@ function ChkDeps() {
 	esac
 }
 function sys::distro() {
-	local os_id
-
 	case "$1" in
 		-v | --version)
-			if [[ -f "/etc/os-release" ]]; then
-				os_id=$(cat "/etc/os-release" | GetValue "ID")
-
+			if [[ -f /etc/os-release ]]; then
+				local -r os_id="$(GetValue "ID" </etc/os-release)"
 				case "${os_id^^}" in
-					DEBIAN) cat "/etc/debian_version" ;;
-					FEDORA) grep -oE '[0-9]+' "/etc/fedora-release" ;;
-					CENTOS) grep -oE '[0-9]+\.[0-9]+' "/etc/centos-release" ;;
-					ALPINE) cat "/etc/alpine-release" ;;
+					DEBIAN) cat /etc/debian_version ;;
+					FEDORA) grep -oE '[0-9]+' /etc/fedora-release ;;
+					CENTOS) grep -oE '[0-9]+\.[0-9]+' /etc/centos-release ;;
+					ALPINE) cat /etc/alpine-release ;;
 					*) Txt "${VERSION_ID}" ;;
 				esac
-			elif [[ -f "/etc/debian_version" ]]; then
-				cat "/etc/debian_version"
-			elif [[ -f "/etc/fedora-release" ]]; then
-				grep -oE '[0-9]+' "/etc/fedora-release"
-			elif [[ -f "/etc/centos-release" ]]; then
-				grep -oE '[0-9]+\.[0-9]+' "/etc/centos-release"
-			elif [[ -f "/etc/alpine-release" ]]; then
-				cat "/etc/alpine-release"
+			elif [[ -f /etc/debian_version ]]; then
+				cat /etc/debian_version
+			elif [[ -f /etc/fedora-release ]]; then
+				grep -oE '[0-9]+' /etc/fedora-release
+			elif [[ -f /etc/centos-release ]]; then
+				grep -oE '[0-9]+\.[0-9]+' /etc/centos-release
+			elif [[ -f /etc/alpine-release ]]; then
+				cat /etc/alpine-release
 			else
 				Err "Unknown" || return 1
 			fi
 			;;
 		-n | --name)
-			if [[ -f "/etc/os-release" ]]; then
-				cat "/etc/os-release" | GetValue "NAME"
-			elif [[ -f "/etc/DISTRO_SPECS" ]]; then
-				cat "/etc/DISTRO_SPECS" | GetValue "DISTRO_NAME"
+			if [[ -f /etc/os-release ]]; then
+				GetValue "NAME" </etc/os-release
+			elif [[ -f /etc/DISTRO_SPECS ]]; then
+				GetValue "DISTRO_NAME" </etc/DISTRO_SPECS
 			else
 				Err "Unknown" || return 1
 			fi
 			;;
-		*)
-			if [[ -f "/etc/os-release" ]]; then
-				cat "/etc/os-release" | GetValue "NAME"
-			elif [[ -f "/etc/DISTRO_SPECS" ]]; then
-				cat "/etc/DISTRO_SPECS" | GetValue "DISTRO_NAME"
-			else
-				Err "Unknown" || return 1
-			fi
-			;;
+		*) Trim "" "\n" </etc/issue ;;
 	esac
 }
 function sys::virt() {
@@ -455,7 +594,7 @@ function sys::virt() {
 
 		case "${virt_typ^^}" in
 			KVM)
-				if [[ "$(cat "/sys/class/dmi/id/product_name" 2>/dev/null)" == *[Pp]roxmox* ]]; then
+				if [[ "$(cat /sys/class/dmi/id/product_name 2>/dev/null)" == *[Pp]roxmox* ]]; then
 					Txt "Proxmox VE (KVM)"
 				else
 					Txt "KVM"
@@ -464,9 +603,9 @@ function sys::virt() {
 			MICROSOFT) Txt "Microsoft Hyper-V" ;;
 			WSL) Txt "適用於 Linux 的 Windows 子系統" ;;
 			NONE)
-				if [[ -r "/proc/1/environ" ]] && grep -q "container=lxc" "/proc/1/environ" 2>/dev/null; then
+				if [[ -r /proc/1/environ ]] && grep -q "container=lxc" /proc/1/environ 2>/dev/null; then
 					Txt "LXC 容器"
-				elif ((SYS_CAPS[_proc_cpuinfo] == 1)) && grep -qi "hypervisor" "/proc/cpuinfo" 2>/dev/null; then
+				elif ((SYS_CAPS[proc_cpuinfo] == 1)) && grep -qi "hypervisor" /proc/cpuinfo 2>/dev/null; then
 					Txt "虛擬機器（未知類型）"
 				else
 					Txt "未偵測到（可能為實體機器）"
@@ -474,8 +613,8 @@ function sys::virt() {
 				;;
 			*) Txt "${virt_typ}" ;;
 		esac
-	elif ((SYS_CAPS[_proc_cpuinfo] == 1)); then
-		if grep -qi "hypervisor" "/proc/cpuinfo" 2>/dev/null; then
+	elif ((SYS_CAPS[proc_cpuinfo] == 1)); then
+		if grep -qi "hypervisor" /proc/cpuinfo 2>/dev/null; then
 			Txt "虛擬機器（未知類型）"
 		else
 			Txt "未偵測到（可能為實體機器）"
@@ -491,16 +630,16 @@ function Clear() {
 	clear
 }
 function cpu::cache() {
-	if ((SYS_CAPS[_proc_cpuinfo] != 1)); then Err "無法存取 CPU 資訊。" || return 1; fi
-	local -r cpu_cache="$(awk '/^cache size/ {sum+=$4; count++} END {print (count>0) ? sum/count : "N/A"}' "/proc/cpuinfo")"
+	if ((SYS_CAPS[proc_cpuinfo] != 1)); then Err "無法存取 CPU 資訊。" || return 1; fi
+	local -r cpu_cache="$(awk '/^cache size/ {sum+=$4; count++} END {print (count>0) ? sum/count : "N/A"}' /proc/cpuinfo)"
 	if [[ "${cpu_cache}" == "N/A" ]]; then
 		Err "無法確定 CPU 快取大小" || return 1
 	fi
 	Txt "${cpu_cache} KB"
 }
 function cpu::freq() {
-	if ((SYS_CAPS[_proc_cpuinfo] != 1)); then Err "無法存取 CPU 資訊。" || return 1; fi
-	local -r cpu_freq="$(awk '/^cpu MHz/ {sum+=$4; count++} END {print (count>0) ? sprintf("%.2f", sum/count/1000) : "N/A"}' "/proc/cpuinfo")"
+	if ((SYS_CAPS[proc_cpuinfo] != 1)); then Err "無法存取 CPU 資訊。" || return 1; fi
+	local -r cpu_freq="$(awk '/^cpu MHz/ {sum+=$4; count++} END {print (count>0) ? sprintf("%.2f", sum/count/1000) : "N/A"}' /proc/cpuinfo)"
 	if [[ "${cpu_freq}" == "N/A" ]]; then
 		Err "無法確定 CPU 頻率" || return 1
 	fi
@@ -508,9 +647,9 @@ function cpu::freq() {
 }
 function cpu::model() {
 	if Cmdd "lscpu"; then
-		lscpu | GetValue "Model name"
-	elif ((SYS_CAPS[_proc_cpuinfo] == 1)); then
-		cat "/proc/cpuinfo" | GetValue "model name"
+		GetValue "Model name" < <(lscpu)
+	elif ((SYS_CAPS[proc_cpuinfo] == 1)); then
+		GetValue "model name" </proc/cpuinfo
 	elif Cmdd "sysctl"; then
 		sysctl -n machdep.cpu.brand_string
 	else
@@ -520,7 +659,7 @@ function cpu::model() {
 function cpu::usage() {
 	local -i usr nice sys idle iowait irq softirq steal guest guest_nice
 
-	if read -r _ usr nice sys idle iowait irq softirq steal guest guest_nice <<<"$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11}' /proc/stat)"; then
+	if read -r _ usr nice sys idle iowait irq softirq steal guest guest_nice <<<"$(Extract cpu {1..11} </proc/stat)"; then
 		if [[ ! -n "${idle}" ]]; then
 			Err "從 /proc/stat 讀取第一階段 CPU 統計失敗" || return 1
 		fi
@@ -529,7 +668,7 @@ function cpu::usage() {
 
 	sleep 0.3
 
-	if read -r _ usr nice sys idle iowait irq softirq steal guest guest_nice <<<"$(awk '/^cpu / {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11}' /proc/stat)"; then
+	if read -r _ usr nice sys idle iowait irq softirq steal guest guest_nice <<<"$(Extract cpu {1..11} </proc/stat)"; then
 		if [[ ! -n "${idle}" ]]; then
 			Err "從 /proc/stat 讀取第二階段 CPU 統計失敗" || return 1
 		fi
@@ -662,9 +801,9 @@ function DelPkg() {
 	Finish
 }
 function disk::info() {
-	local -r pct=$(df / | awk '/^\/dev/ {printf("%.2f"), $3/$2 * 100.0}')
-	local -r tot=$(df -B1 / | awk '/^\/dev/ {print $2}')
-	local -r usd=$(df -B1 / | awk '/^\/dev/ {print $3}')
+	local -r pct=$(df -B1 / | awk '/^\/dev/ {printf("%.2f"), $3/($3+$4)*100}')
+	local -r tot=$(Extract 2 2 < <(df -B1 /))
+	local -r usd=$(Extract 2 3 < <(df -B1 /))
 	case "${1:-}" in
 		-p | --percentage) Txt "${pct}" ;;
 		-t | --total) Txt "${tot}" ;;
@@ -684,7 +823,7 @@ function net::dns() {
 		elif [[ "${servers}" =~ ^[0-9a-fA-F:]+$ ]]; then
 			dns6+=("${servers}")
 		fi
-	done < <(grep -E '^nameserver' "${file}" | awk '{print $2}')
+	done < <(grep -E '^nameserver' "${file}" | Extract 1 2)
 
 	if ((${#dns4[@]} == 0 && ${#dns6[@]} == 0)); then
 		Err "${file} 中未設定 DNS 伺服器" || return 1
@@ -789,7 +928,7 @@ function Ask() {
 		Err "讀取使用者輸入失敗" || return 1
 	fi
 }
-function net::interface() {
+function net::iface() {
 	local all_interfaces default4_route default6_route interface interfaces=() interfaces_num items=()
 	local i item interface4 interface6 physical_iface iface stats
 	local rx_bytes rx_packets rx_drop tx_bytes tx_packets tx_drop
@@ -849,11 +988,11 @@ function net::interface() {
 		[[ "${interface4}" == "${interface6}" ]] && interface="${interface4}"
 		interface=$(Txt "${interface}" | tr -s ' ' | xargs)
 	else
-		physical_iface=$(ip -o link show | grep -v 'lo\|docker\|br-\|veth\|bond\|tun\|tap' | grep 'state UP' | head -n 1 | awk -F': ' '{print $2}')
+		physical_iface=$(ip -o link show | grep -v 'lo\|docker\|br-\|veth\|bond\|tun\|tap' | grep 'state UP' | head -n 1 | Extract 1 2 ":")
 		if [[ -n "${physical_iface}" ]]; then
 			interface="${physical_iface}"
 		else
-			interface=$(ip -o link show | grep -v 'lo:' | head -n 1 | awk -F': ' '{print $2}')
+			interface=$(ip -o link show | grep -v 'lo:' | head -n 1 | Extract 1 2 ":")
 		fi
 	fi
 
@@ -888,7 +1027,7 @@ function net::interface() {
 						stats="${arr[1]} ${arr[2]} ${arr[4]} ${arr[9]} ${arr[10]} ${arr[12]}"
 						break
 					fi
-				done <"/proc/net/dev" 2>/dev/null
+				done </proc/net/dev 2>/dev/null
 				if [[ -n "${stats}" ]]; then
 					read -r rx_bytes rx_packets rx_drop tx_bytes tx_packets tx_drop <<<"${stats}"
 					Txt "${iface}：輸入：$(ConvSz "${rx_bytes}")，輸出：$(ConvSz "${tx_bytes}")"
@@ -925,8 +1064,7 @@ function net::ip() {
 			fi
 			;;
 		-p | --public)
-			data=$(wget -qO- "https://developers.cloudflare.com/cdn-cgi/trace" | GetValue "ip")
-			if ! Txt "${data}"; then
+			if ! Txt "$(GetValue "ip" < <(wget -qO- "https://developers.cloudflare.com/cdn-cgi/trace"))"; then
 				Err "無法偵測公開 IP 位址。請檢查網路連線" || return 1
 			fi
 			;;
@@ -952,14 +1090,13 @@ function net::ip() {
 	esac
 }
 function LastUpd() {
-	if [[ -f "/var/log/apt/history.log" ]]; then
-		data=$(awk '/End-Date:/ {print $2, $3, $4; exit}' "/var/log/apt/history.log" 2>/dev/null)
+	if [[ -f /var/log/apt/history.log ]]; then
+		Txt "$(Extract ^ End-Date {2,3} </var/log/apt/history.log)"
 	elif [[ -f /var/log/dpkg.log ]]; then
-		data=$(tail -n 1 /var/log/dpkg.log | awk '{print $1, $2}')
+		Txt "$(Extract ^ 1 {1,2} </var/log/dpkg.log)"
 	elif Cmdd "rpm"; then
-		data=$(rpm -qa --last | head -n 1 | awk '{print $3, $4, $5, $6, $7}')
+		Txt "$(rpm -qa --last | head -n 1 | Extract 1 {3..7})"
 	fi
-	Txt "${data}" || { Err "無法確定最後系統更新時間。找不到更新日誌" || return 1; }
 }
 function sys::load() {
 	local -r LC_ALL=C
@@ -968,25 +1105,15 @@ function sys::load() {
 	if read -r zo_mi zv_mi ov_mi _ _ </proc/loadavg 2>/dev/null; then
 		data="${zo_mi}, ${zv_mi}, ${ov_mi}"
 	elif Cmdd "uptime"; then
-		data=$(uptime 2>/dev/null | awk -F'load average?: ' '{print $2}' | sed 's/,//g')
-		[[ -z "${data}" ]] && data=$(uptime 2>/dev/null | awk '{print $(NF-2), $(NF-1), ${NF}}' | sed 's/,//g')
-		read -r zo_mi zv_mi ov_mi <<<"${data}"
+		Txt "$(Extract 1 5 ":" < <(uptime)) ($(nproc) Cores)"
 	else
 		Err "缺失取得方法" || return 1
 	fi
-
-	if [[ -z ${zo_mi-} || -z ${zv_mi-} || -z ${ov_mi-} ]]; then
-		Err "取得負載平均值失敗" || return 1
-	fi
-
-	Txt "${data} ($(nproc) Cores)"
 }
-function Loc() {
-	ChkDeps curl
-
+function sys::location() {
 	case "$1" in
-		--city) data=$(curl -s "https://ipinfo.io/city") ;;
-		--country | *) data=$(curl -s "https://ipinfo.io/country") ;;
+		-c | --city) data=$(wget -qO- "https://ipinfo.io/city") ;;
+		-C | --country | *) data=$(wget -qO- "https://ipinfo.io/country") ;;
 	esac
 
 	if ! Txt "${data}"; then
@@ -994,15 +1121,14 @@ function Loc() {
 	fi
 }
 function net::mac() {
-	data=$(ip link show | awk '/ether/ {print $2; exit}')
-	if ! Txt "${data}"; then
+	if ! Txt "$(Extract link/ether 2 < <(ip link show))"; then
 		Err "無法取得 MAC 位址。找不到網路介面" || return 1
 	fi
 }
 function mem::info() {
-	local -r pct=$(free --bytes | awk '/^Mem:/ {printf("%.2f"), $3/$2 * 100.0}')
-	local -r tot=$(free --bytes | awk '/^Mem:/ {print $2}')
-	local -r usd=$(free --bytes | awk '/^Mem:/ {print $3}')
+	local -r pct=$(free --bytes | awk '/^Mem:/ {printf("%.2f"), $3/$2*100}')
+	local -r tot=$(Extract Mem 2 < <(free --bytes))
+	local -r usd=$(Extract Mem 3 < <(free --bytes))
 	case "${1:-}" in
 		-p | --percentage) Txt "${pct}" ;;
 		-t | --total) Txt "${tot}" ;;
@@ -1029,9 +1155,9 @@ function sys::shell_version() {
 	fi
 }
 function swap::info() {
-	local -r pct=$(free --bytes | awk '/^Swap:/ {if($2>0) printf("%.2f"), $3/$2 * 100.0; else print "0.00"}')
-	local -r tot=$(free --bytes | awk '/^Swap:/ {printf "%.0f", $2}')
-	local -r usd=$(free --bytes | awk '/^Swap:/ {printf "%.0f", $3}')
+	local -r pct=$(free --bytes | awk '/^Swap:/ {if($2>0) printf("%.2f"), $3/$2*100; else print "0.00"}')
+	local -r tot=$(Extract Swap 2 < <(free --bytes))
+	local -r usd=$(Extract Swap 3 < <(free --bytes))
 	case "${1:-}" in
 		-p | --percentage) Txt "${pct}" ;;
 		-t | --total) Txt "${tot}" ;;
@@ -1142,7 +1268,7 @@ function SysInfo() {
 	Txt "- RAM 使用率：          ${CLR[2]}$(mem::info)${CLR[0]}"
 	Txt "- SWAP 使用率：         ${CLR[2]}$(swap::info)${CLR[0]}"
 	Txt "- DISK 使用率：         ${CLR[2]}$(disk::info)${CLR[0]}"
-	Txt "- 檔案系統類型：        ${CLR[2]}$(df -T / | awk 'NR==2 {print $2}')${CLR[0]}"
+	Txt "- 檔案系統類型：        ${CLR[2]}$(Extract 2 2 < <(df -T /))${CLR[0]}"
 
 	SLine
 
@@ -1152,14 +1278,14 @@ function SysInfo() {
 	Txt "- 網路供應商：          ${CLR[2]}$(net::provider)${CLR[0]}"
 	Txt "- DNS 伺服器：          ${CLR[2]}$(net::dns)${CLR[0]}"
 	Txt "- 公開 IP：             ${CLR[2]}$(net::ip --public)${CLR[0]}"
-	Txt "- 網路介面：            ${CLR[2]}$(net::interface -i)${CLR[0]}"
+	Txt "- 網路介面：            ${CLR[2]}$(net::iface -i)${CLR[0]}"
 	Txt "- 內部時區：            ${CLR[2]}$(sys::timezone --internal)${CLR[0]}"
 	Txt "- 外部時區：            ${CLR[2]}$(sys::timezone --external)${CLR[0]}"
 
 	SLine
 
 	Txt "- 負載平均：            ${CLR[2]}$(sys::load)${CLR[0]}"
-	Txt "- 程序數量：            ${CLR[2]}$(ps aux | wc -l)${CLR[0]}"
+	Txt "- 程序數量：            ${CLR[2]}$(wc -l < <(ps aux --no-headers))${CLR[0]}"
 	Txt "- 已安裝套件：          ${CLR[2]}$(pkg::count)${CLR[0]}"
 
 	SLine
@@ -1175,7 +1301,7 @@ function SysInfo() {
 }
 function SysOptz() {
 	.Root
-	local sysctl_conf="/etc/sysctl.d/99-server-optimizations.conf"
+	local sysctl_conf=/etc/sysctl.d/99-server-optimizations.conf
 
 	Txt "${CLR[3]}正在優化長期運行伺服器的系統設定...${CLR[0]}" && DLine
 	file::add "${sysctl_conf}"
@@ -1227,7 +1353,7 @@ function SysOptz() {
 			Txt '* hard nproc 65535'
 			Txt '* soft nofile 1048576'
 			Txt '* soft nproc 65535'
-		} >>"/etc/security/limits.conf"
+		} >>/etc/security/limits.conf
 	}
 	_IoStreamOptz() {
 		local disk
@@ -1330,7 +1456,7 @@ function SysUpg() {
 			DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y || { Err "升級目前的套件失敗" || return 1; }
 			Txt "- 開始 DEBIAN 發行版升級..."
 			curr_codenm=$(lsb_release -cs)
-			targ_codenm=$(wget -qO- "https://ftp.debian.org/debian/dists/stable/Release" | GetValue "Codename")
+			targ_codenm=$(GetValue "Codename" < <(wget -qO- "https://ftp.debian.org/debian/dists/stable/Release"))
 			if [[ "${curr_codenm}" == "${targ_codenm}" ]]; then
 				Err "系統已達最新穩定版 (本地/遠端穩定版：${curr_codenm}/${targ_codenm})" || return 1
 			fi
@@ -1381,16 +1507,17 @@ function sys::timezone() {
 
 	Cmdd "curl" || { Err "缺失必要套件" || return 1; }
 	_DetectExternal() {
-		if timeout 1.5s curl -sL "https://ipapi.co/json" | GetValue "timezone"; then
+		# TODO: change the link
+		if GetValue "timezone" < <(timeout 1.5s curl -sL "https://ipapi.co/json"); then
 			:
 		elif timeout 1.5s wget -qO- "http://ip-api.com" | grep -oP '"timezone":"\K[^"]+'; then
 			return 1
 		fi
 	}
 	_DetectInternal() {
-		if readlink "/etc/localtime" | Trim "zoneinfo/"; then
+		if Trim "zoneinfo/" < <(readlink /etc/localtime); then
 			:
-		elif Cmdd "timedatectl" && timedatectl status | GetValue "Time zone"; then
+		elif Cmdd "timedatectl" && Extract "Time zone" 2 ":" < <(timedatectl status); then
 			:
 		elif grep -v "^#" /etc/timezone | tr -d " "; then
 			return 1
@@ -1418,9 +1545,8 @@ function Press() {
 
 function HelpMsg() {
 	local -i max_len=0 i=0 perform_validation=0
-	local app_name="" current_section="" item="" desc=""
-	local cmds cmd_descs opts opt_descs valid_cmds valid_opts args_to_validate
-	cmds=() cmd_descs=() opts=() opt_descs=() valid_cmds=() valid_opts=() args_to_validate=()
+	local cmds=() cmd_descs=() opts=() opt_descs=() valid_cmds=() valid_opts=() args_to_validate=()
+	local app_name current_section item desc
 
 	function _IsInArray() {
 		local -r target="$1"
