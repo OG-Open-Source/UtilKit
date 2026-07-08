@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
-# VERSION="8.0.0a5"
+# VERSION="8.0.0a6"
 
-set +u
+# set -Eeuo pipefail
+# set +u
 set -o pipefail
 shopt -s expand_aliases
 
 declare _
-declare PKG_MGR="" LANG="" UNIT_PREF="IB"
-declare -A SYS_CAPS=(
-	[proc_cpuinfo]=0
-)
+declare BASH=1 PKG_MGR="unknown" LANG="" UNIT_PREF="IB"
 
 declare CLR=(
 	"\x1b[0m"    # [0] 重置
@@ -24,73 +22,24 @@ declare CLR=(
 	"\x1b[0;97m" # [9] 高亮白
 )
 
-alias .Flag='(($# == 0)) && return 1'
-alias .Root='((EUID != 0 || $(id -u) != 0)) && return 1'
-alias .Root.Flag='(($# == 0)) && return 1; ((EUID != 0 || $(id -u) != 0)) && return 1'
+((BASH == 0)) && printf "%b\n" "${CLR[1]}Unsupported Bash version!${CLR[0]}" && return 1
+[[ ${PKG_MGR} == "unknown" ]] && printf "%b\n" "${CLR[1]}Unknown package manager!${CLR[0]}" && return 1
 
-function ut::check_file_exist() {
-	(($# == 0)) && return 1
-	local file
-	for file in "$@"; do
-		[[ -f ${file} ]] || return 1
-	done
-}
-function ut::check_file_valid() {
-	(($# == 0)) && return 1
-	local file
-	for file in "$@"; do
-		[[ -s ${file} ]] || return 1
-	done
-}
-function ut::check_dir_exist() {
-	(($# == 0)) && return 1
-	local dir
-	for dir in "$@"; do
-		[[ -d ${dir} ]] || return 1
-	done
-}
-function ut::check_path_readable() {
-	(($# == 0)) && return 1
-	local path
-	for path in "$@"; do
-		[[ -r ${path} ]] || return 1
-	done
-}
-function ut::check_path_exist() {
-	(($# == 0)) && return 1
-	local path
-	for path in "$@"; do
-		[[ -e ${path} ]] || return 1
-	done
-}
-function ut::check_var_unset_or_null() {
-	(($# == 0)) && return 1
-	local var
-	for var in "$@"; do
-		[[ -z ${var} ]] || return 1
-	done
-}
-function ut::check_var_not_empty() {
-	(($# == 0)) && return 1
-	local var
-	for var in "$@"; do
-		[[ -n ${var} ]] || return 1
-	done
-}
-function safe::grep() {
-	(($# < 2)) && return 2
-	command -v "grep" &>/dev/null || return 127
-	local -r file="${!#}"
-	[[ ! (-f ${file} && -r ${file} && -s ${file}) ]] && return 2
-	grep -- "${pattern}" "${file}"
-}
-function DLine() (printf "%b\n" "${1:-${CLR[8]}}========================${CLR[0]}")
-function SLine() (printf "%b\n" "${1:-${CLR[8]}}--------------------------------${CLR[0]}")
-function Finish() (printf "%b\n" "${CLR[2]}完成${CLR[0]}")
-function Err() (if [[ -n "$*" ]]; then printf "%b\n" "${CLR[1]}$*${CLR[0]}" >&2; fi)
-function Raw() (if [[ -n "$*" ]]; then printf "%b" "$*"; fi)
-function Txt() (if [[ -n "$*" ]]; then printf "%b\n" "$*"; fi)
-function Trim() (
+alias .Flag='(($# == 0)) && return 2'
+alias .Root='((EUID != 0 || $(id -u) != 0)) && return 1'
+alias .Root.Flag='(($# == 0)) && return 2; ((EUID != 0 || $(id -u) != 0)) && return 1'
+
+# ----------------------------------------------------------------------
+#  Namespace: _
+# ----------------------------------------------------------------------
+function grep() { false; }
+function eval() { false; }
+
+# ----------------------------------------------------------------------
+#  Namespace: str
+# ----------------------------------------------------------------------
+function str::grep() { command grep "$@"; }
+function str::trim() {
 	.Flag
 
 	local stdin_buffer
@@ -99,12 +48,186 @@ function Trim() (
 	[[ -n ${2:-} ]] && stdin_buffer="${stdin_buffer%%"$2"*}"
 
 	Txt "${stdin_buffer}"
-)
+}
+
+# ----------------------------------------------------------------------
+#  Namespace: file
+# ----------------------------------------------------------------------
+function file::exist() {
+	.Flag
+	local f
+	for f in "$@"; do [[ -f "$f" ]] || return 1; done
+}
+function file::valid() {
+	.Flag
+	local f
+	for f in "$@"; do [[ -s "$f" ]] || return 1; done
+}
+function file::grep() {
+	(($# < 2)) && return 2
+	command -v "grep" &>/dev/null || return 126
+	local -r file="${!#}"
+	[[ ! (-f ${file} && -r ${file} && -s ${file}) ]] && return 2
+	command grep "$@"
+}
+
+# ----------------------------------------------------------------------
+#  Namespace: dir
+# ----------------------------------------------------------------------
+function dir::exist() {
+	.Flag
+	local d
+	for d in "$@"; do [[ -d "$d" ]] || return 1; done
+}
+
+# ----------------------------------------------------------------------
+#  Namespace: perm
+# ----------------------------------------------------------------------
+function perm::read() {
+	.Flag
+	local p
+	for p in "$@"; do [[ -r "$p" ]] || return 1; done
+}
+function perm::write() {
+	.Flag
+	local p
+	for p in "$@"; do [[ -w "$p" ]] || return 1; done
+}
+function perm::exec() {
+	.Flag
+	local p
+	for p in "$@"; do [[ -x "$p" ]] || return 1; done
+}
+
+# ----------------------------------------------------------------------
+#  Namespace: path
+# ----------------------------------------------------------------------
+function path::exist() {
+	.Flag
+	local p
+	for p in "$@"; do [[ -e "$p" || -L "$p" ]] || return 1; done
+}
+
+# ----------------------------------------------------------------------
+#  Namespace: var
+# ----------------------------------------------------------------------
+function var::empty() {
+	.Flag
+	local v
+	for v in "$@"; do [[ -z "$v" ]] || return 1; done
+}
+function var::set() {
+	.Flag
+	local v
+	for v in "$@"; do [[ -v "$v" ]] || return 1; done
+}
+function var::valid() {
+	.Flag
+	local v
+	for v in "$@"; do [[ -n "$v" ]] || return 1; done
+}
+
+# ----------------------------------------------------------------------
+#  Namespace: pkg
+# ----------------------------------------------------------------------
+function pkg::apt() {
+	.Flag
+	DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=180 -y "$@"
+}
+function pkg::count() {
+	case "${PKG_MGR^^}" in
+		APK) apk info | wc -l ;;
+		APT) dpkg -l | str::grep -c "^ii" ;;
+		DNF) rpm -qa | wc -l ;;
+		OPKG) opkg list-installed | wc -l ;;
+		PACMAN) pacman -Qq | wc -l ;;
+		YUM) rpm -qa | wc -l ;;
+		ZYPPER) rpm -qa | wc -l ;;
+		*) return 127 ;;
+	esac
+}
+function pkg::is_installed() {
+	.Flag
+
+	case "${PKG_MGR^^}" in
+		APK) apk info -e "${1,,}" &>/dev/null ;;
+		APT) dpkg -s "${1,,}" &>/dev/null ;;
+		DNF) rpm -q "${1,,}" &>/dev/null ;;
+		OPKG) opkg status "${1,,}" 2>/dev/null | str::grep -q "Status:.*installed" ;;
+		PACMAN) pacman -Qq "${1,,}" &>/dev/null ;;
+		YUM) rpm -q "${1,,}" &>/dev/null ;;
+		ZYPPER) rpm -q "${1,,}" &>/dev/null ;;
+		*) return 127 ;;
+	esac
+}
+function pkg::install() {
+	.Flag
+
+	case "${PKG_MGR^^}" in
+		APK) apk add "${1,,}" ;;
+		APT) pkg::apt install "${1,,}" ;;
+		DNF) dnf install -y "${1,,}" ;;
+		OPKG) opkg install "${1,,}" ;;
+		PACMAN) pacman -S --noconfirm "${1,,}" ;;
+		YUM) yum install -y "${1,,}" ;;
+		ZYPPER) zypper --non-interactive install -y "${1,,}" ;;
+		*) return 127 ;;
+	esac
+}
+function pkg::remove() {
+	.Flag
+
+	case "${PKG_MGR^^}" in
+		APK) apk del "${1,,}" ;;
+		APT) pkg::apt purge "${1,,}" && pkg::apt autoremove ;;
+		DNF) dnf remove -y "${1,,}" ;;
+		OPKG) opkg remove "${1,,}" ;;
+		PACMAN) pacman -Rns --noconfirm "${1,,}" ;;
+		YUM) yum remove -y "${1,,}" ;;
+		ZYPPER) zypper --non-interactive remove -y "${1,,}" ;;
+		*) return 127 ;;
+	esac
+}
+function pkg::update() {
+	.Root
+
+	case "${PKG_MGR^^}" in
+		APK) apk update ;;
+		APT) pkg::apt update ;;
+		DNF) dnf check-update -y ;;
+		OPKG) opkg update ;;
+		PACMAN) : ;;
+		YUM) yum check-update -y ;;
+		ZYPPER) zypper refresh ;;
+		*) return 127 ;;
+	esac
+}
+function pkg::upgrade() {
+	.Root
+
+	if pkg::update; then
+		case "${PKG_MGR^^}" in
+			APK) apk upgrade ;;
+			APT) pkg::apt full-upgrade ;;
+			DNF) dnf upgrade -y ;;
+			OPKG) : ;;
+			PACMAN) pacman -Syu --noconfirm ;;
+			YUM) yum upgrade -y ;;
+			ZYPPER) zypper dup -y --no-allow-vendor-change ;;
+			*) return 127 ;;
+		esac
+	fi
+}
+
+function DLine() { printf "%b\n" "${1:-${CLR[8]}}========================${CLR[0]}"; }
+function SLine() { printf "%b\n" "${1:-${CLR[8]}}--------------------------------${CLR[0]}"; }
+function Finish() { printf "%b\n" "${CLR[2]}完成${CLR[0]}"; }
+function Err() { var::valid "$@" && printf "%b\n" "${CLR[1]}$*${CLR[0]}" >&2; }
+function Raw() { var::valid "$@" && printf "%b" "$*"; }
+function Txt() { var::valid "$@" && printf "%b\n" "$*"; }
 function Extract() {
 	local has_modifiers=0
 
-	# Check if $1 matches the modifier pattern.
-	# The pattern can contain symbols ^, _, <, > and digits, like ^3<2, ^, <, etc.
 	if (($# > 0)) && [[ $1 =~ ^([_<>^][0-9]*)([_<>^][0-9]*)?$ ]]; then
 		has_modifiers=1
 		shift
@@ -127,7 +250,6 @@ function Extract() {
 		sym2="${part2:0:1}"
 		num2="${part2:1}"
 	else
-		# Auto-complete based on the type of the first symbol
 		if [[ ${sym1} == @(^|_) ]]; then
 			sym2=">"
 			num2=""
@@ -142,7 +264,6 @@ function Extract() {
 	local raw_col_args=()
 	local col_sym delim row_arg row_sym
 
-	# Assign row/col symbols and arguments based on the left-to-right order
 	if [[ ${sym1} == @(^|_) ]]; then
 		row_sym="${sym1}"
 		row_num="${mod_num1}"
@@ -151,7 +272,6 @@ function Extract() {
 		col_sym="${sym2}"
 		col_num="${mod_num2}"
 
-		# Remaining arguments from $2 onwards are col args & possible delimiter
 		local -a remaining_args=("${@:2}")
 		local -i rem_count="${#remaining_args[@]}"
 
@@ -161,7 +281,6 @@ function Extract() {
 			raw_col_args=("${remaining_args[0]}")
 		else
 			local last_arg="${remaining_args[rem_count - 1]}"
-			# If the last argument is of length 1 and is not a number, treat as delim
 			if ((${#last_arg} == 1)) && [[ ! ${last_arg} =~ ^[0-9]$ ]]; then
 				delim="${last_arg}"
 				raw_col_args=("${remaining_args[@]:0:rem_count-1}")
@@ -176,8 +295,6 @@ function Extract() {
 		row_sym="${sym2}"
 		row_num="${mod_num2}"
 
-		# Under col priority, row_arg is the last argument.
-		# e.g., Extract ">_" {1..3} 2
 		row_arg="${*: -1}"
 		row_arg="${row_arg:-1}"
 
@@ -198,7 +315,6 @@ function Extract() {
 		fi
 	fi
 
-	# Read all input lines from stdin
 	local mapfile_lines=()
 	mapfile -t mapfile_lines
 	local -i total_lines=${#mapfile_lines[@]}
@@ -206,9 +322,7 @@ function Extract() {
 
 	local selected_line
 
-	# 1. Row parsing
 	if [[ ${row_arg} =~ ^[0-9]+$ ]]; then
-		# Absolute/Relative positioning
 		local -i target_idx=-1
 		if [[ ${row_sym} == "^" ]]; then
 			target_idx=$((total_lines - row_arg))
@@ -219,29 +333,20 @@ function Extract() {
 		((target_idx < 0 || target_idx >= total_lines)) && return 1
 		selected_line="${mapfile_lines[target_idx]}"
 	else
-		# Filtering by string
 		local -i found_idx=-1 idx=0 match_count=0
 
 		if [[ ${row_sym} == "_" ]]; then
-			# Top-to-bottom search
 			for ((idx = 0; idx < total_lines; idx++)); do
 				if [[ ${mapfile_lines[idx]} == *"${row_arg}"* ]]; then
 					((match_count++))
-					if ((match_count == row_num)); then
-						found_idx=idx
-						break
-					fi
+					((match_count == row_num)) && found_idx=idx && break
 				fi
 			done
 		else
-			# Bottom-to-top search (sym is ^)
 			for ((idx = total_lines - 1; idx >= 0; idx--)); do
 				if [[ ${mapfile_lines[idx]} == *"${row_arg}"* ]]; then
 					((match_count++))
-					if ((match_count == row_num)); then
-						found_idx=idx
-						break
-					fi
+					((match_count == row_num)) && found_idx=idx && break
 				fi
 			done
 		fi
@@ -250,9 +355,8 @@ function Extract() {
 		selected_line="${mapfile_lines[found_idx]}"
 	fi
 
-	# 2. Split line into columns
 	local mapfile_cols=()
-	if [[ -z "${delim}" ]]; then
+	if var::empty "${delim}"; then
 		read -r -a mapfile_cols <<<"${selected_line}"
 	else
 		local -r old_ifs="${IFS}"
@@ -266,7 +370,7 @@ function Extract() {
 		local item
 		for item in "${temp_cols[@]}"; do
 			item="$(echo "${item}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-			ut::check_not_empty "${item}" && mapfile_cols+=("${item}")
+			var::valid "${item}" && mapfile_cols+=("${item}")
 		done
 	fi
 
@@ -275,11 +379,9 @@ function Extract() {
 
 	local output_cols=()
 
-	# 3. Col parsing
 	local col_arg
 	for col_arg in "${raw_col_args[@]}"; do
 		if [[ ${col_arg} =~ ^[0-9]+$ ]]; then
-			# Absolute/Relative positioning
 			local -i target_idx=-1
 			if [[ ${col_sym} == "<" ]]; then
 				target_idx=$((total_cols - col_arg))
@@ -290,29 +392,20 @@ function Extract() {
 			((target_idx < 0 || target_idx >= total_cols)) && return 1
 			output_cols+=("${mapfile_cols[target_idx]}")
 		else
-			# Filtering by string
 			local -i found_idx=-1 idx=0 match_count=0
 
 			if [[ ${col_sym} == ">" ]]; then
-				# Left-to-right search
 				for ((idx = 0; idx < total_cols; idx++)); do
 					if [[ ${mapfile_cols[idx]} == *"${col_arg}"* ]]; then
 						((match_count++))
-						if ((match_count == col_num)); then
-							found_idx=idx
-							break
-						fi
+						((match_count == col_num)) && found_idx=idx && break
 					fi
 				done
 			else
-				# Right-to-left search (sym is <)
 				for ((idx = total_cols - 1; idx >= 0; idx--)); do
 					if [[ ${mapfile_cols[idx]} == *"${col_arg}"* ]]; then
 						((match_count++))
-						if ((match_count == col_num)); then
-							found_idx=idx
-							break
-						fi
+						((match_count == col_num)) && found_idx=idx && break
 					fi
 				done
 			fi
@@ -341,108 +434,12 @@ function GetValue() {
 		return 1
 	}
 
-	if ut::check_unset_or_null "${data_source}"; then
+	if var::empty "${data_source}"; then
 		_parse "${pattern}"
-	elif ut::check_file_exist "${data_source}"; then
+	elif file::exist "${data_source}"; then
 		_parse "${pattern}" <"${data_source}"
 	else
 		_parse "${pattern}" <<<"${data_source}"
-	fi
-}
-function pkg::wait-dpkg-lock() {
-	local -ir max_timeout=180
-	local -i wait_time=0
-
-	Raw "- 等待 DPKG 鎖定釋放... "
-	while ! flock -n /var/lib/dpkg/lock-frontend -c "true" &>/dev/null || ! flock -n /var/lib/dpkg/lock -c "true" &>/dev/null; do
-		sleep 1
-		((wait_time++))
-		((wait_time > max_timeout)) && Err "等待 DPKG 鎖定釋放超時" && return 1
-	done
-	Finish
-}
-function pkg::count() {
-	case "${PKG_MGR^^}" in
-		APK) Txt "$(apk info | wc -l)" ;;
-		APT) Txt "$(dpkg -l | safe::grep -c "^ii")" ;;
-		DNF) Txt "$(rpm -qa | wc -l)" ;;
-		OPKG) Txt "$(opkg list-installed | wc -l)" ;;
-		PACMAN) Txt "$(pacman -Qq | wc -l)" ;;
-		YUM) Txt "$(rpm -qa | wc -l)" ;;
-		ZYPPER) Txt "$(rpm -qa | wc -l)" ;;
-		*) return 127 ;;
-	esac
-}
-function pkg::is_installed() {
-	.Flag
-
-	case "${PKG_MGR^^}" in
-		APK) apk info -e "${1,,}" &>/dev/null ;;
-		APT) dpkg -s "${1,,}" &>/dev/null ;;
-		DNF) rpm -q "${1,,}" &>/dev/null ;;
-		OPKG) opkg status "${1,,}" 2>/dev/null | safe::grep -q "Status:.*installed" ;;
-		PACMAN) pacman -Qq "${1,,}" &>/dev/null ;;
-		YUM) rpm -q "${1,,}" &>/dev/null ;;
-		ZYPPER) rpm -q "${1,,}" &>/dev/null ;;
-		*) return 127 ;;
-	esac
-}
-function pkg::installl() {
-	.Flag
-
-	case "${PKG_MGR^^}" in
-		APK) apk add "${1,,}" ;;
-		APT) pkg::wait-dpkg-lock && DEBIAN_FRONTEND=noninteractive apt-get install -y "${1,,}" ;;
-		DNF) dnf install -y "${1,,}" ;;
-		OPKG) opkg install "${1,,}" ;;
-		PACMAN) pacman -S --noconfirm "${1,,}" ;;
-		YUM) yum install -y "${1,,}" ;;
-		ZYPPER) zypper --non-interactive install -y "${1,,}" ;;
-		*) return 127 ;;
-	esac
-}
-function pkg::remove() {
-	.Flag
-
-	case "${PKG_MGR^^}" in
-		APK) apk del "${1,,}" ;;
-		APT) pkg::wait-dpkg-lock && DEBIAN_FRONTEND=noninteractive apt-get purge -y "${1,,}" && DEBIAN_FRONTEND=noninteractive apt-get autoremove -y ;;
-		DNF) dnf remove -y "${1,,}" ;;
-		OPKG) opkg remove "${1,,}" ;;
-		PACMAN) pacman -Rns --noconfirm "${1,,}" ;;
-		YUM) yum remove -y "${1,,}" ;;
-		ZYPPER) zypper --non-interactive remove -y "${1,,}" ;;
-		*) return 127 ;;
-	esac
-}
-function pkg::update() {
-	.Root
-
-	case "${PKG_MGR^^}" in
-		APK) apk update ;;
-		APT) pkg::wait-dpkg-lock && DEBIAN_FRONTEND=noninteractive apt-get update -y ;;
-		DNF) dnf check-update -y ;;
-		OPKG) opkg update ;;
-		PACMAN) : ;;
-		YUM) yum check-update -y ;;
-		ZYPPER) zypper refresh ;;
-		*) return 127 ;;
-	esac
-}
-function pkg::upgrade() {
-	.Root
-
-	if pkg::update; then
-		case "${PKG_MGR^^}" in
-			APK) apk upgrade ;;
-			APT) pkg::wait-dpkg-lock && DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y ;;
-			DNF) dnf upgrade -y ;;
-			OPKG) : ;;
-			PACMAN) pacman -Syu --noconfirm ;;
-			YUM) yum upgrade -y ;;
-			ZYPPER) zypper dup -y --no-allow-vendor-change ;;
-			*) return 127 ;;
-		esac
 	fi
 }
 
@@ -452,10 +449,10 @@ function AddFile() {
 
 	for item in "$@"; do
 		Txt "${CLR[3]}新增檔案 '${item}'${CLR[0]}"
-		ut::check_path_exist "${item}" && Err "檔案或目錄 '${item}' 已存在" && return 1
+		path::exist "${item}" && Err "檔案或目錄 '${item}' 已存在" && return 1
 		parent_dir="${item%/*}"
 
-		if [[ ${parent_dir} != "${item}" ]] && ! ut::check_dir_exist "${parent_dir}"; then
+		if [[ ${parent_dir} != "${item}" ]] && ! dir::exist "${parent_dir}"; then
 			if ! mkdir -p "${parent_dir}"; then
 				Err "無法建立父目錄 '${parent_dir}'。請檢查權限" && return 1
 			fi
@@ -476,7 +473,7 @@ function AddDir() {
 	for item in "$@"; do
 		Txt "${CLR[3]}新增目錄 '${item}'${CLR[0]}"
 
-		ut::check_path_exist "${item}" && Err "檔案或目錄 '${item}' 已存在" && return 1
+		path::exist "${item}" && Err "檔案或目錄 '${item}' 已存在" && return 1
 
 		if mkdir -p "${item}"; then
 			Txt "- 目錄 '${item}' 建立成功"
@@ -490,24 +487,13 @@ function AddPkg() {
 	.Root.Flag
 	local pkg
 
-	case "${PKG_MGR^^}" in
-		APK) : ;;
-		APT) : ;;
-		DNF) : ;;
-		OPKG) : ;;
-		PACMAN) : ;;
-		YUM) : ;;
-		ZYPPER) : ;;
-		*) Err "不支援的套件管理器" && return 1 ;;
-	esac
-
 	for pkg in "$@"; do
 		Txt "${CLR[3]}安裝套件 '${pkg}'${CLR[0]}"
 
 		if pkg::is_installed "${pkg}"; then
 			Txt "- 套件 ${pkg} 已經安裝"
 		else
-			if pkg::installl "${item}"; then
+			if pkg::install "${item}"; then
 				Txt "- 套件 ${pkg} 安裝成功"
 			else
 				Err "使用 ${PKG_MGR} 安裝 ${pkg} 失敗" && return 1
@@ -563,44 +549,44 @@ function ChkDeps() {
 function sys::distro() {
 	case "$1" in
 		-v | --version)
-			if ut::check_file_exist /etc/os-release; then
+			if file::exist /etc/os-release; then
 				local -r os_id="$(GetValue "ID" </etc/os-release)"
 				case "${os_id^^}" in
 					DEBIAN) cat /etc/debian_version ;;
-					FEDORA) safe::grep -oE '[0-9]+' /etc/fedora-release ;;
-					CENTOS) safe::grep -oE '[0-9]+\.[0-9]+' /etc/centos-release ;;
+					FEDORA) file::grep -oE '[0-9]+' /etc/fedora-release ;;
+					CENTOS) file::grep -oE '[0-9]+\.[0-9]+' /etc/centos-release ;;
 					ALPINE) cat /etc/alpine-release ;;
 					*) Txt "${VERSION_ID}" ;;
 				esac
-			elif ut::check_file_exist /etc/debian_version; then
+			elif file::exist /etc/debian_version; then
 				cat /etc/debian_version
-			elif ut::check_file_exist /etc/fedora-release; then
-				safe::grep -oE '[0-9]+' /etc/fedora-release
-			elif ut::check_file_exist /etc/centos-release; then
-				safe::grep -oE '[0-9]+\.[0-9]+' /etc/centos-release
-			elif ut::check_file_exist /etc/alpine-release; then
+			elif file::exist /etc/fedora-release; then
+				file::grep -oE '[0-9]+' /etc/fedora-release
+			elif file::exist /etc/centos-release; then
+				file::grep -oE '[0-9]+\.[0-9]+' /etc/centos-release
+			elif file::exist /etc/alpine-release; then
 				cat /etc/alpine-release
 			else
 				Err "Unknown" && return 1
 			fi
 			;;
 		-n | --name)
-			if ut::check_file_exist /etc/os-release; then
+			if file::exist /etc/os-release; then
 				GetValue "NAME" </etc/os-release
-			elif ut::check_file_exist /etc/DISTRO_SPECS; then
+			elif file::exist /etc/DISTRO_SPECS; then
 				GetValue "DISTRO_NAME" </etc/DISTRO_SPECS
 			else
 				Err "Unknown" && return 1
 			fi
 			;;
-		*) Trim "" "\n" </etc/issue ;;
+		*) str::trim "" "\n" </etc/issue ;;
 	esac
 }
 function sys::virt() {
 	if command -v "systemd-detect-virt" &>/dev/null; then
 		local -r virt_typ="$(systemd-detect-virt 2>/dev/null)"
 
-		ut::check_var_unset_or_null "${virt_typ}" && Err "無法偵測虛擬化環境" && return 1
+		var::empty "${virt_typ}" && Err "無法偵測虛擬化環境" && return 1
 
 		case "${virt_typ^^}" in
 			KVM)
@@ -613,9 +599,9 @@ function sys::virt() {
 			MICROSOFT) Txt "Microsoft Hyper-V" ;;
 			WSL) Txt "適用於 Linux 的 Windows 子系統" ;;
 			NONE)
-				if safe::grep -q "container=lxc" /proc/1/environ 2>/dev/null; then
+				if file::grep -q "container=lxc" /proc/1/environ 2>/dev/null; then
 					Txt "LXC 容器"
-				elif safe::grep -qi "hypervisor" /proc/cpuinfo 2>/dev/null; then
+				elif file::grep -qi "hypervisor" /proc/cpuinfo 2>/dev/null; then
 					Txt "虛擬機器（未知類型）"
 				else
 					Txt "未偵測到（可能為實體機器）"
@@ -623,8 +609,8 @@ function sys::virt() {
 				;;
 			*) Txt "${virt_typ}" ;;
 		esac
-	elif ((SYS_CAPS[proc_cpuinfo] == 1)); then
-		if safe::grep -qi "hypervisor" /proc/cpuinfo 2>/dev/null; then
+	elif file::exist /proc/cpuinfo; then
+		if file::grep -qi "hypervisor" /proc/cpuinfo 2>/dev/null; then
 			Txt "虛擬機器（未知類型）"
 		else
 			Txt "未偵測到（可能為實體機器）"
@@ -633,20 +619,24 @@ function sys::virt() {
 		Txt "未知環境"
 	fi
 }
-function Clear() (
+function Clear() {
 	if ! cd "${1:-${HOME}}"; then
 		Err "切換目錄失敗" && return 1
 	fi
 	clear
-)
+}
 function cpu::cache() {
-	((SYS_CAPS[proc_cpuinfo] != 1)) && Err "無法存取 CPU 資訊。" && return 1
+	if ! file::exist /proc/cpuinfo; then
+		Err "無法存取 CPU 資訊。" && return 1
+	fi
 	local -r cpu_cache="$(awk '/^cache size/ {sum+=$4; count++} END {print (count>0) ? sum/count : "N/A"}' /proc/cpuinfo)"
 	[[ ${cpu_cache} == "N/A" ]] && Err "無法確定 CPU 快取大小" && return 1
 	Txt "${cpu_cache} KB"
 }
 function cpu::freq() {
-	((SYS_CAPS[proc_cpuinfo] != 1)) && Err "無法存取 CPU 資訊。" && return 1
+	if ! file::exist /proc/cpuinfo; then
+		Err "無法存取 CPU 資訊。" && return 1
+	fi
 	local -r cpu_freq="$(awk '/^cpu MHz/ {sum+=$4; count++} END {print (count>0) ? sprintf("%.2f", sum/count/1000) : "N/A"}' /proc/cpuinfo)"
 	[[ ${cpu_freq} == "N/A" ]] && Err "無法確定 CPU 頻率" && return 1
 	Txt "${cpu_freq} GHz"
@@ -662,14 +652,14 @@ function cpu::usage() {
 	local -i usr nice sys idle iowait irq softirq steal guest guest_nice
 
 	if read -r _ usr nice sys idle iowait irq softirq steal guest guest_nice <<<"$(Extract cpu {1..11} </proc/stat)"; then
-		ut::check_var_unset_or_null "${idle}" && Err "從 /proc/stat 讀取第一階段 CPU 統計失敗" && return 1
+		var::empty "${idle}" && Err "從 /proc/stat 讀取第一階段 CPU 統計失敗" && return 1
 	fi
 	local -ir prev_total=$((usr + nice + sys + idle + iowait + irq + softirq + steal + guest + guest_nice)) prev_idle=idle
 
 	sleep 0.3
 
 	if read -r _ usr nice sys idle iowait irq softirq steal guest guest_nice <<<"$(Extract cpu {1..11} </proc/stat)"; then
-		ut::check_var_unset_or_null "${idle}" && Err "從 /proc/stat 讀取第二階段 CPU 統計失敗" && return 1
+		var::empty "${idle}" && Err "從 /proc/stat 讀取第二階段 CPU 統計失敗" && return 1
 	fi
 	local -ir curr_total=$((usr + nice + sys + idle + iowait + irq + softirq + steal + guest + guest_nice)) curr_idle=idle
 	local -ir tot_delta=$((curr_total - prev_total)) idle_delta=$((curr_idle - prev_idle))
@@ -736,7 +726,7 @@ function DelFile() {
 	local item
 	for item in "$@"; do
 		Txt "${CLR[3]}刪除檔案 '${item}'${CLR[0]}"
-		if ut::check_file_exist "${item}"; then
+		if file::exist "${item}"; then
 			if rm -f "${item}"; then
 				Txt "- 檔案 '${item}' 刪除成功"
 			else
@@ -754,7 +744,7 @@ function DelDir() {
 	local item
 	for item in "$@"; do
 		Txt "${CLR[3]}刪除目錄 '${item}'${CLR[0]}"
-		if ut::check_dir_exist "${item}"; then
+		if dir::exist "${item}"; then
 			if rm -rf "${item}"; then
 				Txt "- 目錄 '${item}' 刪除成功"
 			else
@@ -769,17 +759,6 @@ function DelDir() {
 function DelPkg() {
 	.Root.Flag
 	local pkg
-
-	case "${PKG_MGR^^}" in
-		APK) : ;;
-		APT) : ;;
-		DNF) : ;;
-		OPKG) : ;;
-		PACMAN) : ;;
-		YUM) : ;;
-		ZYPPER) : ;;
-		*) Err "不支援的套件管理器" && return 1 ;;
-	esac
 
 	for pkg in "$@"; do
 		Txt "${CLR[3]}移除套件 '${pkg}'${CLR[0]}"
@@ -808,13 +787,13 @@ function disk::info() {
 	esac
 }
 function net::dns() {
-	ut::check_file_exist /etc/resolv.conf && Err "找不到 DNS 設定檔" && return 1
+	file::exist /etc/resolv.conf && Err "找不到 DNS 設定檔" && return 1
 	local dns4=() dns6=()
 
 	while read -r servers; do
 		[[ ${servers} =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] && dns4+=("${servers}")
 		[[ ${servers} =~ ^[0-9a-fA-F:]+$ ]] && dns6+=("${servers}")
-	done < <(safe::grep -E '^nameserver' /etc/resolv.conf | Extract 1 2)
+	done < <(file::grep -E '^nameserver' /etc/resolv.conf | Extract 1 2)
 
 	((${#dns4[@]} == 0 && ${#dns6[@]} == 0)) && Err "/etc/resolv.conf 中未設定 DNS 伺服器" && return 1
 	case "${1:-}" in
@@ -845,7 +824,7 @@ function file::download() {
 				;;
 			-*) Err "無效的選項：$1" && return 1 ;;
 			*)
-				if ut::check_var_unset_or_null "${url}"; then
+				if var::empty "${url}"; then
 					url="$1" || targ_dir="$1"
 				fi
 				shift
@@ -853,23 +832,23 @@ function file::download() {
 		esac
 	done
 
-	ut::check_var_unset_or_null "${url}" && Err "未指定 URL。請提供要下載的 URL" && return 1
+	var::empty "${url}" && Err "未指定 URL。請提供要下載的 URL" && return 1
 	[[ ${url} =~ ^(http|https|ftp):// ]] || url="https://${url}"
 	oup_file="${url##*/}"
-	ut::check_var_unset_or_null "${oup_file}" && oup_file="index.html"
+	var::empty "${oup_file}" && oup_file="index.html"
 	if [[ ${targ_dir} != "." ]]; then
 		mkdir -p "${targ_dir}"
 	else
 		Err "建立目錄 ${targ_dir} 失敗" && return 1
 	fi
-	ut::check_var_not_empty "${rnm_file}" && oup_file="${rnm_file}"
+	var::valid "${rnm_file}" && oup_file="${rnm_file}"
 	oup_path="${targ_dir}/${oup_file}"
 	url=$(Txt "${url}" | sed -E 's#([^:])/+#\1/#g; s#^(https?|ftp):/+#\1://#')
 	Txt "${CLR[3]}下載 '${url}'${CLR[0]}"
 
 	wget --no-check-certificate --timeout=5 --tries=2 "${url}" -O "${oup_path}" || { Err "下載檔案失敗" && return 1; }
 
-	if ut::check_file_exist "${oup_path}"; then
+	if file::exist "${oup_path}"; then
 		Txt "- 檔案成功下載至 ${oup_path}"
 		if ((unzip == 1)); then
 			if case "${oup_file}" in
@@ -900,17 +879,17 @@ function net::iface() {
 
 	all_interfaces=$(
 		cat /proc/net/dev |
-			safe::grep ':' |
+			str::grep ':' |
 			cut -d':' -f1 |
 			sed 's/\s//g' |
-			safe::grep -iv '^lo\|^sit\|^stf\|^gif\|^dummy\|^vmnet\|^vir\|^gre\|^ipip\|^ppp\|^bond\|^tun\|^tap\|^ip6gre\|^ip6tnl\|^teql\|^ocserv\|^vpn\|^warp\|^wgcf\|^wg\|^docker\|^br-\|^veth' |
+			str::grep -iv '^lo\|^sit\|^stf\|^gif\|^dummy\|^vmnet\|^vir\|^gre\|^ipip\|^ppp\|^bond\|^tun\|^tap\|^ip6gre\|^ip6tnl\|^teql\|^ocserv\|^vpn\|^warp\|^wgcf\|^wg\|^docker\|^br-\|^veth' |
 			sort -n
 	) || { Err "從 /proc/net/dev 取得網路介面失敗" && return 1; }
 
 	mapfile -t items <<<"${all_interfaces}"
 	interfaces=([0]="placeholder")
 	for item in "${items[@]}"; do
-		ut::check_var_not_empty "${item}" && interfaces+=("${item}")
+		var::valid "${item}" && interfaces+=("${item}")
 	done
 	unset 'interfaces[0]'
 	interfaces_num=${#interfaces[@]}
@@ -920,20 +899,20 @@ function net::iface() {
 
 	for ((i = 1; i <= ${#interfaces[@]}; i++)); do
 		item="${interfaces[i]}"
-		ut::check_var_unset_or_null "${item}" && continue
+		var::empty "${item}" && continue
 
-		if ut::check_var_not_empty "${default4_route}" && ut::check_var_unset_or_null "${interface4}"; then
-			Txt "${default4_route}" | safe::grep -qE "\bdev ${item}\b"
+		if var::valid "${default4_route}" && var::empty "${interface4}"; then
+			Txt "${default4_route}" | str::grep -qE "\bdev ${item}\b"
 			interface4="${item}"
 		fi
-		if ut::check_var_not_empty "${default6_route}" && ut::check_var_unset_or_null "${interface6}"; then
-			Txt "${default6_route}" | safe::grep -qE "\bdev ${item}\b"
+		if var::valid "${default6_route}" && var::empty "${interface6}"; then
+			Txt "${default6_route}" | str::grep -qE "\bdev ${item}\b"
 			interface6="${item}"
 		fi
-		ut::check_var_not_empty "${interface4}" "${interface6}" && break
+		var::valid "${interface4}" "${interface6}" && break
 	done
 
-	if ut::check_var_unset_or_null "${interface4}${interface6}"; then
+	if var::empty "${interface4}${interface6}"; then
 		for ((i = 1; i <= ${#interfaces[@]}; i++)); do
 			item="${interfaces[i]}"
 			if [[ ${item} =~ ^en ]]; then
@@ -948,16 +927,16 @@ function net::iface() {
 		fi
 	fi
 
-	if ut::check_var_not_empty "${interface4}" || ut::check_var_not_empty "${interface6}"; then
+	if var::valid "${interface4}" || var::valid "${interface6}"; then
 		interface="${interface4} ${interface6}"
 		[[ ${interface4} == "${interface6}" ]] && interface="${interface4}"
 		interface=$(Txt "${interface}" | tr -s ' ' | xargs)
 	else
-		physical_iface=$(ip -o link show | safe::grep -v 'lo\|docker\|br-\|veth\|bond\|tun\|tap' | safe::grep 'state UP' | head -n 1 | Extract 1 2 ":")
-		if ut::check_var_not_empty "${physical_iface}"; then
+		physical_iface=$(ip -o link show | str::grep -v 'lo\|docker\|br-\|veth\|bond\|tun\|tap' | str::grep 'state UP' | head -n 1 | Extract 1 2 ":")
+		if var::valid "${physical_iface}"; then
 			interface="${physical_iface}"
 		else
-			interface=$(ip -o link show | safe::grep -v 'lo:' | head -n 1 | Extract 1 2 ":")
+			interface=$(ip -o link show | str::grep -v 'lo:' | head -n 1 | Extract 1 2 ":")
 		fi
 	fi
 
@@ -971,7 +950,7 @@ function net::iface() {
 						break
 					fi
 				done </proc/net/dev 2>/dev/null
-				if ut::check_var_not_empty "${stats}"; then
+				if var::valid "${stats}"; then
 					read -r rx_bytes rx_packets rx_drop tx_bytes tx_packets tx_drop <<<"${stats}"
 					case "$1" in
 						--rx_bytes) Txt "${rx_bytes}" && break ;;
@@ -993,7 +972,7 @@ function net::iface() {
 						break
 					fi
 				done </proc/net/dev 2>/dev/null
-				if ut::check_var_not_empty "${stats}"; then
+				if var::valid "${stats}"; then
 					read -r rx_bytes rx_packets rx_drop tx_bytes tx_packets tx_drop <<<"${stats}"
 					Txt "${iface}：輸入：$(ConvSz "${rx_bytes}")，輸出：$(ConvSz "${tx_bytes}")"
 				fi
@@ -1013,7 +992,7 @@ function net::ip() {
 				break
 			done
 
-			ip4_addr=$(safe::grep -oE "${ip4_regex}" <<<"${ip4_addr}")
+			ip4_addr=$(str::grep -oE "${ip4_regex}" <<<"${ip4_addr}")
 			Txt "${ip4_addr:-N/A}"
 			;;
 		-6 | --ipv6)
@@ -1021,7 +1000,7 @@ function net::ip() {
 				ip6_addr=$(timeout 1s curl -s6L "${api}" 2>/dev/null)
 				break
 			done
-			ip6_addr=$(safe::grep -oE "${ip6_regex}" <<<"${ip6_addr}")
+			ip6_addr=$(str::grep -oE "${ip6_regex}" <<<"${ip6_addr}")
 			Txt "${ip6_addr:-N/A}"
 			;;
 		-p | --public) Txt "$(GetValue "ip" < <(wget -qO- "https://developers.cloudflare.com/cdn-cgi/trace"))" ;;
@@ -1030,15 +1009,15 @@ function net::ip() {
 				ip4_addr=$(timeout 1s curl -s4L "${api}" 2>/dev/null)
 				break
 			done
-			ip4_addr=$(safe::grep -oE "${ip4_regex}" <<<"${ip4_addr}")
+			ip4_addr=$(str::grep -oE "${ip4_regex}" <<<"${ip4_addr}")
 
 			for api in "${apis[@]}"; do
 				ip6_addr=$(timeout 1s curl -s6L "${api}" 2>/dev/null)
 				break
 			done
-			ip6_addr=$(safe::grep -oE "${ip6_regex}" <<<"${ip6_addr}")
+			ip6_addr=$(str::grep -oE "${ip6_regex}" <<<"${ip6_addr}")
 
-			ut::check_var_unset_or_null "${ip4_addr}${ip6_addr}" && Err "取得 IP 位址失敗" && return 1
+			var::empty "${ip4_addr}${ip6_addr}" && Err "取得 IP 位址失敗" && return 1
 			Raw "IPv4: " && Txt "${ip4_addr:-N/A}"
 			Raw "IPv6: " && Txt "${ip6_addr:-N/A}"
 			;;
@@ -1086,8 +1065,8 @@ function mem::info() {
 }
 function net::provider() {
 	timeout 1s wget -qO- "https://ipinfo.io" | GetValue "org" && return 0
-	timeout 1s wget -qO- "https://ipwhois.app/json" | Trim '"org":"' '",' && return 0
-	timeout 1s wget -qO- "http://ip-api.com/json" | Trim '"org":"' '",' && return 0
+	timeout 1s wget -qO- "https://ipwhois.app/json" | str::trim '"org":"' '",' && return 0
+	timeout 1s wget -qO- "http://ip-api.com/json" | str::trim '"org":"' '",' && return 0
 
 	Err "無法偵測網路供應商。請檢查網路連線" && return 1
 }
@@ -1096,8 +1075,8 @@ function sys::shell_version() {
 	# TODO: refactor this
 	local -r LC_ALL=C
 
-	ut::check_var_not_empty "${BASH_VERSION:-}" && Txt "Bash ${BASH_VERSION}" && return 0
-	ut::check_var_not_empty "${ZSH_VERSION:-}" && Txt "Zsh ${ZSH_VERSION}" && return 0
+	var::valid "${BASH_VERSION:-}" && Txt "Bash ${BASH_VERSION}" && return 0
+	var::valid "${ZSH_VERSION:-}" && Txt "Zsh ${ZSH_VERSION}" && return 0
 
 	Err "不支援的 Shell" && return 1
 }
@@ -1125,11 +1104,10 @@ function SysClean() {
 			Task "- 修復 ${PKG_MGR} 套件" "apk fix" || { Err "修復 ${PKG_MGR} 套件失敗" && return 1; }
 			;;
 		APT)
-			pkg::wait-dpkg-lock
 			Task "- 設定待處理的套件" "DEBIAN_FRONTEND=noninteractive dpkg --configure -a" || { Err "設定待處理套件失敗" && return 1; }
-			Task "- 自動移除套件" "DEBIAN_FRONTEND=noninteractive apt-get autoremove --purge -y" || { Err "自動移除套件失敗" && return 1; }
-			Task "- 清理 ${PKG_MGR} 快取" "DEBIAN_FRONTEND=noninteractive apt-get clean -y" || { Err "清理 ${PKG_MGR} 快取失敗" && return 1; }
-			Task "- 自動清理 ${PKG_MGR} 快取" "DEBIAN_FRONTEND=noninteractive apt-get autoclean -y" || { Err "自動清理 ${PKG_MGR} 快取失敗" && return 1; }
+			Task "- 自動移除套件" "pkg::apt autoremove --purge" || { Err "自動移除套件失敗" && return 1; }
+			Task "- 清理 ${PKG_MGR} 快取" "pkg::apt clean" || { Err "清理 ${PKG_MGR} 快取失敗" && return 1; }
+			Task "- 自動清理 ${PKG_MGR} 快取" "pkg::apt autoclean" || { Err "自動清理 ${PKG_MGR} 快取失敗" && return 1; }
 			;;
 		OPKG)
 			Task "- 移除暫存檔案" "rm -rf /tmp/*" || { Err "移除暫存檔案失敗" && return 1; }
@@ -1155,7 +1133,6 @@ function SysClean() {
 			Task "- 清理 ${PKG_MGR} 快取" "zypper clean --all" || { Err "清理 ${PKG_MGR} 快取失敗" && return 1; }
 			Task "- 重新整理 ${PKG_MGR} 套件庫" "zypper refresh" || { Err "重新整理 ${PKG_MGR} 套件庫失敗" && return 1; }
 			;;
-		*) Err "不支援的套件管理器" && return 1 ;;
 	esac
 
 	if command -v "journalctl" &>/dev/null; then
@@ -1239,8 +1216,8 @@ function SysInfo() {
 
 	SLine
 
-	Txt "- 啟動時刻：            ${CLR[2]}$(who -b | Trim "boot  ")${CLR[0]}"
-	Txt "- 運行時間：            ${CLR[2]}$(uptime -p | Trim "up ")${CLR[0]}"
+	Txt "- 啟動時刻：            ${CLR[2]}$(who -b | str::trim "boot  ")${CLR[0]}"
+	Txt "- 運行時間：            ${CLR[2]}$(uptime -p | str::trim "up ")${CLR[0]}"
 
 	SLine
 
@@ -1248,7 +1225,7 @@ function SysInfo() {
 
 	DLine
 }
-function SysOptz() (
+function SysOptz() {
 	.Root
 
 	Txt "${CLR[3]}正在優化長期運行伺服器的系統設定...${CLR[0]}" && DLine
@@ -1315,16 +1292,16 @@ function SysOptz() (
 			[[ -d "${disk}" ]] || continue
 			# 依據是否為旋轉磁碟決定排程器 (0 為 SSD/NVMe)
 			dev_type=$(cat "${disk}/queue/rotational" 2>/dev/null || Txt "1")
-			if Txt "${dev_type}" | safe::grep -q "0"; then
-				Txt "none" >"${disk}/queue/scheduler" 2>/dev/null
+			if Txt "${dev_type}" | str::grep -q "0"; then
+				cat <<<"none" >"${disk}/queue/scheduler" 2>/dev/null
 			else
-				Txt "mq-deadline" >"${disk}/queue/scheduler" 2>/dev/null
+				cat <<<"mq-deadline" >"${disk}/queue/scheduler" 2>/dev/null
 			fi
-			Txt "256" >"${disk}/queue/nr_requests" 2>/dev/null || true
+			cat <<<"256" >"${disk}/queue/nr_requests" 2>/dev/null || true
 		done
 	}
 
-	function _DisableService() (
+	function _DisableService() {
 		local services=(
 			autofs
 			avahi-daemon
@@ -1340,11 +1317,11 @@ function SysOptz() (
 				systemctl disable --now "${s}.service" &>/dev/null || true
 			fi
 		done
-	)
+	}
 
 	function _OptimizeSSH() {
 		local ssh_conf=/etc/ssh/sshd_config
-		[[ -f "${ssh_conf}" ]] || return 0
+		[[ -f ${ssh_conf} ]] || return 0
 
 		# 備份原始設定
 		cp "${ssh_conf}" "${ssh_conf}.bak"
@@ -1364,7 +1341,7 @@ function SysOptz() (
 
 	function _OptimizeJournal() {
 		local journal_conf=/etc/systemd/journald.conf
-		[[ -f "${journal_conf}" ]] || return 0
+		[[ -f ${journal_conf} ]] || return 0
 
 		# 限制日誌最大佔用 500MB 空間，預設通常是硬碟的 10%（極易塞爆）
 		sed -i 's/^#\?SystemMaxUse.*/SystemMaxUse=500M/g' "${journal_conf}"
@@ -1386,22 +1363,22 @@ function SysOptz() (
 		swapon "${swapfile}"
 
 		# 寫入開機自動掛載
-		safe::grep -q "${swapfile}" /etc/fstab || Txt "${swapfile} none swap sw 0 0" >>/etc/fstab
+		file::grep -q "${swapfile}" /etc/fstab || cat <<<"${swapfile} none swap sw 0 0" >>/etc/fstab
 	}
 
-	if Raw "- 正在產生核心參數與網路優化設定... " && _ApplySysctlConf &>/dev/null && Finish; then true; else return 1; fi
-	if Raw "- 正在產生系統資源限制設定... " && _ApplySystemLimits &>/dev/null && Finsh; then true; else return 1; fi
-	if Raw "- 正在優化儲存裝置 I/O 排程器... " && _OptimizeDisk &>/dev/null && Finsh; then true; else return 1; fi
-	if Raw "- 正在停用背景非必要服務... " && _DisableService &>/dev/null && Finsh; then true; else return 1; fi
-	if Raw "- 正在優化 SSH 連線與安全性設定... " && _OptimizeSSH &>/dev/null && Finsh; then true; else return 1; fi
-	if Raw "- 正在配置日誌上限以保護磁碟空間... " && _OptimizeJournal &>/dev/null && Finsh; then true; else return 1; fi
-	if Raw "- 正在建置系統應急 Swap 緩衝空間... " && _EnsureSwap &>/dev/null && Finsh; then true; else return 1; fi
-	if Raw "- 正在將核心參數載入系統運作... " && sysctl --system &>/dev/null && Finsh; then true; else return 1; fi
-	if Raw "- 正在清理網路鄰居快取快門... " && ip -s -s neigh flush all &>/dev/null && Finsh; then true; else return 1; fi
+	if Raw "- 正在產生核心參數與網路優化設定... " && _ApplySysctlConf &>/dev/null; then Finish; else return 1; fi
+	if Raw "- 正在產生系統資源限制設定... " && _ApplySystemLimits &>/dev/null; then Finish; else return 1; fi
+	if Raw "- 正在優化儲存裝置 I/O 排程器... " && _OptimizeDisk &>/dev/null; then Finish; else return 1; fi
+	if Raw "- 正在停用背景非必要服務... " && _DisableService &>/dev/null; then Finish; else return 1; fi
+	if Raw "- 正在優化 SSH 連線與安全性設定... " && _OptimizeSSH &>/dev/null; then Finish; else return 1; fi
+	if Raw "- 正在配置日誌上限以保護磁碟空間... " && _OptimizeJournal &>/dev/null; then Finish; else return 1; fi
+	if Raw "- 正在建置系統應急 Swap 緩衝空間... " && _EnsureSwap &>/dev/null; then Finish; else return 1; fi
+	if Raw "- 正在將核心參數載入系統運作... " && sysctl --system &>/dev/null; then Finish; else return 1; fi
+	if Raw "- 正在清理網路鄰居快取快門... " && ip -s -s neigh flush all &>/dev/null; then Finish; else return 1; fi
 
 	Dline
 	Finish
-)
+}
 function SysRboot() {
 	.Root
 	local -r active_usrs="$(who | wc -l)" important_procs="$(ps aux --no-headers | awk '$3 > 1.0 || $4 > 1.0' | wc -l)"
@@ -1438,7 +1415,7 @@ function SysRboot() {
 	Task "- 開始重新啟動" "reboot || sudo reboot" || { Err "啟動重新啟動失敗" && return 1; }
 	Txt "${CLR[2]}已成功發出重新啟動命令。系統將立即重新啟動${CLR[0]}"
 }
-function SysUpd() (
+function SysUpd() {
 	.Root
 
 	local -r current_lang="${LANG}" update_url="https://raw.githubusercontent.com/OG-Open-Source/UtilKit/main/sh/get_utilkit.sh"
@@ -1453,8 +1430,8 @@ function SysUpd() (
 
 	Dline
 	Finish
-)
-function SysUpg() (
+}
+function SysUpg() {
 	.Root
 
 	Txt "${CLR[3]}正在升級系統至下一個主要版本...${CLR[0]}" && DLine
@@ -1464,9 +1441,9 @@ function SysUpg() (
 		DEBIAN)
 			Txt "- 偵測到 DEBIAN 系統"
 			Txt "- 正在更新套件清單"
-			DEBIAN_FRONTEND=noninteractive apt-get update -y || { Err "使用 APT 更新套件清單失敗" && return 1; }
+			pkg::updatee || { Err "使用 APT 更新套件清單失敗" && return 1; }
 			Txt "- 正在升級目前的套件"
-			DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y || { Err "升級目前的套件失敗" && return 1; }
+			pkg::upgrade || { Err "升級目前的套件失敗" && return 1; }
 			Txt "- 開始 DEBIAN 發行版升級..."
 			curr_codenm=$(lsb_release -cs)
 			targ_codenm=$(GetValue "Codename" < <(wget -qO- "https://ftp.debian.org/debian/dists/stable/Release"))
@@ -1474,14 +1451,14 @@ function SysUpg() (
 			Txt "- 正在從 ${CLR[2]}${curr_codenm}${CLR[0]} 升級到 ${CLR[3]}${targ_codenm}${CLR[0]}"
 			Task "- 備份 sources.list" "cp /etc/apt/sources.list /etc/apt/sources.list.backup" || { Err "備份 sources.list 失敗" && return 1; }
 			Task "- 更新 sources.list" "sed -i 's/${curr_codenm}/${targ_codenm}/g' /etc/apt/sources.list" || { Err "更新 sources.list 失敗" && return 1; }
-			Task "- 更新套件清單" "DEBIAN_FRONTEND=noninteractive apt-get update -y" || { Err "更新新版本的套件清單失敗" && return 1; }
-			DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y || { Err "升級到新的 DEBIAN 版本失敗" && return 1; }
+			Task "- 更新套件清單" "pkg::update" || { Err "更新新版本的套件清單失敗" && return 1; }
+			pkg::upgrade || { Err "升級到新的 DEBIAN 版本失敗" && return 1; }
 			;;
 		UBUNTU)
 			Txt "- 偵測到 UBUNTU 系統"
-			Task "- 正在更新套件清單" "DEBIAN_FRONTEND=noninteractive apt-get update -y" || { Err "使用 APT 更新套件清單失敗" && return 1; }
-			Task "- 正在升級目前的套件" "DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y" || { Err "升級目前的套件失敗" && return 1; }
-			Task "- 安裝 update-manager-core" "DEBIAN_FRONTEND=noninteractive apt-get install -y update-manager-core" || { Err "安裝 update-manager-core 失敗" && return 1; }
+			Task "- 正在更新套件清單" "pkg::update" || { Err "使用 APT 更新套件清單失敗" && return 1; }
+			Task "- 正在升級目前的套件" "pkg::upgrade" || { Err "升級目前的套件失敗" && return 1; }
+			Task "- 安裝 update-manager-core" "pkg::install update-manager-core" || { Err "安裝 update-manager-core 失敗" && return 1; }
 			do-release-upgrade -f DistUpgradeViewNonInteractive || { Err "升級 UBUNTU 版本失敗" && return 1; }
 			SysRboot
 			;;
@@ -1489,43 +1466,49 @@ function SysUpg() (
 	esac
 	Dline
 	Finish
-)
+}
 function Task() {
 	.Flag
-	local -r command_str="$2" ignore_error="${3:-false}"
+	local -r msg="$1" ignore_error="${2:-false}"
+	shift 2 # 移出前兩個參數，剩下的 "$@" 就是完整的命令與其參數
+
 	local ret tmp_file
 
 	if ! tmp_file=$(mktemp); then
 		Err "無法建立臨時檔案" && return 1
 	fi
 
+	# 注意：在 Bash 中，函式內的 trap '...' RETURN
+	# 需要在 Bash 4.4+ 或有設定 set -T / trap_return 的情況下才完全可靠。
+	# 建議保留或確保環境支援。
 	trap 'rm -f "${tmp_file}"' RETURN
 
-	Raw "$1... "
+	Raw "${msg}... "
 
-	if eval "${command_str}" >"${tmp_file}" 2>&1; then
+	# 關鍵改動：直接執行 "$@"，完全不透過 eval，絕對安全且支援帶有空白的參數
+	if "$@" >"${tmp_file}" 2>&1; then
 		Finish
 		ret=0
 	else
 		ret=$?
-		Txt "${CLR[1]}失敗${CLR[0]} (${ret}"
+		Txt "${CLR[1]}失敗${CLR[0]} (${ret})"
 		[[ -s "${tmp_file}" ]] && Txt "${CLR[1]}$(cat "${tmp_file}")${CLR[0]}"
-		[[ ${ignore_error} == true ]] || return "${ret}"
+		[[ ${ignore_error} == "true" ]] || return "${ret}"
 	fi
 	return "${ret}"
 }
-function sys::timezone() (
+function sys::timezone() {
 	.Flag
 
 	function _DetectExternal() {
 		timeout 1.5s wget -qO- "https://ipapi.co/json" | GetValue "timezone" && return 0
-		timeout 1.5s wget -qO- "http://ip-api.com/json" | Trim '"timezone":"' '",' && return 0
+		timeout 1.5s wget -qO- "http://ip-api.com/json" | str::trim '"timezone":"' '",' && return 0
 		return 1
 	}
 	function _DetectInternal() {
-		readlink /etc/localtime | Trim "zoneinfo/" && return 0
+		readlink /etc/localtime | str::trim "zoneinfo/" && return 0
 		timedatectl status | Extract "Time zone" 2 ":" && return 0
-		safe::grep -v "^#" /etc/timezone | tr -d " " && return 0
+		file::grep -v "^#" /etc/timezone | tr -d " " && return 0
 		return 1
 	}
 
@@ -1541,7 +1524,7 @@ function sys::timezone() (
 			fi
 			;;
 	esac
-)
+}
 function Press() {
 	if ! read -p "$1" -n 1 -r; then
 		Err "讀取使用者輸入失敗" && return 1
@@ -1589,7 +1572,7 @@ function HelpMsg() {
 			*)
 				item="$1"
 
-				if ut::check_var_not_empty "$2" && [[ $2 != -* ]]; then
+				if var::valid "$2" && [[ $2 != -* ]]; then
 					desc="$2"
 					shift 2
 				else
