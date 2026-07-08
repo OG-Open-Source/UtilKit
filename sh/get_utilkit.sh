@@ -7,9 +7,9 @@ declare e loc m pkg_mgr="unknown"
 loc=$(wget -qO- "https://developers.cloudflare.com/cdn-cgi/trace" | sed -n 's/^loc=//p')
 
 case "${loc^^}" in
-	CN) echo "zh-CN" ;;
-	TW) echo "zh-TW" ;;
-	*) echo "en" ;;
+	CN) loc="zh-cn" ;;
+	TW) loc="zh-tw" ;;
+	*) loc="en" ;;
 esac
 
 for m in apt-get apk dnf opkg pacman yum zypper; do
@@ -41,7 +41,7 @@ function download_utilkit_sh() {
 	fi
 }
 
-lang="${1:-$(DetectLang)}"
+lang="${1:-${loc}}"
 
 if [[ -f ${HOME}/utilkit.sh ]]; then
 	printf "%b\n" "\x1b[0;32mUpdating UtilKit.sh...\x1b[0m"
@@ -49,14 +49,6 @@ if [[ -f ${HOME}/utilkit.sh ]]; then
 	detect_environment
 	printf "%b\n" "\x1b[0;32mUtilKit.sh has been updated successfully\x1b[0m"
 else
-	if ! crontab -l 2>/dev/null | grep -q "get_utilkit.sh"; then
-		(crontab -l 2>/dev/null || true) | {
-			cat
-			printf "%b\n" "0 0 * * 0 wget -qO- https://raw.githubusercontent.com/OG-Open-Source/UtilKit/main/sh/get_utilkit.sh | bash -s -- ${lang}"
-		} | crontab -
-		printf "%b\n" "\x1b[0;32mAdded weekly auto-update to crontab\x1b[0m"
-	fi
-
 	printf "%b\n" "\x1b[0;32mDownloading UtilKit.sh...\x1b[0m"
 	download_utilkit_sh
 	detect_environment
