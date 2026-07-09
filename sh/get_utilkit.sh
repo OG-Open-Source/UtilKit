@@ -25,7 +25,7 @@ function detect_environment() {
 	((BASH_VERSINFO[0] > 4)) || ((BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] >= 4)) || return 1
 	[[ ${pkg_mgr,,} == "apt-get" ]] && dpkg --compare-versions "$(apt-get --version | head -n1 | awk '{print $2}')" ge "1.9" && pkg_mgr="apt"
 
-	sed -i "s/BASH=1/BASH=0/" "${HOME}/utilkit.sh"
+	sed -i "s/BASH=0/BASH=1/" "${HOME}/utilkit.sh"
 	sed -i "s/PKG_MGR=\"unknown\"/PKG_MGR=\"${pkg_mgr}\"/" "${HOME}/utilkit.sh"
 }
 
