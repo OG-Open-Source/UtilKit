@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VERSION="8.0.0a6"
+# VERSION="8.0.0a7"
 
 # set -Eeuo pipefail
 # set +u
@@ -7,7 +7,7 @@ set -o pipefail
 shopt -s expand_aliases
 
 declare _
-declare BASH=1 PKG_MGR="unknown" LANG="" UNIT_PREF="IB"
+declare BASH=0 PKG_MGR="unknown" LANG="" UNIT_PREF="IB"
 
 declare CLR=(
 	"\x1b[0m"    # [0] 重置
@@ -32,22 +32,31 @@ alias .Root.Flag='(($# == 0)) && return 2; ((EUID != 0 || $(id -u) != 0)) && ret
 # ----------------------------------------------------------------------
 #  Namespace: _
 # ----------------------------------------------------------------------
-function grep() { false; }
+function curl() { false; }
 function eval() { false; }
+function grep() { false; }
+function wget() { false; }
 
 # ----------------------------------------------------------------------
-#  Namespace: str
+#  Namespace: url
 # ----------------------------------------------------------------------
-function str::grep() { command grep "$@"; }
-function str::trim() {
+function url::get() {
+	command wget \
+		--timeout=15 \
+		--tries=3 \
+		--waitretry=5 \
+		--retry-on-http-error=429,500,502,503,504 \
+		--max-redirect=5 \
+		"$@"
+}
+
+# ----------------------------------------------------------------------
+#  Namespace: dir
+# ----------------------------------------------------------------------
+function dir::exist() {
 	.Flag
-
-	local stdin_buffer
-	stdin_buffer=$(cat)
-	[[ -n ${1:-} ]] && stdin_buffer="${stdin_buffer#*"$1"}"
-	[[ -n ${2:-} ]] && stdin_buffer="${stdin_buffer%%"$2"*}"
-
-	Txt "${stdin_buffer}"
+	local d
+	for d in "$@"; do [[ -d "$d" ]] || return 1; done
 }
 
 # ----------------------------------------------------------------------
@@ -65,19 +74,19 @@ function file::valid() {
 }
 function file::grep() {
 	(($# < 2)) && return 2
-	command -v "grep" &>/dev/null || return 126
+	command -v grep &>/dev/null || return 126
 	local -r file="${!#}"
 	[[ ! (-f ${file} && -r ${file} && -s ${file}) ]] && return 2
 	command grep "$@"
 }
 
 # ----------------------------------------------------------------------
-#  Namespace: dir
+#  Namespace: path
 # ----------------------------------------------------------------------
-function dir::exist() {
+function path::exist() {
 	.Flag
-	local d
-	for d in "$@"; do [[ -d "$d" ]] || return 1; done
+	local p
+	for p in "$@"; do [[ -e "$p" || -L "$p" ]] || return 1; done
 }
 
 # ----------------------------------------------------------------------
@@ -97,34 +106,6 @@ function perm::exec() {
 	.Flag
 	local p
 	for p in "$@"; do [[ -x "$p" ]] || return 1; done
-}
-
-# ----------------------------------------------------------------------
-#  Namespace: path
-# ----------------------------------------------------------------------
-function path::exist() {
-	.Flag
-	local p
-	for p in "$@"; do [[ -e "$p" || -L "$p" ]] || return 1; done
-}
-
-# ----------------------------------------------------------------------
-#  Namespace: var
-# ----------------------------------------------------------------------
-function var::empty() {
-	.Flag
-	local v
-	for v in "$@"; do [[ -z "$v" ]] || return 1; done
-}
-function var::set() {
-	.Flag
-	local v
-	for v in "$@"; do [[ -v "$v" ]] || return 1; done
-}
-function var::valid() {
-	.Flag
-	local v
-	for v in "$@"; do [[ -n "$v" ]] || return 1; done
 }
 
 # ----------------------------------------------------------------------
@@ -219,12 +200,49 @@ function pkg::upgrade() {
 	fi
 }
 
-function DLine() { printf "%b\n" "${1:-${CLR[8]}}========================${CLR[0]}"; }
-function SLine() { printf "%b\n" "${1:-${CLR[8]}}--------------------------------${CLR[0]}"; }
-function Finish() { printf "%b\n" "${CLR[2]}完成${CLR[0]}"; }
+# ----------------------------------------------------------------------
+#  Namespace: str
+# ----------------------------------------------------------------------
+function str::grep() { command grep "$@"; }
+function str::trim() {
+	.Flag
+
+	local stdin_buffer
+	stdin_buffer=$(cat)
+	[[ -n ${1:-} ]] && stdin_buffer="${stdin_buffer#*"$1"}"
+	[[ -n ${2:-} ]] && stdin_buffer="${stdin_buffer%%"$2"*}"
+
+	printf "%b\n" "${stdin_buffer}"
+}
+
+# ----------------------------------------------------------------------
+#  Namespace: var
+# ----------------------------------------------------------------------
+function var::empty() {
+	.Flag
+	local v
+	for v in "$@"; do [[ -z "$v" ]] || return 1; done
+}
+function var::set() {
+	.Flag
+	local v
+	for v in "$@"; do [[ -v "$v" ]] || return 1; done
+}
+function var::valid() {
+	.Flag
+	local v
+	for v in "$@"; do [[ -n "$v" ]] || return 1; done
+}
+
 function Err() { var::valid "$@" && printf "%b\n" "${CLR[1]}$*${CLR[0]}" >&2; }
-function Raw() { var::valid "$@" && printf "%b" "$*"; }
+function ErrR() { var::valid "$@" && printf "%b\n" "${CLR[1]}$*${CLR[0]}" >&2 && return 1; }
+function Raw() { printf "%b" "$*"; }
 function Txt() { var::valid "$@" && printf "%b\n" "$*"; }
+
+function DLine() { Txt "${1:-${CLR[8]}}========================${CLR[0]}"; }
+function SLine() { Txt "${1:-${CLR[8]}}--------------------------------${CLR[0]}"; }
+function Finish() { Txt "${CLR[2]}完成${CLR[0]}"; }
+
 function Extract() {
 	local has_modifiers=0
 
@@ -583,7 +601,7 @@ function sys::distro() {
 	esac
 }
 function sys::virt() {
-	if command -v "systemd-detect-virt" &>/dev/null; then
+	if command -v systemd-detect-virt &>/dev/null; then
 		local -r virt_typ="$(systemd-detect-virt 2>/dev/null)"
 
 		var::empty "${virt_typ}" && Err "無法偵測虛擬化環境" && return 1
@@ -620,23 +638,17 @@ function sys::virt() {
 	fi
 }
 function Clear() {
-	if ! cd "${1:-${HOME}}"; then
-		Err "切換目錄失敗" && return 1
-	fi
+	cd "${1:-${HOME}}" || ErrR "切換目錄失敗" || return 1
 	clear
 }
 function cpu::cache() {
-	if ! file::exist /proc/cpuinfo; then
-		Err "無法存取 CPU 資訊。" && return 1
-	fi
+	file::exist /proc/cpuinfo || ErrR "無法存取 CPU 資訊。" || return 1
 	local -r cpu_cache="$(awk '/^cache size/ {sum+=$4; count++} END {print (count>0) ? sum/count : "N/A"}' /proc/cpuinfo)"
 	[[ ${cpu_cache} == "N/A" ]] && Err "無法確定 CPU 快取大小" && return 1
 	Txt "${cpu_cache} KB"
 }
 function cpu::freq() {
-	if ! file::exist /proc/cpuinfo; then
-		Err "無法存取 CPU 資訊。" && return 1
-	fi
+	file::exist /proc/cpuinfo || ErrR "無法存取 CPU 資訊。" || return 1
 	local -r cpu_freq="$(awk '/^cpu MHz/ {sum+=$4; count++} END {print (count>0) ? sprintf("%.2f", sum/count/1000) : "N/A"}' /proc/cpuinfo)"
 	[[ ${cpu_freq} == "N/A" ]] && Err "無法確定 CPU 頻率" && return 1
 	Txt "${cpu_freq} GHz"
@@ -718,7 +730,7 @@ function ConvSz() {
 			    else			        printf "%.3f %s", value, units_arr[power + 1];
 			}
         }
-    ' || { Err "不支持的單位或格式錯誤：size=${size} unit=${unit,,}" && return 1; }
+    ' || ErrR "不支持的單位或格式錯誤：size=${size} unit=${unit,,}" || return 1
 }
 function DelFile() {
 	.Flag
@@ -818,7 +830,7 @@ function file::download() {
 		case "$1" in
 			-x | --unzip) unzip=1 && shift ;;
 			-r | --rename)
-				[[ -z $1 || "$1" == -* ]] && Err "-r 選項後未指定檔案名稱" && return 1
+				[[ -z $1 || $1 == -* ]] && Err "-r 選項後未指定檔案名稱" && return 1
 				rnm_file="$1"
 				shift 2
 				;;
@@ -846,7 +858,7 @@ function file::download() {
 	url=$(Txt "${url}" | sed -E 's#([^:])/+#\1/#g; s#^(https?|ftp):/+#\1://#')
 	Txt "${CLR[3]}下載 '${url}'${CLR[0]}"
 
-	wget --no-check-certificate --timeout=5 --tries=2 "${url}" -O "${oup_path}" || { Err "下載檔案失敗" && return 1; }
+	url::get -c "${url}" -O "${oup_path}" || ErrR "下載檔案失敗" || return 1
 
 	if file::exist "${oup_path}"; then
 		Txt "- 檔案成功下載至 ${oup_path}"
@@ -884,7 +896,7 @@ function net::iface() {
 			sed 's/\s//g' |
 			str::grep -iv '^lo\|^sit\|^stf\|^gif\|^dummy\|^vmnet\|^vir\|^gre\|^ipip\|^ppp\|^bond\|^tun\|^tap\|^ip6gre\|^ip6tnl\|^teql\|^ocserv\|^vpn\|^warp\|^wgcf\|^wg\|^docker\|^br-\|^veth' |
 			sort -n
-	) || { Err "從 /proc/net/dev 取得網路介面失敗" && return 1; }
+	) || ErrR "從 /proc/net/dev 取得網路介面失敗" || return 1
 
 	mapfile -t items <<<"${all_interfaces}"
 	interfaces=([0]="placeholder")
@@ -894,8 +906,8 @@ function net::iface() {
 	unset 'interfaces[0]'
 	interfaces_num=${#interfaces[@]}
 
-	default4_route=$(ip -4 route show default 2>/dev/null || Txt "")
-	default6_route=$(ip -6 route show default 2>/dev/null || Txt "")
+	default4_route=$(ip -4 route show default 2>/dev/null || Raw "")
+	default6_route=$(ip -6 route show default 2>/dev/null || Raw "")
 
 	for ((i = 1; i <= ${#interfaces[@]}; i++)); do
 		item="${interfaces[i]}"
@@ -974,7 +986,7 @@ function net::iface() {
 				done </proc/net/dev 2>/dev/null
 				if var::valid "${stats}"; then
 					read -r rx_bytes rx_packets rx_drop tx_bytes tx_packets tx_drop <<<"${stats}"
-					Txt "${iface}：輸入：$(ConvSz "${rx_bytes}")，輸出：$(ConvSz "${tx_bytes}")"
+					Txt "${iface}: RX: $(ConvSz "${rx_bytes}"), TX: $(ConvSz "${tx_bytes}")"
 				fi
 			done
 			;;
@@ -988,7 +1000,7 @@ function net::ip() {
 	case "$1" in
 		-4 | --ipv4)
 			for api in "${apis[@]}"; do
-				ip4_addr=$(timeout 1s curl -s4L "${api}" 2>/dev/null)
+				ip4_addr=$(url::get -qO- -4 "${api}" 2>/dev/null)
 				break
 			done
 
@@ -997,22 +1009,22 @@ function net::ip() {
 			;;
 		-6 | --ipv6)
 			for api in "${apis[@]}"; do
-				ip6_addr=$(timeout 1s curl -s6L "${api}" 2>/dev/null)
+				ip6_addr=$(url::get -qO- -6 "${api}" 2>/dev/null)
 				break
 			done
 			ip6_addr=$(str::grep -oE "${ip6_regex}" <<<"${ip6_addr}")
 			Txt "${ip6_addr:-N/A}"
 			;;
-		-p | --public) Txt "$(GetValue "ip" < <(wget -qO- "https://developers.cloudflare.com/cdn-cgi/trace"))" ;;
+		-p | --public) GetValue "ip" < <(url::get -qO- "https://developers.cloudflare.com/cdn-cgi/trace") ;;
 		*)
 			for api in "${apis[@]}"; do
-				ip4_addr=$(timeout 1s curl -s4L "${api}" 2>/dev/null)
+				ip4_addr=$(url::get -qO- -4 "${api}" 2>/dev/null)
 				break
 			done
 			ip4_addr=$(str::grep -oE "${ip4_regex}" <<<"${ip4_addr}")
 
 			for api in "${apis[@]}"; do
-				ip6_addr=$(timeout 1s curl -s6L "${api}" 2>/dev/null)
+				ip6_addr=$(url::get -qO- -6 "${api}" 2>/dev/null)
 				break
 			done
 			ip6_addr=$(str::grep -oE "${ip6_regex}" <<<"${ip6_addr}")
@@ -1041,8 +1053,8 @@ function sys::load() {
 }
 function sys::location() {
 	case "$1" in
-		-c | --city) data=$(wget -qO- "https://ipinfo.io/city") ;;
-		-C | --country | *) data=$(wget -qO- "https://ipinfo.io/country") ;;
+		-c | --city) data=$(url::get -qO- "https://ipinfo.io/city") ;;
+		-C | --country | *) data=$(url::get -qO- "https://ipinfo.io/country") ;;
 	esac
 
 	Txt "${data:-N/A}"
@@ -1064,9 +1076,9 @@ function mem::info() {
 	esac
 }
 function net::provider() {
-	timeout 1s wget -qO- "https://ipinfo.io" | GetValue "org" && return 0
-	timeout 1s wget -qO- "https://ipwhois.app/json" | str::trim '"org":"' '",' && return 0
-	timeout 1s wget -qO- "http://ip-api.com/json" | str::trim '"org":"' '",' && return 0
+	url::get -qO- "https://ipinfo.io" | GetValue "org" && return 0
+	url::get -qO- "https://ipwhois.app/json" | str::trim '"org":"' '",' && return 0
+	url::get -qO- "http://ip-api.com/json" | str::trim '"org":"' '",' && return 0
 
 	Err "無法偵測網路供應商。請檢查網路連線" && return 1
 }
@@ -1099,72 +1111,58 @@ function SysClean() {
 
 	case "${PKG_MGR^^}" in
 		APK)
-			Task "- 清理 ${PKG_MGR} 快取" "apk cache clean" || { Err "清理 ${PKG_MGR} 快取失敗" && return 1; }
-			Task "- 移除暫存檔案" "rm -rf /tmp/* /var/cache/apk/*" || { Err "移除暫存檔案失敗" && return 1; }
-			Task "- 修復 ${PKG_MGR} 套件" "apk fix" || { Err "修復 ${PKG_MGR} 套件失敗" && return 1; }
+			Task "- 清理 ${PKG_MGR} 快取" "apk cache clean" || ErrR "清理 ${PKG_MGR} 快取失敗" || return 1
+			Task "- 移除暫存檔案" "rm -rf /tmp/* /var/cache/apk/*" || ErrR "移除暫存檔案失敗" || return 1
+			Task "- 修復 ${PKG_MGR} 套件" "apk fix" || ErrR "修復 ${PKG_MGR} 套件失敗" || return 1
 			;;
 		APT)
-			Task "- 設定待處理的套件" "DEBIAN_FRONTEND=noninteractive dpkg --configure -a" || { Err "設定待處理套件失敗" && return 1; }
-			Task "- 自動移除套件" "pkg::apt autoremove --purge" || { Err "自動移除套件失敗" && return 1; }
-			Task "- 清理 ${PKG_MGR} 快取" "pkg::apt clean" || { Err "清理 ${PKG_MGR} 快取失敗" && return 1; }
-			Task "- 自動清理 ${PKG_MGR} 快取" "pkg::apt autoclean" || { Err "自動清理 ${PKG_MGR} 快取失敗" && return 1; }
+			Task "- 設定待處理的套件" "DEBIAN_FRONTEND=noninteractive dpkg --configure -a" || ErrR "設定待處理套件失敗" || return 1
+			Task "- 自動移除套件" "pkg::apt autoremove --purge" || ErrR "自動移除套件失敗" || return 1
+			Task "- 清理 ${PKG_MGR} 快取" "pkg::apt clean" || ErrR "清理 ${PKG_MGR} 快取失敗" || return 1
+			Task "- 自動清理 ${PKG_MGR} 快取" "pkg::apt autoclean" || ErrR "自動清理 ${PKG_MGR} 快取失敗" || return 1
 			;;
 		OPKG)
-			Task "- 移除暫存檔案" "rm -rf /tmp/*" || { Err "移除暫存檔案失敗" && return 1; }
-			Task "- 更新 ${PKG_MGR}" "opkg update" || { Err "更新 ${PKG_MGR} 失敗" && return 1; }
-			Task "- 清理 ${PKG_MGR} 快取" "opkg clean" || { Err "清理 ${PKG_MGR} 快取失敗" && return 1; }
+			Task "- 移除暫存檔案" "rm -rf /tmp/*" || ErrR "移除暫存檔案失敗" || return 1
+			Task "- 更新 ${PKG_MGR}" "opkg update" || ErrR "更新 ${PKG_MGR} 失敗" || return 1
+			Task "- 清理 ${PKG_MGR} 快取" "opkg clean" || ErrR "清理 ${PKG_MGR} 快取失敗" || return 1
 			;;
 		PACMAN)
-			Task "- 更新和升級套件" "pacman -Syu --noconfirm" || { Err "使用 ${PKG_MGR} 更新和升級套件失敗" && return 1; }
-			Task "- 清理 ${PKG_MGR} 快取" "pacman -Sc --noconfirm" || { Err "清理 ${PKG_MGR} 快取失敗" && return 1; }
-			Task "- 清理所有 ${PKG_MGR} 快取" "pacman -Scc --noconfirm" || { Err "清理所有 ${PKG_MGR} 快取失敗" && return 1; }
+			Task "- 更新和升級套件" "pacman -Syu --noconfirm" || ErrR "使用 ${PKG_MGR} 更新和升級套件失敗" || return 1
+			Task "- 清理 ${PKG_MGR} 快取" "pacman -Sc --noconfirm" || ErrR "清理 ${PKG_MGR} 快取失敗" || return 1
+			Task "- 清理所有 ${PKG_MGR} 快取" "pacman -Scc --noconfirm" || ErrR "清理所有 ${PKG_MGR} 快取失敗" || return 1
 			;;
 		DNF)
-			Task "- 自動移除套件" "dnf autoremove -y" || { Err "自動移除套件失敗" && return 1; }
-			Task "- 清理 ${PKG_MGR} 快取" "dnf clean all" || { Err "清理 ${PKG_MGR} 快取失敗" && return 1; }
-			Task "- 建立 ${PKG_MGR} 快取" "dnf makecache" || { Err "建立 ${PKG_MGR} 快取失敗" && return 1; }
+			Task "- 自動移除套件" "dnf autoremove -y" || ErrR "自動移除套件失敗" || return 1
+			Task "- 清理 ${PKG_MGR} 快取" "dnf clean all" || ErrR "清理 ${PKG_MGR} 快取失敗" || return 1
+			Task "- 建立 ${PKG_MGR} 快取" "dnf makecache" || ErrR "建立 ${PKG_MGR} 快取失敗" || return 1
 			;;
 		YUM)
-			Task "- 自動移除套件" "yum autoremove -y" || { Err "自動移除套件失敗" && return 1; }
-			Task "- 清理 ${PKG_MGR} 快取" "yum clean all" || { Err "清理 ${PKG_MGR} 快取失敗" && return 1; }
-			Task "- 建立 ${PKG_MGR} 快取" "yum makecache" || { Err "建立 ${PKG_MGR} 快取失敗" && return 1; }
+			Task "- 自動移除套件" "yum autoremove -y" || ErrR "自動移除套件失敗" || return 1
+			Task "- 清理 ${PKG_MGR} 快取" "yum clean all" || ErrR "清理 ${PKG_MGR} 快取失敗" || return 1
+			Task "- 建立 ${PKG_MGR} 快取" "yum makecache" || ErrR "建立 ${PKG_MGR} 快取失敗" || return 1
 			;;
 		ZYPPER)
-			Task "- 清理 ${PKG_MGR} 快取" "zypper clean --all" || { Err "清理 ${PKG_MGR} 快取失敗" && return 1; }
-			Task "- 重新整理 ${PKG_MGR} 套件庫" "zypper refresh" || { Err "重新整理 ${PKG_MGR} 套件庫失敗" && return 1; }
+			Task "- 清理 ${PKG_MGR} 快取" "zypper clean --all" || ErrR "清理 ${PKG_MGR} 快取失敗" || return 1
+			Task "- 重新整理 ${PKG_MGR} 套件庫" "zypper refresh" || ErrR "重新整理 ${PKG_MGR} 套件庫失敗" || return 1
 			;;
 	esac
 
-	if command -v "journalctl" &>/dev/null; then
-		if ! Task "- 輪替和清理 journalctl 日誌" "journalctl --rotate --vacuum-time=1d --vacuum-size=500M"; then
-			Err "輪替和清理 journalctl 日誌失敗（系統找不到 journalctl 指令）" && return 1
-		fi
+	if command -v journalctl &>/dev/null; then
+		Task "- 輪替和清理 journalctl 日誌" "journalctl --rotate --vacuum-time=1d --vacuum-size=500M" || ErrR "輪替和清理 journalctl 日誌失敗（系統找不到 journalctl 指令）" || return 1
 	fi
 
 	local cmd
 	for cmd in docker npm pip; do
 		command -v "${cmd}" &>/dev/null && case "${cmd^^}" in
-			DOCKER)
-				if ! Task "- 清理 DOCKER 系統" "docker system prune -af"; then
-					Err "清理 DOCKER 系統失敗" && return 1
-				fi
-				;;
-			NPM)
-				if ! Task "- 清理 NPM 快取" "npm cache clean --force"; then
-					Err "清理 NPM 快取失敗" && return 1
-				fi
-				;;
-			PIP)
-				if ! Task "- 清除 PIP 快取" "pip cache purge"; then
-					Err "清除 PIP 快取失敗" && return 1
-				fi
-				;;
+			DOCKER) Task "- 清理 DOCKER 系統" "docker system prune -af" || ErrR "清理 DOCKER 系統失敗" || return 1 ;;
+			NPM) Task "- 清理 NPM 快取" "npm cache clean --force" || ErrR "清理 NPM 快取失敗" || return 1 ;;
+			PIP) Task "- 清除 PIP 快取" "pip cache purge" || ErrR "清除 PIP 快取失敗" || return 1 ;;
 		esac
 	done
 
-	Task "- 移除使用者快取檔案" "rm -rf ~/.cache/*" || { Err "移除使用者快取檔案失敗" && return 1; }
-	Task "- 移除暫存檔案" "rm -rf /tmp/*" || { Err "移除暫存檔案失敗" && return 1; }
-	Task "- 移除縮圖檔案" "rm -rf ~/.thumbnails/*" || { Err "移除縮圖檔案失敗" && return 1; }
+	Task "- 移除使用者快取檔案" "rm -rf ~/.cache/*" || ErrR "移除使用者快取檔案失敗" || return 1
+	Task "- 移除暫存檔案" "rm -rf /tmp/*" || ErrR "移除暫存檔案失敗" || return 1
+	Task "- 移除縮圖檔案" "rm -rf ~/.thumbnails/*" || ErrR "移除縮圖檔案失敗" || return 1
 
 	Dline
 	Finish
@@ -1411,8 +1409,8 @@ function SysRboot() {
 		return 0
 	fi
 
-	Task "- 執行最終檢查" "sync" || { Err "同步檔案系統失敗" && return 1; }
-	Task "- 開始重新啟動" "reboot || sudo reboot" || { Err "啟動重新啟動失敗" && return 1; }
+	Task "- 執行最終檢查" "sync" || ErrR "同步檔案系統失敗" || return 1
+	Task "- 開始重新啟動" "reboot || sudo reboot" || ErrR "啟動重新啟動失敗" || return 1
 	Txt "${CLR[2]}已成功發出重新啟動命令。系統將立即重新啟動${CLR[0]}"
 }
 function SysUpd() {
@@ -1424,9 +1422,7 @@ function SysUpd() {
 	DLine
 
 	pkg::upgrade
-	if ! wget -qO- "${update_url}" | bash -s -- "${current_lang}"; then
-		Err "更新 UtilKit.sh 失敗" && return 1
-	fi
+	url::get -qO- "${update_url}" | bash -s -- "${current_lang}" || ErrR "更新 UtilKit.sh 失敗" || return 1
 
 	Dline
 	Finish
@@ -1441,25 +1437,25 @@ function SysUpg() {
 		DEBIAN)
 			Txt "- 偵測到 DEBIAN 系統"
 			Txt "- 正在更新套件清單"
-			pkg::updatee || { Err "使用 APT 更新套件清單失敗" && return 1; }
+			pkg::updatee || ErrR "使用 APT 更新套件清單失敗" || return 1
 			Txt "- 正在升級目前的套件"
-			pkg::upgrade || { Err "升級目前的套件失敗" && return 1; }
+			pkg::upgrade || ErrR "升級目前的套件失敗" || return 1
 			Txt "- 開始 DEBIAN 發行版升級..."
 			curr_codenm=$(lsb_release -cs)
-			targ_codenm=$(GetValue "Codename" < <(wget -qO- "https://ftp.debian.org/debian/dists/stable/Release"))
+			targ_codenm=$(GetValue "Codename" < <(url::get -qO- "https://ftp.debian.org/debian/dists/stable/Release"))
 			[[ ${curr_codenm} == "${targ_codenm}" ]] && Err "系統已達最新穩定版 (本地/遠端穩定版：${curr_codenm}/${targ_codenm}" && return 1
 			Txt "- 正在從 ${CLR[2]}${curr_codenm}${CLR[0]} 升級到 ${CLR[3]}${targ_codenm}${CLR[0]}"
-			Task "- 備份 sources.list" "cp /etc/apt/sources.list /etc/apt/sources.list.backup" || { Err "備份 sources.list 失敗" && return 1; }
-			Task "- 更新 sources.list" "sed -i 's/${curr_codenm}/${targ_codenm}/g' /etc/apt/sources.list" || { Err "更新 sources.list 失敗" && return 1; }
-			Task "- 更新套件清單" "pkg::update" || { Err "更新新版本的套件清單失敗" && return 1; }
-			pkg::upgrade || { Err "升級到新的 DEBIAN 版本失敗" && return 1; }
+			Task "- 備份 sources.list" "cp /etc/apt/sources.list /etc/apt/sources.list.backup" || ErrR "備份 sources.list 失敗" || return 1
+			Task "- 更新 sources.list" "sed -i 's/${curr_codenm}/${targ_codenm}/g' /etc/apt/sources.list" || ErrR "更新 sources.list 失敗" || return 1
+			Task "- 更新套件清單" "pkg::update" || ErrR "更新新版本的套件清單失敗" || return 1
+			pkg::upgrade || ErrR "升級到新的 DEBIAN 版本失敗" || return 1
 			;;
 		UBUNTU)
 			Txt "- 偵測到 UBUNTU 系統"
-			Task "- 正在更新套件清單" "pkg::update" || { Err "使用 APT 更新套件清單失敗" && return 1; }
-			Task "- 正在升級目前的套件" "pkg::upgrade" || { Err "升級目前的套件失敗" && return 1; }
-			Task "- 安裝 update-manager-core" "pkg::install update-manager-core" || { Err "安裝 update-manager-core 失敗" && return 1; }
-			do-release-upgrade -f DistUpgradeViewNonInteractive || { Err "升級 UBUNTU 版本失敗" && return 1; }
+			Task "- 正在更新套件清單" "pkg::update" || ErrR "使用 APT 更新套件清單失敗" || return 1
+			Task "- 正在升級目前的套件" "pkg::upgrade" || ErrR "升級目前的套件失敗" || return 1
+			Task "- 安裝 update-manager-core" "pkg::install update-manager-core" || ErrR "安裝 update-manager-core 失敗" || return 1
+			do-release-upgrade -f DistUpgradeViewNonInteractive || ErrR "升級 UBUNTU 版本失敗" || return 1
 			SysRboot
 			;;
 		*) Err "您的系統尚不支援主要版本升級" && return 1 ;;
@@ -1501,8 +1497,8 @@ function sys::timezone() {
 	.Flag
 
 	function _DetectExternal() {
-		timeout 1.5s wget -qO- "https://ipapi.co/json" | GetValue "timezone" && return 0
-		timeout 1.5s wget -qO- "http://ip-api.com/json" | str::trim '"timezone":"' '",' && return 0
+		url::get -qO- "https://ipapi.co/json" | GetValue "timezone" && return 0
+		url::get -qO- "http://ip-api.com/json" | str::trim '"timezone":"' '",' && return 0
 		return 1
 	}
 	function _DetectInternal() {
