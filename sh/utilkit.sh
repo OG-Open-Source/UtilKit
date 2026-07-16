@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VERSION="8.0.0a8"
+# VERSION="8.0.0a9"
 
 # set -Eeuo pipefail
 # set +u
@@ -32,17 +32,17 @@ declare CLR=(
 function var::empty() {
 	(($# == 0)) && return 2
 	local v
-	for v in "$@"; do [[ -z "$v" ]] || return 1; done
+	for v in "$@"; do [[ -z "${v}" ]] || return 1; done
 }
 function var::set() {
 	(($# == 0)) && return 2
 	local v
-	for v in "$@"; do [[ -v "$v" ]] || return 1; done
+	for v in "$@"; do [[ -v "${v}" ]] || return 1; done
 }
 function var::valid() {
 	(($# == 0)) && return 2
 	local v
-	for v in "$@"; do [[ -n "$v" ]] || return 1; done
+	for v in "$@"; do [[ -n "${v}" ]] || return 1; done
 }
 
 function io::err() { var::valid "$@" && printf "%b\n" "${CLR[1]}$*${CLR[0]}" >&2; }
@@ -56,8 +56,8 @@ function str::trim() {
 
 	local stdin_buffer
 	stdin_buffer=$(cat)
-	[[ -n ${1:-} ]] && stdin_buffer="${stdin_buffer#*"$1"}"
-	[[ -n ${2:-} ]] && stdin_buffer="${stdin_buffer%%"$2"*}"
+	var::valid "${1:-}" && stdin_buffer="${stdin_buffer#*"$1"}"
+	var::valid "${2:-}" && stdin_buffer="${stdin_buffer%%"$2"*}"
 
 	printf "%b\n" "${stdin_buffer}"
 }
@@ -79,7 +79,7 @@ function str::grid() {
 	local sym1="${part1:0:1}" num1="${part1:1}"
 	local sym2 num2
 
-	if [[ -n ${part2} ]]; then
+	if var::valid "${part2}"; then
 		sym2="${part2:0:1}"
 		num2="${part2:1}"
 	else
@@ -105,7 +105,7 @@ function str::grid() {
 		col_sym="${sym2}"
 		col_num="${mod_num2}"
 
-		local -a remaining_args=("${@:2}")
+		local remaining_args=("${@:2}")
 		local -i rem_count="${#remaining_args[@]}"
 
 		if ((rem_count == 0)); then
@@ -250,7 +250,7 @@ function str::grid() {
 
 	io::txt "${output_cols[*]}"
 }
-function str::query() {
+function str::query() (
 	local -r key="$1" data_source="${2:-}"
 	local -r pattern="(^|[[:space:],'{ \"])(\"${key}\"|'${key}'|\<${key}\>)[[:space:]]*[:=][[:space:]]*(\"([^\"]*)\"|'([^']*)'|([^,#]*[^[:space:],#]))"
 
@@ -266,27 +266,333 @@ function str::query() {
 
 	if var::empty "${data_source}"; then
 		_parse "${pattern}"
-	elif file::exist "${data_source}"; then
+	elif fs::file_exist "${data_source}"; then
 		_parse "${pattern}" <"${data_source}"
 	else
 		_parse "${pattern}" <<<"${data_source}"
 	fi
-}
+)
 
-function sys::harden_env() {
+function util::conv_size() {
+	(($# == 0)) && return 2
+	# TODO: change these variables
+	local size="$1" default_pref="${UNIT_PREF:-b}" && local unit="${2:-${default_pref}}"
+
+	((size < 0)) && io::err "大小值不能為負數：${size}" && return 1
+
+	local -r LC_ALL=C
+	awk -v size="${size}" -v unit="${unit,,}" '
+        function ToBytes(val, u) {
+			if (u == "b" || u == "ib")      return val;
+			if (u == "kb")                  return val * 1000;
+			if (u == "mb")                  return val * 1000^2;
+			if (u == "gb")                  return val * 1000^3;
+			if (u == "tb")                  return val * 1000^4;
+			if (u == "pb")                  return val * 1000^5;
+			if (u == "kib")                 return val * 1024;
+			if (u == "mib")                 return val * 1024^2;
+			if (u == "gib")                 return val * 1024^3;
+			if (u == "tib")                 return val * 1024^4;
+			if (u == "pib")                 return val * 1024^5;
+			return -1;
+        }
+        BEGIN {
+			bytes = ToBytes(size, unit);
+			if (bytes < 0) exit 1;
+
+			is_binary = (index(unit, "ib") > 0);
+			if (is_binary) {
+			    base = 1024;
+			    units_str = "B KiB MiB GiB TiB PiB";
+			} else {
+			    base = 1000;
+			    units_str = "B KB MB GB TB PB";
+			}
+			split(units_str, units_arr, " ");
+			power = 0;
+			value = bytes;
+			if (bytes > 0) {
+			    power = int(log(bytes)/log(base));
+			    if (power > 5) power = 5;
+			    if (power > 0) value = bytes / (base^power);
+			}
+			if (power == 0) {
+			    printf "%d %s", bytes, units_arr[1];
+			} else {
+			    if (value >= 100)       printf "%.1f %s", value, units_arr[power + 1];
+			    else if (value >= 10)   printf "%.2f %s", value, units_arr[power + 1];
+			    else                    printf "%.3f %s", value, units_arr[power + 1];
+			}
+        }
+    ' || io::err_die "不支持的單位或格式錯誤：size=${size} unit=${unit,,}" || return 1
+}
+function util::parse_opts() {
+	local -n _utilkit_io_parse_opts_ref="$1" || return 1
+	shift
+	local -r _spec="$1"
+	shift
+
+	# 初始化關聯陣列 (修復 SC2154)
+	_utilkit_io_parse_opts_ref=()
+	_utilkit_io_parse_opts_ref["_args"]="" # 用來收集非旗標的定位參數
+
+	# 預先將 Spec 中所有定義的旗標初始化為預設狀態
+	local _spec_item
+	for _spec_item in ${_spec}; do
+		local _opt_def="${_spec_item%:}"
+		local _has_arg=0
+		[[ ${_spec_item} == *":" ]] && _has_arg=1
+
+		local _short_opt="${_opt_def%|*}"
+		local _long_opt="${_opt_def#*|}"
+
+		if ((_has_arg == 1)); then
+			_utilkit_io_parse_opts_ref["${_short_opt}"]=""
+			_utilkit_io_parse_opts_ref["${_long_opt}"]=""
+		else
+			_utilkit_io_parse_opts_ref["${_short_opt}"]="0"
+			_utilkit_io_parse_opts_ref["${_long_opt}"]="0"
+		fi
+	done
+
+	while (($# > 0)); do
+		local token="$1"
+
+		# 1. 處理旗標終止符 (Standard -- terminator)
+		if [[ ${token} == "--" ]]; then
+			shift
+			_utilkit_io_parse_opts_ref["_args"]+=" $*"
+			break
+		fi
+
+		# 2. 處理單一 "-" 或 "+" (視為普通定位參數，而非旗標)
+		if [[ ${token} == "-" || ${token} == "+" ]]; then
+			_utilkit_io_parse_opts_ref["_args"]+=" ${token}"
+			shift
+			continue
+		fi
+
+		# 3. 識別前綴與行為數值 (-/-- 為 1，+/++ 為 0)
+		local prefix="" action_val=1 is_long=0
+		if [[ ${token} =~ ^\+\+[a-zA-Z0-9] ]]; then
+			prefix="++"
+			action_val=0
+			is_long=1
+		elif [[ ${token} =~ ^--[a-zA-Z0-9] ]]; then
+			prefix="--"
+			action_val=1
+			is_long=1
+		elif [[ ${token} =~ ^\+[a-zA-Z0-9] ]]; then
+			prefix="+"
+			action_val=0
+			is_long=0
+		elif [[ ${token} =~ ^-[a-zA-Z0-9] ]]; then
+			prefix="-"
+			action_val=1
+			is_long=0
+		else
+			# 非旗標，歸入定位參數 (修復 SC2154)
+			_utilkit_io_parse_opts_ref["_args"]+=" ${token}"
+			shift
+			continue
+		fi
+
+		# 4. 解析是否有等號賦值 "=" (如 -a=1 或 --space=2,format)
+		local opt_part="" val_part="" has_equal=0
+		if [[ ${token} == *"="* ]]; then
+			opt_part="${token%%=*}"
+			val_part="${token#*=}"
+			has_equal=1
+		else
+			opt_part="${token}"
+		fi
+
+		# 去除前綴字元 (修復 SC2295)
+		opt_part="${opt_part#"${prefix}"}"
+
+		# 5. 執行分流解析 (長旗標 vs 短旗標組合) (修復 SC2004)
+		if ((is_long == 1)); then
+			# -- 長旗標處理 (單一長旗標，不支援組合)
+			local opt_name="${opt_part}"
+			local matched=0
+			local spec_item
+			for spec_item in ${_spec}; do
+				local opt_def="${spec_item%:}"
+				local has_arg=0
+				[[ ${spec_item} == *":" ]] && has_arg=1
+
+				local short_opt="${opt_def%|*}"
+				local long_opt="${opt_def#*|}"
+
+				if [[ ${opt_name} == "${long_opt}" ]]; then
+					matched=1
+					if ((has_arg == 1)); then
+						# 如果帶有等號，則進行賦值，否則退化為布林開關
+						if ((has_equal == 1)); then
+							_utilkit_io_parse_opts_ref["${short_opt}"]="${val_part}"
+							_utilkit_io_parse_opts_ref["${long_opt}"]="${val_part}"
+						else
+							_utilkit_io_parse_opts_ref["${short_opt}"]="${action_val}"
+							_utilkit_io_parse_opts_ref["${long_opt}"]="${action_val}"
+						fi
+					else
+						# 標準布林開關
+						_utilkit_io_parse_opts_ref["${short_opt}"]="${action_val}"
+						_utilkit_io_parse_opts_ref["${long_opt}"]="${action_val}"
+					fi
+					break
+				fi
+			done
+
+			if ((matched == 0)); then
+				io::err "未知的長旗標: ${prefix}${opt_name}"
+				return 1
+			fi
+
+		else
+			# -- 短旗標處理 (依舊支援連續組合，如 -abc 或 +bc)
+			local len=${#opt_part}
+			local i
+			for ((i = 0; i < len; i++)); do
+				local char="${opt_part:i:1}"
+				local matched=0
+				local spec_item
+				for spec_item in ${_spec}; do
+					local opt_def="${spec_item%:}"
+					local has_arg=0
+					[[ ${spec_item} == *":" ]] && has_arg=1
+
+					local short_opt="${opt_def%|*}"
+					local long_opt="${opt_def#*|}"
+
+					if [[ ${char} == "${short_opt}" ]]; then
+						matched=1
+						if ((has_arg == 1)); then
+							if ((has_equal == 1)); then
+								_utilkit_io_parse_opts_ref["${short_opt}"]="${val_part}"
+								_utilkit_io_parse_opts_ref["${long_opt}"]="${val_part}"
+							else
+								# 沒有等號的情況：
+								if ((i == len - 1)); then
+									# 如果是最後一個字元且後面「已斷開」，退化為布林開關
+									_utilkit_io_parse_opts_ref["${short_opt}"]="${action_val}"
+									_utilkit_io_parse_opts_ref["${long_opt}"]="${action_val}"
+								else
+									# 如果後面緊跟著其他字元「未斷開」(e.g., -s123)，視後續字元為參數值
+									local remaining="${opt_part:i+1}"
+									_utilkit_io_parse_opts_ref["${short_opt}"]="${remaining}"
+									_utilkit_io_parse_opts_ref["${long_opt}"]="${remaining}"
+									i=len # 強制結束字元迴圈
+								fi
+							fi
+						else
+							# 布林開關 (設為 1 或 0)
+							_utilkit_io_parse_opts_ref["${short_opt}"]="${action_val}"
+							_utilkit_io_parse_opts_ref["${long_opt}"]="${action_val}"
+						fi
+						break
+					fi
+				done
+
+				if ((matched == 0)); then
+					io::err "未知的短旗標: ${prefix}${char}"
+					return 1
+				fi
+			done
+		fi
+
+		# 由於移除了吞噬邏輯，每次處理完一個 token 後固定 shift 1
+		shift 1
+	done
+
+	# 清理定位參數前後多餘空格
+	_utilkit_io_parse_opts_ref["_args"]="${_utilkit_io_parse_opts_ref["_args"]# }"
+	_utilkit_io_parse_opts_ref["_args"]="${_utilkit_io_parse_opts_ref["_args"]% }"
+}
+function util::validate() {
+	local -r _format_or_regex="$1"
+	local -r _val="$2"
+	local -r _out_var="$3"
+	local -r _pcre_flag="${4:-0}"
+
+	# 若格式或正規表示式為空，安全清除輸出變數並回傳 2
+	if var::empty "${_format_or_regex}"; then
+		if var::valid "${_out_var}"; then
+			if [[ ${_out_var} =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+				local -n _utilkit_util_validate_err_ref="${_out_var}"
+				_utilkit_util_validate_err_ref=""
+			fi
+		fi
+		return 2
+	fi
+
+	local _pattern
+
+	# 1. 取得基礎 Pattern
+	case "${_format_or_regex,,}" in
+		"ipv6") _pattern='(([[:xdigit:]]{1,4}:){7}[[:xdigit:]]{1,4}|([[:xdigit:]]{1,4}:){1,7}:|([[:xdigit:]]{1,4}:){1,6}:[[:xdigit:]]{1,4}|([[:xdigit:]]{1,4}:){1,5}(:[[:xdigit:]]{1,4}){1,2}|([[:xdigit:]]{1,4}:){1,4}(:[[:xdigit:]]{1,4}){1,3}|([[:xdigit:]]{1,4}:){1,3}(:[[:xdigit:]]{1,4}){1,4}|([[:xdigit:]]{1,4}:){1,2}(:[[:xdigit:]]{1,4}){1,5}|[[:xdigit:]]{1,4}:((:[[:xdigit:]]{1,4}){1,6})|:((:[[:xdigit:]]{1,4}){1,7}|:)|fe80:(:[[:xdigit:]]{0,4}){0,4}%[[:alnum:]]+|::(ffff(:0{1,4})?:)?((25[0-5]|(2[0-4]|1?[[:digit:]])?[[:digit:]])\.){3}(25[0-5]|(2[0-4]|1?[[:digit:]])?[[:digit:]])|([[:xdigit:]]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1?[[:digit:]])?[[:digit:]])\.){3}(25[0-5]|(2[0-4]|1?[[:digit:]])?[[:digit:]]))' ;;
+		"ipv4") _pattern='(25[0-5]|2[0-4][[:digit:]]|[01]?[[:digit:]][[:digit:]]?)(\.(25[0-5]|2[0-4][[:digit:]]|[01]?[[:digit:]][[:digit:]]?)){3}' ;;
+		"email") _pattern='[^@[[:space:]]]+@[^@[[:space:]]]+\.[^@[[:space:]]]+' ;;
+		"int") _pattern='-?[[:digit:]]+' ;;
+		*) _pattern="${_format_or_regex}" ;;
+	esac
+
+	# 2. 自動安全加註 ^ 與 $
+	if [[ ${_pattern} != "^"* ]] || [[ ${_pattern} != *'$' ]]; then
+		local _inner="${_pattern#^}"
+		_inner="${_inner%$}"
+		_pattern="^(${_inner})$"
+	fi
+
+	# 3. 執行匹配（根據 flag 進行分流）
+	local _is_match=1
+	if ((_pcre_flag == 1)) || [[ ${_pcre_flag} == "true" ]]; then
+		str::grep -qP -- "${_pattern}" <<<"${_val}" && _is_match=0
+	else
+		[[ ${_val} =~ ${_pattern} ]] && _is_match=0
+	fi
+
+	# 4. 處理輸出與回傳狀態
+	if ((_is_match == 0)); then
+		# -- 成功 (Match) --
+		if var::valid "${_out_var}"; then
+			# 安全檢查變數名稱，避免惡意注入
+			if [[ ${_out_var} =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+				local -n _utilkit_util_validate_ok_ref="${_out_var}"
+				_utilkit_util_validate_ok_ref="${_val}"
+			fi
+		else
+			# 未指定變數時，直接輸出至 stdout
+			io::txt "${_val}"
+		fi
+		return 0
+	else
+		# -- 失敗 (No Match) --
+		if var::valid "${_out_var}"; then
+			if [[ ${_out_var} =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+				local -n _utilkit_util_validate_fail_ref="${_out_var}"
+				_utilkit_util_validate_fail_ref=""
+			fi
+		fi
+		return 1
+	fi
+}
+function util::harden_session() {
 	function curl() { false; }
 	function eval() { false; }
 	function grep() { false; }
 	function wget() { false; }
 }
+function net::url_get() { command wget --timeout=15 --tries=3 --waitretry=5 --retry-on-http-error=429,500,502,503,504 --max-redirect=5 "$@"; }
+
 function sys::cpu_cache() {
-	file::exist /proc/cpuinfo || io::err_die "無法存取 CPU 資訊。" || return 1
+	fs::file_exist /proc/cpuinfo || io::err_die "無法存取 CPU 資訊。" || return 1
 	local -r cpu_cache="$(awk '/^cache size/ {sum+=$4; count++} END {print (count>0) ? sum/count : "N/A"}' /proc/cpuinfo)"
 	[[ ${cpu_cache} == "N/A" ]] && io::err "無法確定 CPU 快取大小" && return 1
 	io::txt "${cpu_cache} KB"
 }
 function sys::cpu_freq() {
-	file::exist /proc/cpuinfo || io::err_die "無法存取 CPU 資訊。" || return 1
+	fs::file_exist /proc/cpuinfo || io::err_die "無法存取 CPU 資訊。" || return 1
 	local -r cpu_freq="$(awk '/^cpu MHz/ {sum+=$4; count++} END {print (count>0) ? sprintf("%.2f", sum/count/1000) : "N/A"}' /proc/cpuinfo)"
 	[[ ${cpu_freq} == "N/A" ]] && io::err "無法確定 CPU 頻率" && return 1
 	io::txt "${cpu_freq} GHz"
@@ -294,7 +600,6 @@ function sys::cpu_freq() {
 function sys::cpu_model() {
 	str::query "Model name" < <(lscpu) && return 0
 	str::query "model name" </proc/cpuinfo && return 0
-	sysctl -n machdep.cpu.brand_string 2>/dev/null && return 0
 
 	io::err "${CLR[1]}未知${CLR[0]}" && return 1
 }
@@ -325,7 +630,7 @@ function sys::disk_info() {
 		-p | --percentage) io::txt "${pct}" ;;
 		-t | --total) io::txt "${tot}" ;;
 		-u | --used) io::txt "${usd}" ;;
-		*) io::txt "$(ConvSz "${usd}") / $(ConvSz "${tot}") (${pct}%)" ;;
+		*) io::txt "$(util::conv_size "${usd}") / $(util::conv_size "${tot}") (${pct}%)" ;;
 	esac
 }
 function sys::mem_info() {
@@ -336,7 +641,7 @@ function sys::mem_info() {
 		-p | --percentage) io::txt "${pct}" ;;
 		-t | --total) io::txt "${tot}" ;;
 		-u | --used) io::txt "${usd}" ;;
-		*) io::txt "$(ConvSz "${usd}") / $(ConvSz "${tot}") (${pct}%)" ;;
+		*) io::txt "$(util::conv_size "${usd}") / $(util::conv_size "${tot}") (${pct}%)" ;;
 	esac
 }
 function sys::swap_info() {
@@ -347,37 +652,37 @@ function sys::swap_info() {
 		-p | --percentage) io::txt "${pct}" ;;
 		-t | --total) io::txt "${tot}" ;;
 		-u | --used) io::txt "${usd}" ;;
-		*) io::txt "$(ConvSz "${usd}") / $(ConvSz "${tot}") (${pct}%)" ;;
+		*) io::txt "$(util::conv_size "${usd}") / $(util::conv_size "${tot}") (${pct}%)" ;;
 	esac
 }
 function sys::distro() {
 	case "$1" in
 		-v | --version)
-			if file::exist /etc/os-release; then
+			if fs::file_exist /etc/os-release; then
 				local -r os_id="$(str::query "ID" </etc/os-release)"
 				case "${os_id^^}" in
 					DEBIAN) cat /etc/debian_version ;;
-					FEDORA) file::grep -oE '[0-9]+' /etc/fedora-release ;;
-					CENTOS) file::grep -oE '[0-9]+\.[0-9]+' /etc/centos-release ;;
+					FEDORA) fs::file_grep -oE '[0-9]+' /etc/fedora-release ;;
+					CENTOS) fs::file_grep -oE '[0-9]+\.[0-9]+' /etc/centos-release ;;
 					ALPINE) cat /etc/alpine-release ;;
 					*) io::txt "${VERSION_ID}" ;;
 				esac
-			elif file::exist /etc/debian_version; then
+			elif fs::file_exist /etc/debian_version; then
 				cat /etc/debian_version
-			elif file::exist /etc/fedora-release; then
-				file::grep -oE '[0-9]+' /etc/fedora-release
-			elif file::exist /etc/centos-release; then
-				file::grep -oE '[0-9]+\.[0-9]+' /etc/centos-release
-			elif file::exist /etc/alpine-release; then
+			elif fs::file_exist /etc/fedora-release; then
+				fs::file_grep -oE '[0-9]+' /etc/fedora-release
+			elif fs::file_exist /etc/centos-release; then
+				fs::file_grep -oE '[0-9]+\.[0-9]+' /etc/centos-release
+			elif fs::file_exist /etc/alpine-release; then
 				cat /etc/alpine-release
 			else
 				io::err "Unknown" && return 1
 			fi
 			;;
 		-n | --name)
-			if file::exist /etc/os-release; then
+			if fs::file_exist /etc/os-release; then
 				str::query "NAME" </etc/os-release
-			elif file::exist /etc/DISTRO_SPECS; then
+			elif fs::file_exist /etc/DISTRO_SPECS; then
 				str::query "DISTRO_NAME" </etc/DISTRO_SPECS
 			else
 				io::err "Unknown" && return 1
@@ -412,18 +717,18 @@ function sys::shell_ver() {
 
 	io::err "不支援的 Shell" && return 1
 }
-function sys::timezone() {
+function sys::timezone() (
 	(($# == 0)) && return 2
 
-	function _DetectExternal() {
+	_DetectExternal() {
 		net::url_get -qO- "https://ipapi.co/json" | str::query "timezone" && return 0
 		net::url_get -qO- "http://ip-api.com/json" | str::trim '"timezone":"' '",' && return 0
 		return 1
 	}
-	function _DetectInternal() {
+	_DetectInternal() {
 		readlink /etc/localtime | str::trim "zoneinfo/" && return 0
 		timedatectl status | str::grid "Time zone" 2 ":" && return 0
-		file::grep -v "^#" /etc/timezone | tr -d " " && return 0
+		fs::file_grep -v "^#" /etc/timezone | tr -d " " && return 0
 		return 1
 	}
 
@@ -439,7 +744,7 @@ function sys::timezone() {
 			fi
 			;;
 	esac
-}
+)
 function sys::virt() {
 	if command -v systemd-detect-virt &>/dev/null; then
 		local -r virt_typ="$(systemd-detect-virt 2>/dev/null)"
@@ -457,9 +762,9 @@ function sys::virt() {
 			MICROSOFT) io::txt "Microsoft Hyper-V" ;;
 			WSL) io::txt "適用於 Linux 的 Windows 子系統" ;;
 			NONE)
-				if file::grep -q "container=lxc" /proc/1/environ 2>/dev/null; then
+				if fs::file_grep -q "container=lxc" /proc/1/environ 2>/dev/null; then
 					io::txt "LXC 容器"
-				elif file::grep -qi "hypervisor" /proc/cpuinfo 2>/dev/null; then
+				elif fs::file_grep -qi "hypervisor" /proc/cpuinfo 2>/dev/null; then
 					io::txt "虛擬機器（未知類型）"
 				else
 					io::txt "未偵測到（可能為實體機器）"
@@ -467,8 +772,8 @@ function sys::virt() {
 				;;
 			*) io::txt "${virt_typ}" ;;
 		esac
-	elif file::exist /proc/cpuinfo; then
-		if file::grep -qi "hypervisor" /proc/cpuinfo 2>/dev/null; then
+	elif fs::file_exist /proc/cpuinfo; then
+		if fs::file_grep -qi "hypervisor" /proc/cpuinfo 2>/dev/null; then
 			io::txt "虛擬機器（未知類型）"
 		else
 			io::txt "未偵測到（可能為實體機器）"
@@ -483,74 +788,87 @@ function sys::virt() {
 function fs::dir_exist() {
 	(($# == 0)) && return 2
 	local d
-	for d in "$@"; do [[ -d $d ]] || return 1; done
+	for d in "$@"; do [[ -d "${d}" ]] || return 1; done
 }
 function fs::file_exist() {
 	(($# == 0)) && return 2
 	local f
-	for f in "$@"; do [[ -f $f ]] || return 1; done
+	for f in "$@"; do [[ -f "${f}" ]] || return 1; done
 }
 function fs::file_valid() {
 	(($# == 0)) && return 2
 	local f
-	for f in "$@"; do [[ -s $f ]] || return 1; done
+	for f in "$@"; do [[ -s "${f}" ]] || return 1; done
 }
 function fs::file_grep() {
 	(($# < 2)) && return 2
 	command -v grep &>/dev/null || return 126
 	local -r file="${!#}"
-	[[ ! (-f ${file} && -r ${file} && -s ${file}) ]] && return 2
+	[[ ! (-f "${file}" && -r "${file}" && -s "${file}") ]] && return 2
 	command grep "$@"
 }
 function fs::path_exist() {
 	(($# == 0)) && return 2
 	local p
-	for p in "$@"; do [[ -e $p || -L $p ]] || return 1; done
+	for p in "$@"; do [[ -e "${p}" || -L "${p}" ]] || return 1; done
 }
 function fs::perm_read() {
 	(($# == 0)) && return 2
 	local p
-	for p in "$@"; do [[ -r $p ]] || return 1; done
+	for p in "$@"; do [[ -r "${p}" ]] || return 1; done
 }
 function fs::perm_write() {
 	(($# == 0)) && return 2
 	local p
-	for p in "$@"; do [[ -w $p ]] || return 1; done
+	for p in "$@"; do [[ -w "${p}" ]] || return 1; done
 }
 function fs::perm_exec() {
 	(($# == 0)) && return 2
 	local p
-	for p in "$@"; do [[ -x $p ]] || return 1; done
+	for p in "$@"; do [[ -x "${p}" ]] || return 1; done
 }
 
 # ----------------------------------------------------------------------
 #  Namespace: net (Networking & Downloads)
 # ----------------------------------------------------------------------
-function net::url_get() { command wget --timeout=15 --tries=3 --waitretry=5 --retry-on-http-error=429,500,502,503,504 --max-redirect=5 "$@"; }
 function net::dns() {
-	file::exist /etc/resolv.conf && io::err "找不到 DNS 設定檔" && return 1
-	local dns4=() dns6=()
+	fs::file_exist /etc/resolv.conf || io::err_die "找不到 DNS 設定檔" || return 1
 
-	while read -r servers; do
-		[[ ${servers} =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] && dns4+=("${servers}")
-		[[ ${servers} =~ ^[0-9a-fA-F:]+$ ]] && dns6+=("${servers}")
-	done < <(file::grep -E '^nameserver' /etc/resolv.conf | str::grid 1 2)
+	local -A opts
+	local dns4=() dns6=()
+	util::parse_opts opts "4|ipv4 6|ipv6" "$@" || return 1
+
+	local first second _
+	while read -r first second _; do
+		# 忽略以 # 或 ; 開頭的註解行，以及空白行
+		[[ ${first} =~ ^[#\;] ]] && continue
+		var::empty "${first}" && continue
+
+		if [[ ${first} == "nameserver" ]]; then
+			if util::validate "ipv4" "${second}"; then
+				dns4+=("${second}")
+			elif util::validate "ipv6" "${second}"; then
+				dns6+=("${second}")
+			fi
+		fi
+	done </etc/resolv.conf
 
 	((${#dns4[@]} == 0 && ${#dns6[@]} == 0)) && io::err "/etc/resolv.conf 中未設定 DNS 伺服器" && return 1
-	case "${1:-}" in
-		-4 | --ipv4)
-			((${#dns4[@]} == 0)) && io::err "找不到 IPv4 DNS 伺服器" && return 1
-			io::txt "${dns4[*]}"
-			;;
-		-6 | --ipv6)
-			((${#dns6[@]} == 0)) && io::err "找不到 IPv6 DNS 伺服器" && return 1
-			io::txt "${dns6[*]}"
-			;;
-		*)
-			((${#dns4[@]} == 0 && ${#dns6[@]} == 0)) && io::err "找不到 DNS 伺服器" && return 1
+
+	if ((opts[ipv4] != 0)); then
+		((${#dns4[@]} == 0)) && io::err "找不到 IPv4 DNS 伺服器" && return 1
+		io::txt "${dns4[*]}"
+	elif ((opts[ipv6] != 0)); then
+		((${#dns6[@]} == 0)) && io::err "找不到 IPv6 DNS 伺服器" && return 1
+		io::txt "${dns6[*]}"
+	else
+		# 若其中一個為空，避免輸出多餘的空格
+		if ((${#dns4[@]} > 0 && ${#dns6[@]} > 0)); then
 			io::txt "${dns4[*]}   ${dns6[*]}"
-			;;
-	esac
+		else
+			io::txt "${dns4[*]}${dns6[*]}"
+		fi
+	fi
 }
 function net::iface() {
 	local all_interfaces default4_route default6_route interface interfaces=() interfaces_num items=()
@@ -654,7 +972,7 @@ function net::iface() {
 				done </proc/net/dev 2>/dev/null
 				if var::valid "${stats}"; then
 					read -r rx_bytes rx_packets rx_drop tx_bytes tx_packets tx_drop <<<"${stats}"
-					io::txt "${iface}: RX: $(ConvSz "${rx_bytes}"), TX: $(ConvSz "${tx_bytes}")"
+					io::txt "${iface}: RX: $(util::conv_size "${rx_bytes}"), TX: $(util::conv_size "${tx_bytes}")"
 				fi
 			done
 			;;
@@ -662,46 +980,43 @@ function net::iface() {
 	esac
 }
 function net::ip() {
-	local -r apis=("api64.ipify.org" "ifconfig.me" "ipinfo.io") ip4_regex="(\b25[0-5]|\b2[0-4][0-9]|\b[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}"
-	local -r ip6_regex="(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}{1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}{1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}{1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}{1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}{1,6}|:((:[0-9a-fA-F]{1,4}{1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}{0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}{0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))"
-	local ip4_addr ip6_addr
-	case "$1" in
-		-4 | --ipv4)
-			for api in "${apis[@]}"; do
-				ip4_addr=$(net::url_get -qO- -4 "${api}" 2>/dev/null)
-				break
-			done
+	local -r apis=("api64.ipify.org" "ifconfig.me/ip" "api.ipinfo.io/ip")
+	local ip4_addr ip6_addr api raw_ip
 
-			ip4_addr=$(str::grep -oE "${ip4_regex}" <<<"${ip4_addr}")
-			io::txt "${ip4_addr:-N/A}"
-			;;
-		-6 | --ipv6)
-			for api in "${apis[@]}"; do
-				ip6_addr=$(net::url_get -qO- -6 "${api}" 2>/dev/null)
-				break
-			done
-			ip6_addr=$(str::grep -oE "${ip6_regex}" <<<"${ip6_addr}")
-			io::txt "${ip6_addr:-N/A}"
-			;;
-		-p | --public) str::query "ip" < <(net::url_get -qO- "https://developers.cloudflare.com/cdn-cgi/trace") ;;
-		*)
-			for api in "${apis[@]}"; do
-				ip4_addr=$(net::url_get -qO- -4 "${api}" 2>/dev/null)
-				break
-			done
-			ip4_addr=$(str::grep -oE "${ip4_regex}" <<<"${ip4_addr}")
+	local -A opts
+	util::parse_opts opts "4|ipv4 6|ipv6 p|public" "$@" || return 1
 
-			for api in "${apis[@]}"; do
-				ip6_addr=$(net::url_get -qO- -6 "${api}" 2>/dev/null)
-				break
-			done
-			ip6_addr=$(str::grep -oE "${ip6_regex}" <<<"${ip6_addr}")
+	if ((opts[ipv4] != 0)); then
+		for api in "${apis[@]}"; do
+			raw_ip=$(net::url_get -qO- -4 "${api}" 2>/dev/null)
+			util::validate "ipv4" "${raw_ip}" ip4_addr && break
+		done
 
-			var::empty "${ip4_addr}${ip6_addr}" && io::err "取得 IP 位址失敗" && return 1
-			io::raw "IPv4: " && io::txt "${ip4_addr:-N/A}"
-			io::raw "IPv6: " && io::txt "${ip6_addr:-N/A}"
-			;;
-	esac
+		io::txt "${ip4_addr:-N/A}"
+	elif ((opts[ipv6] != 0)); then
+		for api in "${apis[@]}"; do
+			raw_ip=$(net::url_get -qO- -6 "${api}" 2>/dev/null)
+			util::validate "ipv6" "${raw_ip}" ip6_addr && break
+		done
+
+		io::txt "${ip6_addr:-N/A}"
+	elif ((opts[public] != 0)); then
+		str::query "ip" < <(net::url_get -qO- "https://developers.cloudflare.com/cdn-cgi/trace")
+	else
+		for api in "${apis[@]}"; do
+			raw_ip=$(net::url_get -qO- -4 "${api}" 2>/dev/null)
+			util::validate "ipv4" "${raw_ip}" ip4_addr && break
+		done
+
+		for api in "${apis[@]}"; do
+			raw_ip=$(net::url_get -qO- -6 "${api}" 2>/dev/null)
+			util::validate "ipv6" "${raw_ip}" ip6_addr && break
+		done
+
+		var::empty "${ip4_addr}${ip6_addr}" && io::err "取得 IP 位址失敗" && return 1
+		io::raw "IPv4: " && io::txt "${ip4_addr:-N/A}"
+		io::raw "IPv6: " && io::txt "${ip6_addr:-N/A}"
+	fi
 }
 function net::mac() { str::grid link/ether 2 < <(ip link show) || io::err_die "無法取得 MAC 位址。找不到網路介面" || return 1; }
 function net::provider() {
@@ -803,4 +1118,15 @@ function pkg::upgrade() {
 			ZYPPER) zypper dup -y --no-allow-vendor-change ;;
 		esac
 	fi
+}
+
+# ----------------------------------------------------------------------
+#  Namespace: app (Package Manager Wrappers)
+# ----------------------------------------------------------------------
+function app::install_docker() {
+	true
+}
+
+function app::docker() {
+	true
 }
