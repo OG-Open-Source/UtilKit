@@ -1,70 +1,164 @@
 #!/usr/bin/env bash
-# VERSION="8.0.0a9"
+# VERSION="8.0.0a10"
 
+# shellcheck source=/dev/null
 # set -Eeuo pipefail
 # set +u
 set -o pipefail
 shopt -s expand_aliases
 
+declare -A UT_CODE=() UT_INFO=()
+declare BASH=0 PKG_MGR="unknown" LANG="${LANG:-C.UTF-8}"
+declare UT_ERR_CODE=0
 declare _
-declare BASH=0 PKG_MGR="unknown"
-readonly LANG="${LANG:-C.UTF-8}"
+export UT_CODE
+export UT_ERR_CODE
+export UT_INFO
 
-declare CLR=(
-	"\x1b[0m"    # [0] 重置
-	"\x1b[0;31m" # [1] 紅
-	"\x1b[0;32m" # [2] 綠
-	"\x1b[0;33m" # [3] 黃
-	"\x1b[0;34m" # [4] 藍
-	"\x1b[0;35m" # [5] 紫
-	"\x1b[0;36m" # [6] 青
-	"\x1b[0;37m" # [7] 白
-	"\x1b[0;96m" # [8] 高亮青
-	"\x1b[0;97m" # [9] 高亮白
+((BASH == 0)) && printf "%b\n" "\x1b[38;2;204;51;51mUnsupported Bash version!\x1b[0m" && return 126
+[[ ${PKG_MGR} == "unknown" ]] && printf "%b\n" "\x1b[38;2;204;51;51mUnknown package manager!\x1b[0m" && return 127
+
+source /dev/stdin <<< "$(wget -qO- utilkit.ogtt.tk/sh/core.sh 2>/dev/null)"
+
+# ----------------------------------------------------------------------
+#  Namespace: ut (Utility & Custom Error Handling)
+# ----------------------------------------------------------------------
+function ut::set_code() {
+	local -r type_name="${1:-}"
+	local -r code_val="${2:-}"
+	[[ -n "${type_name}" ]] || return 1
+	UT_CODE["${type_name^^}"]="${code_val}"
+}
+function ut::get_code() {
+	local -r type_name="${1:-}"
+	[[ -n "${type_name}" ]] || return 1
+	io::txt "${UT_CODE["${type_name^^}"]:-}"
+}
+function ut::clear_codes() {
+	UT_CODE=()
+}
+
+# @description 抽象化生成高精度 UTC 時間與格式化紀錄至 UT_INFO 以及寫入永續檔案
+# @params $1: 函數名稱 (e.g. net::url_get)
+# @params $2: 類型 (ERROR 或 WARN)
+# @params $3: 精確故障代碼 [A-Z]{4}[0-9]{4} (e.g. NEUG2000)
+# @params $4: 詳情訊息 (details)
+function ut::log_info() {
+	local -r func_name="${1:-}"
+	local -r type_name="${2:-}"
+	local -r code_val="${3:-}"
+	local -r details_msg="${4:-}"
+	
+	[[ -n "${func_name}" && -n "${type_name}" && -n "${code_val}" ]] || return 1
+
+	# 1. 獲取高精度微秒級 UTC 時間，格式 YYYY-MM-DDTHH:mm:ssssss+00:00
+	local raw_nanos nanos current_utc_time
+	raw_nanos=$(date -u +'%N' 2>/dev/null)
+	if [[ -z "${raw_nanos}" || "${raw_nanos}" == "N" ]]; then
+		nanos="000000"
+	else
+		nanos="${raw_nanos:0:6}"
+	fi
+	current_utc_time="$(date -u +'%Y-%m-%dT%H:%M:%S').${nanos}+00:00"
+
+	# 2. 更新 UT_CODE 狀態碼 (與 ut::set_code 對稱同步)
+	ut::set_code "${type_name}" "${code_val}"
+
+	# 3. 生成符合規範的 UT_INFO 項目與 DELIMITER
+	local info_entry
+	read -r -d '' info_entry <<-EOF
+		function_name: ${func_name}
+		datatime: ${current_utc_time}
+		code: ${code_val}
+		details: ${details_msg}
+		---
+	EOF
+
+	# 追加至對應函數的 UT_INFO 全局暫存器
+	UT_INFO["${func_name}"]+="${info_entry}"$'\n'
+
+	# 4. 將錯誤儲存到文件中 (日誌防禦性校驗)
+	local log_file="/var/log/utilkit.sh.log"
+	local log_msg="[${current_utc_time}] [${type_name^^}] ${func_name}: ${details_msg} (code: ${code_val})"
+	
+	# 如果在當前工作目錄下建立日誌，或具有 root 寫入權限，執行永久性文件記錄
+	if [[ -w "/var/log" ]]; then
+		printf "%s\n" "${log_msg}" >> "${log_file}" 2>/dev/null
+	elif [[ -w "." ]]; then
+		# 如果無系統 /var/log 寫入權限，fallback 到工作目錄下的日誌文件
+		printf "%s\n" "${log_msg}" >> "./utilkit.sh.log" 2>/dev/null
+	fi
+}
+
+declare -gA CLR=(
+	[0]="\x1b[0m"
+	[1]="\x1b[38;2;204;51;51m"
+	[2]="\x1b[38;2;51;204;85m"
+	[3]="\x1b[38;2;255;204;51m"
+	[4]="\x1b[0;34m"
+	[5]="\x1b[0;3\x1b[38;2;136;68;221"
+	[6]="\x1b[0;36m"
+	[7]="\x1b[0;37m"
+	[8]="\x1b[38;2;0;102;204m"
+	[9]="\x1b[0;97m"
+
+	[reset]="\x1b[0m" [rst]="\x1b[0m"
+	[bold]="\x1b[1m"
+	[dim]="\x1b[2m"
+	[italic]="\x1b[3m"
+	[underline]="\x1b[4m"
+	[blink]="\x1b[5m"
+	[reverse]="\x1b[7m"
+	[hidden]="\x1b[8m"
+
+	[new]="\x1b[38;2;136;68;221"
+	[disb]="\x1b[38;2;102;119;153m" [disable]="\x1b[38;2;102;119;153m" [dis]="\x1b[38;2;102;119;153m"
+	[eror]="\x1b[38;2;204;51;51m" [error]="\x1b[38;2;204;51;51m" [err]="\x1b[38;2;204;51;51m"
+	[info]="\x1b[38;2;0;102;204m" [information]="\x1b[38;2;0;102;204m" [inf]="\x1b[38;2;0;102;204m"
+	[sucs]="\x1b[38;2;51;204;85m" [success]="\x1b[38;2;51;204;85m" [scs]="\x1b[38;2;51;204;85m"
+	[warn]="\x1b[38;2;255;204;51m" [warning]="\x1b[38;2;255;204;51m" [wrn]="\x1b[38;2;255;204;51m"
+
+	[black]="\x1b[30m" [bg_black]="\x1b[40m"
+	[red]="\x1b[31m" [bg_red]="\x1b[41m"
+	[green]="\x1b[32m" [bg_green]="\x1b[42m"
+	[yellow]="\x1b[33m" [bg_yellow]="\x1b[43m"
+	[blue]="\x1b[34m" [bg_blue]="\x1b[44m"
+	[magenta]="\x1b[35m" [bg_magenta]="\x1b[45m"
+	[cyan]="\x1b[36m" [bg_cyan]="\x1b[46m"
+	[white]="\x1b[37m" [bg_white]="\x1b[47m"
+
+	[bright_black]="\x1b[90m" [bg_bright_black]="\x1b[100m"
+	[bright_red]="\x1b[91m" [bg_bright_red]="\x1b[101m"
+	[bright_green]="\x1b[92m" [bg_bright_green]="\x1b[102m"
+	[bright_yellow]="\x1b[93m" [bg_bright_yellow]="\x1b[103m"
+	[bright_blue]="\x1b[94m" [bg_bright_blue]="\x1b[104m"
+	[bright_magenta]="\x1b[95m" [bg_bright_magenta]="\x1b[105m"
+	[bright_cyan]="\x1b[96m" [bg_bright_cyan]="\x1b[106m"
+	[bright_white]="\x1b[97m" [bg_bright_white]="\x1b[107m"
 )
-
-((BASH == 0)) && printf "%b\n" "${CLR[1]}Unsupported Bash version!${CLR[0]}" && return 126
-[[ ${PKG_MGR} == "unknown" ]] && printf "%b\n" "${CLR[1]}Unknown package manager!${CLR[0]}" && return 127
 
 # ----------------------------------------------------------------------
 #  Namespace: var/io/str
 # ----------------------------------------------------------------------
-function var::empty() {
-	(($# == 0)) && return 2
-	local v
-	for v in "$@"; do [[ -z "${v}" ]] || return 1; done
-}
-function var::set() {
-	(($# == 0)) && return 2
-	local v
-	for v in "$@"; do [[ -v "${v}" ]] || return 1; done
-}
-function var::valid() {
-	(($# == 0)) && return 2
-	local v
-	for v in "$@"; do [[ -n "${v}" ]] || return 1; done
-}
+function str::grep() {
+	var::valid "$@"
 
-function io::err() { var::valid "$@" && printf "%b\n" "${CLR[1]}$*${CLR[0]}" >&2; }
-function io::err_die() { var::valid "$@" && printf "%b\n" "${CLR[1]}$*${CLR[0]}" >&2 && return 1; }
-function io::raw() { printf "%b" "$*"; }
-function io::txt() { var::valid "$@" && printf "%b\n" "$*"; }
-
-function str::grep() { command grep "$@"; }
+	command grep "$@"
+}
 function str::trim() {
-	(($# == 0)) && return 2
+	var::valid "$@"
 
 	local stdin_buffer
 	stdin_buffer=$(cat)
 	var::valid "${1:-}" && stdin_buffer="${stdin_buffer#*"$1"}"
 	var::valid "${2:-}" && stdin_buffer="${stdin_buffer%%"$2"*}"
 
-	printf "%b\n" "${stdin_buffer}"
+	io::txt "${stdin_buffer}"
 }
 function str::grid() {
 	local has_modifiers=0
 
-	(($# > 0)) && [[ $1 =~ ^([_<>^][0-9]*)([_<>^][0-9]*)?$ ]] && has_modifiers=1 && shift
+	(($# > 0)) && [[ $1 =~ ^([_<>^][0-9]*)([_<>^][0-9]*)?$ ]] && has_modifiers=1 && shift 1
 
 	local part1 part2
 
@@ -254,7 +348,7 @@ function str::query() (
 	local -r key="$1" data_source="${2:-}"
 	local -r pattern="(^|[[:space:],'{ \"])(\"${key}\"|'${key}'|\<${key}\>)[[:space:]]*[:=][[:space:]]*(\"([^\"]*)\"|'([^']*)'|([^,#]*[^[:space:],#]))"
 
-	function _parse() {
+	_parse() {
 		local -r target_pattern="$1"
 		local line
 
@@ -273,8 +367,11 @@ function str::query() (
 	fi
 )
 
+# ----------------------------------------------------------------------
+#  Namespace: util ()
+# ----------------------------------------------------------------------
 function util::conv_size() {
-	(($# == 0)) && return 2
+	var::valid "$@"
 	# TODO: change these variables
 	local size="$1" default_pref="${UNIT_PREF:-b}" && local unit="${2:-${default_pref}}"
 
@@ -282,7 +379,7 @@ function util::conv_size() {
 
 	local -r LC_ALL=C
 	awk -v size="${size}" -v unit="${unit,,}" '
-        function ToBytes(val, u) {
+		function ToBytes(val, u) {
 			if (u == "b" || u == "ib")      return val;
 			if (u == "kb")                  return val * 1000;
 			if (u == "mb")                  return val * 1000^2;
@@ -295,42 +392,42 @@ function util::conv_size() {
 			if (u == "tib")                 return val * 1024^4;
 			if (u == "pib")                 return val * 1024^5;
 			return -1;
-        }
-        BEGIN {
+		}
+		BEGIN {
 			bytes = ToBytes(size, unit);
 			if (bytes < 0) exit 1;
 
 			is_binary = (index(unit, "ib") > 0);
 			if (is_binary) {
-			    base = 1024;
-			    units_str = "B KiB MiB GiB TiB PiB";
+				base = 1024;
+				units_str = "B KiB MiB GiB TiB PiB";
 			} else {
-			    base = 1000;
-			    units_str = "B KB MB GB TB PB";
+				base = 1000;
+				units_str = "B KB MB GB TB PB";
 			}
 			split(units_str, units_arr, " ");
 			power = 0;
 			value = bytes;
 			if (bytes > 0) {
-			    power = int(log(bytes)/log(base));
-			    if (power > 5) power = 5;
-			    if (power > 0) value = bytes / (base^power);
+				power = int(log(bytes)/log(base));
+				if (power > 5) power = 5;
+				if (power > 0) value = bytes / (base^power);
 			}
 			if (power == 0) {
-			    printf "%d %s", bytes, units_arr[1];
+				printf "%d %s", bytes, units_arr[1];
 			} else {
-			    if (value >= 100)       printf "%.1f %s", value, units_arr[power + 1];
-			    else if (value >= 10)   printf "%.2f %s", value, units_arr[power + 1];
-			    else                    printf "%.3f %s", value, units_arr[power + 1];
+				if (value >= 100)       printf "%.1f %s", value, units_arr[power + 1];
+				else if (value >= 10)   printf "%.2f %s", value, units_arr[power + 1];
+				else                    printf "%.3f %s", value, units_arr[power + 1];
 			}
-        }
-    ' || io::err_die "不支持的單位或格式錯誤：size=${size} unit=${unit,,}" || return 1
+		}
+	' || io::err_die "不支持的單位或格式錯誤：size=${size} unit=${unit,,}" || return 1
 }
 function util::parse_opts() {
 	local -n _utilkit_io_parse_opts_ref="$1" || return 1
-	shift
+	shift 1
 	local -r _spec="$1"
-	shift
+	shift 1
 
 	# 初始化關聯陣列 (修復 SC2154)
 	_utilkit_io_parse_opts_ref=()
@@ -360,7 +457,7 @@ function util::parse_opts() {
 
 		# 1. 處理旗標終止符 (Standard -- terminator)
 		if [[ ${token} == "--" ]]; then
-			shift
+			shift 1
 			_utilkit_io_parse_opts_ref["_args"]+=" $*"
 			break
 		fi
@@ -368,7 +465,7 @@ function util::parse_opts() {
 		# 2. 處理單一 "-" 或 "+" (視為普通定位參數，而非旗標)
 		if [[ ${token} == "-" || ${token} == "+" ]]; then
 			_utilkit_io_parse_opts_ref["_args"]+=" ${token}"
-			shift
+			shift 1
 			continue
 		fi
 
@@ -393,7 +490,7 @@ function util::parse_opts() {
 		else
 			# 非旗標，歸入定位參數 (修復 SC2154)
 			_utilkit_io_parse_opts_ref["_args"]+=" ${token}"
-			shift
+			shift 1
 			continue
 		fi
 
@@ -444,26 +541,20 @@ function util::parse_opts() {
 				fi
 			done
 
-			if ((matched == 0)); then
-				io::err "未知的長旗標: ${prefix}${opt_name}"
-				return 1
-			fi
-
+			((matched == 0)) && io::err "未知的長旗標: ${prefix}${opt_name}" && return 1
 		else
 			# -- 短旗標處理 (依舊支援連續組合，如 -abc 或 +bc)
 			local len=${#opt_part}
 			local i
 			for ((i = 0; i < len; i++)); do
-				local char="${opt_part:i:1}"
-				local matched=0
-				local spec_item
+				local -i matched=0
+				local char="${opt_part:i:1}" spec_item
 				for spec_item in ${_spec}; do
+					local -i has_arg=0
 					local opt_def="${spec_item%:}"
-					local has_arg=0
 					[[ ${spec_item} == *":" ]] && has_arg=1
 
-					local short_opt="${opt_def%|*}"
-					local long_opt="${opt_def#*|}"
+					local short_opt="${opt_def%|*}" long_opt="${opt_def#*|}"
 
 					if [[ ${char} == "${short_opt}" ]]; then
 						matched=1
@@ -494,14 +585,10 @@ function util::parse_opts() {
 					fi
 				done
 
-				if ((matched == 0)); then
-					io::err "未知的短旗標: ${prefix}${char}"
-					return 1
-				fi
+				((matched == 0)) && io::err "未知的短旗標: ${prefix}${char}" && return 1
 			done
 		fi
 
-		# 由於移除了吞噬邏輯，每次處理完一個 token 後固定 shift 1
 		shift 1
 	done
 
@@ -562,7 +649,6 @@ function util::validate() {
 				_utilkit_util_validate_ok_ref="${_val}"
 			fi
 		else
-			# 未指定變數時，直接輸出至 stdout
 			io::txt "${_val}"
 		fi
 		return 0
@@ -583,7 +669,95 @@ function util::harden_session() {
 	function grep() { false; }
 	function wget() { false; }
 }
-function net::url_get() { command wget --timeout=15 --tries=3 --waitretry=5 --retry-on-http-error=429,500,502,503,504 --max-redirect=5 "$@"; }
+
+function net::url_get() {
+	# 1. 宣告局部變數，並遵循顯式型別優先之順序： -i > none
+	local -i arg_idx=0 status_code=0 url_found=0
+	local args=("$@")
+	local last_arg url_to_check proto
+
+	# 2. 衛語句：輸入範圍安全檢查 (若參數為空，直接回傳錯誤狀態碼 20)
+	if (($# == 0)); then
+		UT_ERR_CODE=20
+		# 使用全域且高度抽象化的 ut::log_info 處理時間、代碼更新、UT_INFO 儲存、以及永續文件寫入
+		ut::log_info "net::url_get" "ERROR" "NEUG2000" "net::url_get 失敗：參數列表為空"
+		io::err "net::url_get 失敗：參數列表為空"
+		return 20
+	fi
+
+	# 3. 輸入長度與極值防禦：長度限制 2048 字元，避免緩衝區溢位
+	last_arg="${args[$(($# - 1))]}"
+	if ((${#last_arg} > 2048)); then
+		UT_ERR_CODE=21
+		ut::log_info "net::url_get" "ERROR" "NEUG2100" "net::url_get 失敗：參數長度超過限制"
+		io::err "net::url_get 失敗：參數長度超過限制"
+		return 21
+	fi
+
+	# 4. 輸入範圍安全性檢驗：識別並驗證 URL
+	# 遍歷參數以找到最後一個非選項參數作為目標 URL
+	for ((arg_idx = $# - 1; arg_idx >= 0; arg_idx--)); do
+		if [[ ${args[arg_idx]} != -* ]]; then
+			url_to_check="${args[arg_idx]}"
+			url_found=1
+			break
+		fi
+	done
+
+	if ((url_found == 0)) || [[ -z "${url_to_check}" ]]; then
+		UT_ERR_CODE=22
+		ut::log_info "net::url_get" "ERROR" "NEUG2200" "net::url_get 失敗：未在參數中找到目標 URL"
+		io::err "net::url_get 失敗：未在參數中找到目標 URL"
+		return 22
+	fi
+
+	# 5. 通訊協定與字元範圍檢驗：僅允許 HTTP 與 HTTPS 協定，避免 file://, gopher:// 等 SSRF 漏洞
+	if [[ ${url_to_check} =~ ^([a-zA-Z0-9+.-]+):// ]]; then
+		proto="${BASH_REMATCH[1]}"
+		proto="${proto,,}" # 轉小寫
+		if [[ ${proto} != "http" && ${proto} != "https" ]]; then
+			UT_ERR_CODE=23
+			ut::log_info "net::url_get" "ERROR" "NEUG2300" "net::url_get 失敗：不支援的通訊協定 '${proto}'"
+			io::err "net::url_get 失敗：不支援的通訊協定 '${proto}'"
+			return 23
+		fi
+	else
+		# 預設若沒有寫 scheme，直接視為不安全或無效 URL
+		UT_ERR_CODE=24
+		ut::log_info "net::url_get" "ERROR" "NEUG2400" "net::url_get 失敗：URL 缺少通訊協定開頭"
+		io::err "net::url_get 失敗：URL 缺少通訊協定開頭"
+		return 24
+	fi
+
+	# URL 安全字元集範圍驗證（防止 command injection 和非法字元）
+	# 用最通用安全且相容的字元檢驗，若含有 $、`、\、'、"、<、> 或分號等危險命令注入字元，直接拒絕
+	if [[ ${url_to_check} == *['$`"'\\]* || ${url_to_check} == *";"* || ${url_to_check} == *"<"* || ${url_to_check} == *">"* ]]; then
+		UT_ERR_CODE=25
+		ut::log_info "net::url_get" "ERROR" "NEUG2500" "net::url_get 失敗：URL 中偵測到不安全/非法的字元"
+		io::err "net::url_get 失敗：URL 中偵測到不安全/非法的字元"
+		return 25
+	fi
+
+	# 6. try ... catch ... 實作區段
+	# 在 Bash 中利用子 Shell 環境執行 wget，並補捉其結束狀態
+	# 子 Shell 隔離了執行環境，即使發生異常中斷或 SIGPIPE，也能被父 Shell 順利 catch
+	if command wget --timeout=15 --tries=3 --waitretry=5 --retry-on-http-error=429,500,502,503,504 --max-redirect=5 "${args[@]}"; then
+		UT_ERR_CODE=0
+		return 0
+	else
+		# Catch Block
+		# 捕獲 wget 的 exit status
+		status_code=$?
+		UT_ERR_CODE="${status_code}"
+
+		# 透過高度抽象的公用處理器，為當次呼叫追加入 ERROR 與獨占性的 WARN 代碼，並安全地將其記錄至 /var/log/utilkit.sh.log 永久檔案
+		ut::log_info "net::url_get" "ERROR" "NEUG3000" "net::url_get 失敗：wget 結束狀態碼為 ${status_code}，請求之 URL 為 '${url_to_check}'"
+		ut::log_info "net::url_get" "WARN" "NEUG3001" "net::url_get 警告：下載任務異常中斷，請確認遠端伺服器可用性"
+
+		# 回傳 wget 的原始狀態碼
+		return "${status_code}"
+	fi
+}
 
 function sys::cpu_cache() {
 	fs::file_exist /proc/cpuinfo || io::err_die "無法存取 CPU 資訊。" || return 1
@@ -718,7 +892,7 @@ function sys::shell_ver() {
 	io::err "不支援的 Shell" && return 1
 }
 function sys::timezone() (
-	(($# == 0)) && return 2
+	var::valid "$@"
 
 	_DetectExternal() {
 		net::url_get -qO- "https://ipapi.co/json" | str::query "timezone" && return 0
@@ -782,72 +956,27 @@ function sys::virt() {
 		io::txt "未知環境"
 	fi
 }
-# ----------------------------------------------------------------------
-#  Namespace: fs (Filesystem & Permissions)
-# ----------------------------------------------------------------------
-function fs::dir_exist() {
-	(($# == 0)) && return 2
-	local d
-	for d in "$@"; do [[ -d "${d}" ]] || return 1; done
-}
-function fs::file_exist() {
-	(($# == 0)) && return 2
-	local f
-	for f in "$@"; do [[ -f "${f}" ]] || return 1; done
-}
-function fs::file_valid() {
-	(($# == 0)) && return 2
-	local f
-	for f in "$@"; do [[ -s "${f}" ]] || return 1; done
-}
-function fs::file_grep() {
-	(($# < 2)) && return 2
-	command -v grep &>/dev/null || return 126
-	local -r file="${!#}"
-	[[ ! (-f "${file}" && -r "${file}" && -s "${file}") ]] && return 2
-	command grep "$@"
-}
-function fs::path_exist() {
-	(($# == 0)) && return 2
-	local p
-	for p in "$@"; do [[ -e "${p}" || -L "${p}" ]] || return 1; done
-}
-function fs::perm_read() {
-	(($# == 0)) && return 2
-	local p
-	for p in "$@"; do [[ -r "${p}" ]] || return 1; done
-}
-function fs::perm_write() {
-	(($# == 0)) && return 2
-	local p
-	for p in "$@"; do [[ -w "${p}" ]] || return 1; done
-}
-function fs::perm_exec() {
-	(($# == 0)) && return 2
-	local p
-	for p in "$@"; do [[ -x "${p}" ]] || return 1; done
-}
 
 # ----------------------------------------------------------------------
 #  Namespace: net (Networking & Downloads)
 # ----------------------------------------------------------------------
 function net::dns() {
+	local -A opts && util::parse_opts opts "4|ipv4 6|ipv6" "$@"
+
 	fs::file_exist /etc/resolv.conf || io::err_die "找不到 DNS 設定檔" || return 1
 
-	local -A opts
 	local dns4=() dns6=()
-	util::parse_opts opts "4|ipv4 6|ipv6" "$@" || return 1
-
 	local first second _
+
 	while read -r first second _; do
 		# 忽略以 # 或 ; 開頭的註解行，以及空白行
 		[[ ${first} =~ ^[#\;] ]] && continue
 		var::empty "${first}" && continue
 
 		if [[ ${first} == "nameserver" ]]; then
-			if util::validate "ipv4" "${second}"; then
+			if util::validate "ipv4" "${second}" &>/dev/null; then
 				dns4+=("${second}")
-			elif util::validate "ipv6" "${second}"; then
+			elif util::validate "ipv6" "${second}" &>/dev/null; then
 				dns6+=("${second}")
 			fi
 		fi
@@ -871,83 +1000,100 @@ function net::dns() {
 	fi
 }
 function net::iface() {
-	local all_interfaces default4_route default6_route interface interfaces=() interfaces_num items=()
-	local i item interface4 interface6 physical_iface iface stats
+	local interfaces=()
+	local default4_route default6_route i iface iface_name interface interface4 interface6 interfaces_num item line physical_iface stats
 	local rx_bytes rx_packets rx_drop tx_bytes tx_packets tx_drop
 
-	all_interfaces=$(
-		cat /proc/net/dev |
-			str::grep ':' |
-			cut -d':' -f1 |
-			sed 's/\s//g' |
-			str::grep -iv '^lo\|^sit\|^stf\|^gif\|^dummy\|^vmnet\|^vir\|^gre\|^ipip\|^ppp\|^bond\|^tun\|^tap\|^ip6gre\|^ip6tnl\|^teql\|^ocserv\|^vpn\|^warp\|^wgcf\|^wg\|^docker\|^br-\|^veth' |
-			sort -n
-	) || io::err_die "從 /proc/net/dev 取得網路介面失敗" || return 1
+	while read -r line; do
+		if [[ ${line} =~ ^[[:space:]]*([^:]+): ]]; then
+			iface_name="${BASH_REMATCH[1]}"
+			iface_name="${iface_name//[[:space:]]/}"
+			[[ ${iface_name} =~ ^(lo|sit|stf|gif|dummy|vmnet|vir|gre|ipip|ppp|bond|tun|tap|ip6gre|ip6tnl|teql|ocserv|vpn|warp|wgcf|wg|docker|br-|veth) ]] && continue
+			interfaces+=("${iface_name}")
+		fi
+	done </proc/net/dev
 
-	mapfile -t items <<<"${all_interfaces}"
-	interfaces=([0]="placeholder")
-	for item in "${items[@]}"; do
-		var::valid "${item}" && interfaces+=("${item}")
-	done
-	unset 'interfaces[0]'
 	interfaces_num=${#interfaces[@]}
 
 	default4_route=$(ip -4 route show default 2>/dev/null || io::raw "")
 	default6_route=$(ip -6 route show default 2>/dev/null || io::raw "")
 
-	for ((i = 1; i <= ${#interfaces[@]}; i++)); do
-		item="${interfaces[i]}"
+	for item in "${interfaces[@]}"; do
 		var::empty "${item}" && continue
 
 		if var::valid "${default4_route}" && var::empty "${interface4}"; then
-			io::txt "${default4_route}" | str::grep -qE "\bdev ${item}\b"
-			interface4="${item}"
+			# 使用具有空白/邊界安全性的 regex 匹配 "dev <iface>"
+			[[ ${default4_route} =~ [[:space:]]dev[[:space:]]${item}([[:space:]]|$) ]] && interface4="${item}"
 		fi
 		if var::valid "${default6_route}" && var::empty "${interface6}"; then
-			io::txt "${default6_route}" | str::grep -qE "\bdev ${item}\b"
-			interface6="${item}"
+			[[ ${default6_route} =~ [[:space:]]dev[[:space:]]${item}([[:space:]]|$) ]] && interface6="${item}"
 		fi
+
 		var::valid "${interface4}" "${interface6}" && break
 	done
 
 	if var::empty "${interface4}${interface6}"; then
-		for ((i = 1; i <= ${#interfaces[@]}; i++)); do
-			item="${interfaces[i]}"
+		for item in "${interfaces[@]}"; do
 			if [[ ${item} =~ ^en ]]; then
 				interface4="${item}"
 				interface6="${item}"
 				break
 			fi
 		done
-		if ((interfaces_num == 0)); then
-			interface4="${interfaces[1]}"
-			interface6="${interfaces[1]}"
+		# 若依然沒找到 en 開頭的介面，且介面清單不為空，則預設採用第一個介面
+		if var::empty "${interface4}" && ((interfaces_num > 0)); then
+			interface4="${interfaces[0]}"
+			interface6="${interfaces[0]}"
 		fi
 	fi
 
 	if var::valid "${interface4}" || var::valid "${interface6}"; then
-		interface="${interface4} ${interface6}"
-		[[ ${interface4} == "${interface6}" ]] && interface="${interface4}"
-		interface=$(io::txt "${interface}" | tr -s ' ' | xargs)
+		if [[ ${interface4} == "${interface6}" ]]; then
+			interface="${interface4}"
+		else
+			interface="${interface4} ${interface6}"
+			# 原生去除可能的多餘首尾空格
+			interface="${interface#"${interface%%[![:space:]]*}"}"
+			interface="${interface%"${interface##*[![:space:]]}"}"
+		fi
 	else
-		physical_iface=$(ip -o link show | str::grep -v 'lo\|docker\|br-\|veth\|bond\|tun\|tap' | str::grep 'state UP' | head -n 1 | str::grid 1 2 ":")
+		# 5. 實體介面 fallback 備援：以原生讀取與 regex 擷取，取代 ip | grep | grep | head | grid 管道
+		local line_link iface_link state_link first_iface_link
+		while read -r line_link; do
+			if [[ ${line_link} =~ lo|docker|br-|veth|bond|tun|tap ]]; then
+				continue
+			fi
+			if [[ ${line_link} =~ ^[0-9]+:[[:space:]]*([^:]+):.*state[[:space:]]([A-Z]+) ]]; then
+				iface_link="${BASH_REMATCH[1]}"
+				iface_link="${iface_link//[[:space:]]/}"
+				state_link="${BASH_REMATCH[2]}"
+
+				[[ ${state_link} == "UP" ]] && var::empty "${physical_iface}" && physical_iface="${iface_link}"
+				var::empty "${first_iface_link}" && first_iface_link="${iface_link}"
+			fi
+		done < <(ip -o link show 2>/dev/null)
+
 		if var::valid "${physical_iface}"; then
 			interface="${physical_iface}"
 		else
-			interface=$(ip -o link show | str::grep -v 'lo:' | head -n 1 | str::grid 1 2 ":")
+			interface="${first_iface_link}"
 		fi
 	fi
 
 	case "$1" in
 		--rx_bytes | --rx_packets | --rx_drop | --tx_bytes | --tx_packets | --tx_drop)
 			for iface in ${interface}; do
+				local stats=""
 				while read -r line; do
-					if [[ ${line} =~ ^[[:space:]]*"${iface}": ]]; then
-						read -r -a arr <<<"${line}"
+					# 去除首部空格以防陣列分割時產生的偏移
+					local trimmed="${line#"${line%%[![:space:]]*}"}"
+					if [[ ${trimmed} == "${iface}":* ]]; then
+						read -r -a arr <<<"${trimmed}"
 						stats="${arr[1]} ${arr[2]} ${arr[4]} ${arr[9]} ${arr[10]} ${arr[12]}"
 						break
 					fi
 				done </proc/net/dev 2>/dev/null
+
 				if var::valid "${stats}"; then
 					read -r rx_bytes rx_packets rx_drop tx_bytes tx_packets tx_drop <<<"${stats}"
 					case "$1" in
@@ -963,13 +1109,16 @@ function net::iface() {
 			;;
 		-i | --information)
 			for iface in ${interface}; do
+				local stats=""
 				while read -r line; do
-					if [[ ${line} =~ ^[[:space:]]*"${iface}": ]]; then
-						read -r -a arr <<<"${line}"
+					local trimmed="${line#"${line%%[![:space:]]*}"}"
+					if [[ ${trimmed} == "${iface}":* ]]; then
+						read -r -a arr <<<"${trimmed}"
 						stats="${arr[1]} ${arr[2]} ${arr[4]} ${arr[9]} ${arr[10]} ${arr[12]}"
 						break
 					fi
 				done </proc/net/dev 2>/dev/null
+
 				if var::valid "${stats}"; then
 					read -r rx_bytes rx_packets rx_drop tx_bytes tx_packets tx_drop <<<"${stats}"
 					io::txt "${iface}: RX: $(util::conv_size "${rx_bytes}"), TX: $(util::conv_size "${tx_bytes}")"
@@ -980,11 +1129,10 @@ function net::iface() {
 	esac
 }
 function net::ip() {
-	local -r apis=("api64.ipify.org" "ifconfig.me/ip" "api.ipinfo.io/ip")
-	local ip4_addr ip6_addr api raw_ip
+	local -A opts && util::parse_opts opts "4|ipv4 6|ipv6 p|public" "$@"
 
-	local -A opts
-	util::parse_opts opts "4|ipv4 6|ipv6 p|public" "$@" || return 1
+	local -r apis=("https://api64.ipify.org" "https://ifconfig.me/ip" "https://api.ipinfo.io/ip")
+	local ip4_addr ip6_addr api raw_ip
 
 	if ((opts[ipv4] != 0)); then
 		for api in "${apis[@]}"; do
@@ -1031,7 +1179,7 @@ function net::provider() {
 #  Namespace: pkg (Package Manager Wrappers)
 # ----------------------------------------------------------------------
 function pkg::apt() {
-	(($# == 0)) && return 2
+	var::valid "$@"
 	DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=180 -y "$@"
 }
 function pkg::count() {
@@ -1046,7 +1194,7 @@ function pkg::count() {
 	esac
 }
 function pkg::is_installed() {
-	(($# == 0)) && return 2
+	var::valid "$@"
 
 	case "${PKG_MGR^^}" in
 		APK) apk info -e "${1,,}" &>/dev/null ;;
@@ -1059,7 +1207,7 @@ function pkg::is_installed() {
 	esac
 }
 function pkg::install() {
-	(($# == 0)) && return 2
+	var::valid "$@"
 
 	case "${PKG_MGR^^}" in
 		APK) apk add "${1,,}" ;;
@@ -1079,7 +1227,7 @@ function pkg::last_update() {
 	io::err "取得最後更新時間失敗" && return 1
 }
 function pkg::remove() {
-	(($# == 0)) && return 2
+	var::valid "$@"
 
 	case "${PKG_MGR^^}" in
 		APK) apk del "${1,,}" ;;
