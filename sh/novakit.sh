@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # VERSION="1.0.0a1"
 
+# shellcheck source=/dev/null
 # set -Eeuo pipefail
 # set +u
 set -o pipefail
