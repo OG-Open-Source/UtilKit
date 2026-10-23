@@ -18,7 +18,7 @@ export UT_INFO
 ((BASH == 0)) && printf "%b\n" "\x1b[38;2;204;51;51mUnsupported Bash version!\x1b[0m" && return 126
 [[ ${PKG_MGR} == "unknown" ]] && printf "%b\n" "\x1b[38;2;204;51;51mUnknown package manager!\x1b[0m" && return 127
 
-source /dev/stdin <<< "$(wget -qO- utilkit.ogtt.tk/sh/core.sh 2>/dev/null)"
+source /dev/stdin <<< "$(wget -qO- https://raw.githubusercontent.com/OG-Open-Source/UtilKit/main/sh/core.sh)"
 
 # ----------------------------------------------------------------------
 #  Namespace: ut (Utility & Custom Error Handling)
