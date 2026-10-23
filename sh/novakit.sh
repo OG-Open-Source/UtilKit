@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VERSION="1.0.0a3"
+# VERSION="1.0.0a4"
 
 # shellcheck source=/dev/null
 # set -Eeuo pipefail
@@ -563,7 +563,7 @@ function SysRboot() {
 		io::raw "\n"
 	fi
 
-	read -p "您確定要立即重新啟動系統嗎？(y/N) " -nr 1 cont
+	read -p "您確定要立即重新啟動系統嗎？(y/N) " -n 1 -r cont
 	io::raw "\n"
 
 	if ! [[ ${cont} =~ ^[Yy]$ ]]; then
