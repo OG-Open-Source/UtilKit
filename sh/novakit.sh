@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VERSION="1.0.0a1"
+# VERSION="1.0.0a2"
 
 # shellcheck source=/dev/null
 # set -Eeuo pipefail
@@ -7,7 +7,7 @@
 set -o pipefail
 shopt -s expand_aliases
 
-[[ -f ~/utilkit.sh ]] || bash <(wget -qO- utilkit.ogtt.tk/sh &>/dev/null)
+[[ -f ~/utilkit.sh ]] || bash <(wget -qO- https://raw.githubusercontent.com/OG-Open-Source/UtilKit/main/sh/get_utilkit.sh &>/dev/null)
 source ~/utilkit.sh
 
 declare UNIT_PREF="IB"
