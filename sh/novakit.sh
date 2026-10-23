@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VERSION="1.0.0a2"
+# VERSION="1.0.0a3"
 
 # shellcheck source=/dev/null
 # set -Eeuo pipefail
@@ -600,7 +600,7 @@ function SysUpg() {
 		DEBIAN)
 			io::txt "- 偵測到 DEBIAN 系統"
 			io::txt "- 正在更新套件清單"
-			pkg::updatee || io::err_die "使用 APT 更新套件清單失敗" || return 1
+			pkg::update || io::err_die "使用 APT 更新套件清單失敗" || return 1
 			io::txt "- 正在升級目前的套件"
 			pkg::upgrade || io::err_die "升級目前的套件失敗" || return 1
 			io::txt "- 開始 DEBIAN 發行版升級..."
